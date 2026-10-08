@@ -7,7 +7,7 @@
     "更新链路切换至 gitee"
   ],
   "download": [
-    "https://gitee.com/xunwulove/jiyuejie-updates/raw/master/updates/app-arm64-v8a-release.apk",
-    "https://gitee.com/xunwulove/jiyuejie-updates/raw/master/updates/app-universal-release.apk"
+    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/V0.6.2/app-arm64-v8a-release.apk",
+    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/V0.6.2/app-universal-release.apk"
   ]
 }
