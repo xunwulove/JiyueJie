@@ -1,0 +1,13 @@
+{
+  "version": "0.6.2",
+  "changeLog": [
+    "极悦界 v0.6.2：应用更名「极悦界」",
+    "设置页整合梳理（8 组卡片式）",
+    "修复齿轮重复点击黑屏",
+    "更新链路切换至 gitee"
+  ],
+  "download": [
+    "https://gitee.com/xujin621/Photo/raw/master/updates/app-arm64-v8a-release.apk",
+    "https://gitee.com/xujin621/Photo/raw/master/updates/app-universal-release.apk"
+  ]
+}
