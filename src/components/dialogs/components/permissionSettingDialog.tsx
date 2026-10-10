@@ -1,0 +1,149 @@
+import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { AppState } from "react-native";
+import rpx from "@/utils/rpx";
+import ThemeText from "@/components/base/themeText";
+import ListItem from "@/components/base/listItem";
+import ThemeSwitch from "@/components/base/switch";
+import { useI18N } from "@/core/i18n";
+import LyricUtil from "@/native/lyricUtil";
+import NativeUtils from "@/native/utils";
+import { hideDialog } from "../useDialog";
+import Dialog from "./base";
+
+type IPermissionTypes = "floatingWindow" | "fileStorage";
+
+/**
+ * 权限管理三级浮窗（原权限管理二级页压缩为浮窗）：
+ * 说明 + 悬浮窗/文件读写两行开关（点击行申请对应权限），返回前台自动重查状态
+ */
+export default function PermissionSettingDialog() {
+    const appState = useRef(AppState.currentState);
+    const [permissions, setPermissions] = useState<
+        Record<IPermissionTypes, boolean>
+    >({
+        floatingWindow: false,
+        fileStorage: false,
+    });
+    const { t } = useI18N();
+
+    async function checkPermission(type?: IPermissionTypes) {
+        let newPermission = {
+            ...permissions,
+        };
+        if (!type || type === "floatingWindow") {
+            const hasPermission =
+                await LyricUtil.checkSystemAlertPermission();
+            newPermission.floatingWindow = hasPermission;
+        }
+        if (!type || type === "fileStorage") {
+            const hasPermission =
+                await NativeUtils.checkStoragePermission();
+            newPermission.fileStorage = hasPermission;
+        }
+        setPermissions(newPermission);
+    }
+
+    useEffect(() => {
+        checkPermission();
+        const subscription = AppState.addEventListener(
+            "change",
+            nextAppState => {
+                if (
+                    appState.current.match(/inactive|background/) &&
+                    nextAppState === "active"
+                ) {
+                    checkPermission();
+                }
+                appState.current = nextAppState;
+            },
+        );
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
+
+    // 申请悬浮窗权限：系统会跳转设置页，返回前台由 AppState 监听重查；
+    // 此处再兜底一次，保证立即返回时开关状态也刷新
+    const requestFloatingWindow = () => {
+        LyricUtil.requestSystemAlertPermission().finally(() => {
+            setTimeout(() => {
+                checkPermission("floatingWindow");
+            }, 500);
+        });
+    };
+
+    // 申请存储权限：系统对话框在应用内弹出（Android 13+），
+    // 弹框会让应用失焦触发 AppState 重查；此处延时兜底刷新
+    const requestFileStorage = () => {
+        NativeUtils.requestStoragePermission();
+        setTimeout(() => {
+            checkPermission("fileStorage");
+        }, 800);
+    };
+
+    return (
+        <Dialog onDismiss={hideDialog}>
+            <Dialog.Title withDivider>
+                {t("permissionSetting.title")}
+            </Dialog.Title>
+            <Dialog.Content>
+                <ThemeText
+                    fontSize="description"
+                    fontColor="textSecondary"
+                    style={styles.description}>
+                    {t("permissionSetting.description")}
+                </ThemeText>
+                <ListItem
+                    withHorizontalPadding
+                    heightType="small"
+                    onPress={requestFloatingWindow}>
+                    <ListItem.Content
+                        title={t("permissionSetting.floatWindowPermission")}
+                        description={t(
+                            "permissionSetting.floatWindowPermissionDescription",
+                        )}
+                    />
+                    <ThemeSwitch
+                        value={permissions.floatingWindow}
+                        onValueChange={requestFloatingWindow}
+                    />
+                </ListItem>
+                <ListItem
+                    withHorizontalPadding
+                    heightType="small"
+                    onPress={requestFileStorage}>
+                    <ListItem.Content
+                        title={t(
+                            "permissionSetting.fileReadWritePermission",
+                        )}
+                        description={t(
+                            "permissionSetting.fileReadWritePermissionDescription",
+                        )}
+                    />
+                    <ThemeSwitch
+                        value={permissions.fileStorage}
+                        onValueChange={requestFileStorage}
+                    />
+                </ListItem>
+            </Dialog.Content>
+            <Dialog.Actions
+                actions={[
+                    {
+                        title: t("common.done"),
+                        type: "primary",
+                        onPress: hideDialog,
+                    },
+                ]}
+            />
+        </Dialog>
+    );
+}
+
+const styles = StyleSheet.create({
+    description: {
+        paddingHorizontal: rpx(24),
+        paddingVertical: rpx(16),
+    },
+});

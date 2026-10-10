@@ -1,0 +1,20 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+    </style>
+
+    <!-- Splash screen -->
+    <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@drawable/splashscreen_background</item>
+        <!-- Android 12+ 原生图标位显示真实品牌图标：启动即刻可见，避免空白等待；
+             RN 首帧后由 BrandSplash 无缝接管（同渐变底 + 40% 大图标 + 行楷字标） -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen_icon</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+        <!-- API<31 兼容：全屏浅色渐变背景，避免黑屏 -->
+        <item name="android:windowBackground">@drawable/splashscreen_background</item>
+    </style>
+
+</resources>

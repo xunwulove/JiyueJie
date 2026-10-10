@@ -1,0 +1,4 @@
+<resources>
+    <!-- 启动页背景：浅蓝（极悦界品牌浅色调性，替代原深黑） -->
+    <color name="splashscreen_background">#E9F2FC</color> <!-- #AARRGGBB or #RRGGBB format -->
+</resources>

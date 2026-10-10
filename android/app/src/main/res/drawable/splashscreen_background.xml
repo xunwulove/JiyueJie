@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 启动页浅色渐变背景（与极悦界品牌浅蓝调性一致；API<31 全屏渐变兜底） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:startColor="#D8E9FA"
+        android:endColor="#F0F8F3"
+        android:angle="135" />
+</shape>
