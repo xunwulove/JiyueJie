@@ -1,13 +1,12 @@
 {
-  "version": "0.6.2",
+  "version": "0.6.2.4",
   "changeLog": [
-    "极悦界 v0.6.2：应用更名「极悦界」",
-    "设置页整合梳理（8 组卡片式）",
-    "修复齿轮重复点击黑屏",
-    "更新链路切换至 gitee"
+    "新增沉浸歌词（样式A）：全屏播放页无操作自动进入，对齐QQ音乐HD布局（左60%歌词+右下40%封面、右上北京时间、缓慢流动光效，可设10/15/30秒）",
+    "全屏页顶栏新增主题设置图标（衣服），三点菜单右移至其右侧；功能区三点菜单移除",
+    "音源清单整合更新（45源）"
   ],
   "download": [
-    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/V0.6.2/app-arm64-v8a-release.apk",
-    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/V0.6.2/app-universal-release.apk"
+    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/latest/app-arm64-v8a-release.apk",
+    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/latest/app-universal-release.apk"
   ]
 }
