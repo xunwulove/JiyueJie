@@ -104,12 +104,17 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
 
     private downloadingCount = 0;
 
-    private static generateFilename(musicItem: IMusic.IMusicItem) {
-        return `${escapeCharacter(musicItem.platform)}@${escapeCharacter(
-            musicItem.id,
-        )}@${escapeCharacter(musicItem.title)}@${escapeCharacter(
-            musicItem.artist,
-        )}`.slice(0, 200);
+    private generateFilename(musicItem: IMusic.IMusicItem) {
+        // 下载文件命名：歌名在前（默认）/ 作者在前，可配置 basic.downloadNameOrder
+        const order =
+            this.configService?.getConfig("basic.downloadNameOrder") ?? "title-first";
+        const title = escapeCharacter(musicItem.title) || "未知歌曲";
+        const artist = escapeCharacter(musicItem.artist) || "未知歌手";
+        const name =
+            order === "artist-first"
+                ? `${artist} - ${title}`
+                : `${title} - ${artist}`;
+        return name.slice(0, 200);
     }
 
 
@@ -407,7 +412,7 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
             // 设置下载任务
             downloadTasks.set(getMediaUniqueKey(m), {
                 status: DownloadStatus.Pending,
-                filename: Downloader.generateFilename(m),
+                filename: this.generateFilename(m),
                 quality: quality,
                 musicItem: m,
             });
@@ -449,7 +454,7 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
         await this.removeDownloadedRecord(musicItem);
         // 删除文件（尽力而为；路径 = 下载目录/文件名.后缀）
         try {
-            const filename = `${Downloader.generateFilename(musicItem)}`;
+            const filename = `${this.generateFilename(musicItem)}`;
             const dir = this.getDownloadPath("");
             const dirNoScheme = dir.replace("file://", "");
             const res = await readDir(dirNoScheme).catch(() => [] as any[]);

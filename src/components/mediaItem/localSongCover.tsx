@@ -8,15 +8,16 @@ import Mp3Util from "@/native/mp3Util";
 import { getLocalPath } from "@/utils/mediaUtils";
 
 /**
- * 本地歌曲内嵌封面（列表行小封面）
+ * 歌曲行封面（列表行小封面，48dp 圆角 8）
  *
- * 链路：仅对带本地路径的歌曲，异步调用原生 Mp3Util.getMediaCoverImg 读取音频内嵌封面
- * （原生返回 file:// URI；无内嵌封面时 resolve null；失败 reject）。
- * - 进程内内存缓存：结果 Map + 进行中 Promise Map，同一路径只触发一次原生读盘，
- *   列表快速滚动/行复用/多列表同时展示同一首歌都不会重复读盘。
- * - 绝不阻塞列表渲染：渲染期不 await，拿到封面后 setState 刷新。
- * - 读取中 / 无内嵌封面 / 读取失败 / 图片加载失败 → 渐变占位块（对齐音乐库歌曲行现有占位）。
- * - 非本地歌曲（无 localPath）→ 返回 null，不占布局，网络歌曲封面链路完全不受影响。
+ * 两类来源：
+ * 1. 本地歌曲（带 localPath）：异步调用原生 Mp3Util.getMediaCoverImg 读取音频内嵌封面
+ *    （原生返回 file:// URI；无内嵌封面时 resolve null；失败 reject）。
+ *    - 进程内内存缓存：结果 Map + 进行中 Promise Map，同一路径只触发一次原生读盘。
+ *    - 绝不阻塞列表渲染：渲染期不 await，拿到封面后 setState 刷新。
+ * 2. 网络歌曲（无 localPath）：直接渲染 musicItem.artwork 网络图；
+ *    无 artwork 或加载失败 → 渐变占位块。
+ * - 任何来源的读取中 / 无封面 / 加载失败 → 渐变占位块（统一行布局，不跳位）。
  */
 
 /** localPath -> 封面 file:// URI；null 表示已知无封面 */
@@ -65,6 +66,8 @@ export default function LocalSongCover(props: ILocalSongCoverProps) {
     const colors = useColors();
 
     const localPath = normalizeLocalPath(getLocalPath(musicItem));
+    // 网络歌曲封面直接走 artwork（无本地路径时无 read 缓存）
+    const networkArtwork = !localPath ? musicItem.artwork : undefined;
 
     // 同步读缓存：已知结果（URI 或 null）直接作为初始 state，避免占位→封面闪烁
     const [coverUri, setCoverUri] = useState<string | null | undefined>(
@@ -89,12 +92,7 @@ export default function LocalSongCover(props: ILocalSongCoverProps) {
 
     useEffect(() => {
         setLoadError(false);
-    }, [coverUri]);
-
-    // 非本地歌曲：不渲染任何占位，不占布局（网络歌曲行保持现状）
-    if (!localPath) {
-        return null;
-    }
+    }, [coverUri, networkArtwork]);
 
     const boxStyle: ViewStyle = {
         width: size,
@@ -103,21 +101,23 @@ export default function LocalSongCover(props: ILocalSongCoverProps) {
         overflow: "hidden",
     };
 
-    const showImage = coverUri && !loadError;
+    // 本地歌曲：内嵌封面 URI；网络歌曲：artwork 网络图
+    const showImage =
+        (coverUri || networkArtwork) && !loadError;
 
     if (showImage) {
         return (
             <View style={[boxStyle, style]}>
                 <Image
                     style={{ width: size, height: size, borderRadius }}
-                    source={{ uri: coverUri as string }}
+                    source={{ uri: (coverUri ?? networkArtwork) as string }}
                     onError={() => setLoadError(true)}
                 />
             </View>
         );
     }
 
-    // 占位：主题色渐变 + 音符图标（对齐 libraryTab LocalSongItem 现有封面占位）
+    // 占位：主题色渐变 + 音符图标（本地/网络歌曲无封面统一占位，行布局一致）
     return (
         <LinearGradient
             colors={[

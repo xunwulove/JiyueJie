@@ -21,6 +21,7 @@ export interface IAppConfigProperties {
     "basic.playQualityOrder": "asc" | "desc";
     "basic.defaultDownloadQuality": IMusic.IQualityKey;
     "basic.downloadQualityOrder": "asc" | "desc";
+    "basic.downloadNameOrder": "title-first" | "artist-first";
     "basic.musicDetailDefault": "album" | "lyric";
     "basic.musicDetailAwake": boolean;
     "basic.maxHistoryLen": number;

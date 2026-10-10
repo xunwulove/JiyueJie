@@ -335,6 +335,9 @@ export interface ILanguageData {
     "basicSettings.downloadQualityOrder": string; // 默认下载音质缺失时
     "basicSettings.downloadQualityOrder.asc": string; // 下载更高音质
     "basicSettings.downloadQualityOrder.desc": string; // 下载更低音质
+    "basicSettings.downloadNameOrder": string; // 下载文件命名
+    "basicSettings.downloadNameOrder.titleFirst": string; // 歌名在前（歌名 - 作者）
+    "basicSettings.downloadNameOrder.artistFirst": string; // 作者在前（作者 - 歌名）
     
     "basicSettings.network": string; // 网络
     "basicSettings.networkAndCache": string; // 网络与缓存

@@ -22,6 +22,7 @@ let cachedState: {
     order?: "asc" | "desc";
     maxDownload?: number;
     downloadPath?: string;
+    nameOrder?: "title-first" | "artist-first";
 } | null = null;
 
 /**
@@ -51,6 +52,11 @@ export default function DownloadSettingsDialog() {
         cachedState?.downloadPath ??
             Config.getConfig("basic.downloadPath"),
     );
+    const [nameOrder, setNameOrder] = useState<"title-first" | "artist-first">(
+        cachedState?.nameOrder ??
+            Config.getConfig("basic.downloadNameOrder") ??
+            "title-first",
+    );
 
     const qualityLabels: Record<IMusic.IQualityKey, string> = {
         low: t("musicQuality.low"),
@@ -61,7 +67,7 @@ export default function DownloadSettingsDialog() {
 
     const onPickPath = () => {
         // 先缓存当前设置并关闭浮窗，再打开文件夹选择三级浮窗（同体系，无遮挡问题）
-        cachedState = { quality, order, maxDownload, downloadPath };
+        cachedState = { quality, order, maxDownload, downloadPath, nameOrder };
         hideDialog();
         showDialog("FileSelectorDialog", {
             fileType: "folder",
@@ -96,6 +102,7 @@ export default function DownloadSettingsDialog() {
         Config.setConfig("basic.defaultDownloadQuality", quality);
         Config.setConfig("basic.downloadQualityOrder", order);
         Config.setConfig("basic.maxDownload", maxDownload);
+        Config.setConfig("basic.downloadNameOrder", nameOrder);
         if (downloadPath) {
             Config.setConfig("basic.downloadPath", downloadPath);
         }
@@ -139,6 +146,18 @@ export default function DownloadSettingsDialog() {
                                 onPress={() => setMaxDownload(n)}
                             />
                         ))}
+                    </OptionGroup>
+                    <OptionGroup title={t("basicSettings.downloadNameOrder")}>
+                        <OptionRow
+                            label={t("basicSettings.downloadNameOrder.titleFirst")}
+                            selected={nameOrder === "title-first"}
+                            onPress={() => setNameOrder("title-first")}
+                        />
+                        <OptionRow
+                            label={t("basicSettings.downloadNameOrder.artistFirst")}
+                            selected={nameOrder === "artist-first"}
+                            onPress={() => setNameOrder("artist-first")}
+                        />
                     </OptionGroup>
                     <OptionGroup title={t("basicSettings.downloadPath")} last>
                         <Pressable onPress={onPickPath} style={styles.pathRow}>
