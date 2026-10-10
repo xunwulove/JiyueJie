@@ -88,5 +88,6 @@ const styles = StyleSheet.create({
     rightGroup: {
         flexDirection: "row",
         alignItems: "center",
+        paddingRight: 16, // 主题/三点菜单整体往左收一点，不贴最右边缘
     },
 });

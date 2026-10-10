@@ -108,17 +108,6 @@ export async function getSongDetail(
     return song ? toMusicItem(song) : null;
 }
 
-/** 网易分类热门歌单分类（对齐 APlayer HomePage RECOMMEND_CATEGORIES） */
-export const RECOMMEND_CATEGORIES = [
-    "古风",
-    "流行",
-    "华语",
-    "民谣",
-    "摇滚",
-    "电子",
-    "轻音乐",
-] as const;
-
 /** 推荐歌单列表（响应较慢，放宽超时） */
 export async function getRecommendSheets(): Promise<
     IMusic.IMusicSheetItemBase[]
@@ -140,52 +129,4 @@ export async function getRecommendSheets(): Promise<
             platform: NETEASE_PLATFORM,
             apiSource: "netease",
         }));
-}
-
-/** 分类热门歌单（对齐 APlayer /api/playlist/list?cat=&order=hot） */
-export async function getHotPlaylists(
-    category: string,
-    limit = 8,
-): Promise<IMusic.IMusicSheetItemBase[]> {
-    const data = await fetchJson<any>(
-        `${NETEASE_BASE}/api/playlist/list?cat=${encodeURIComponent(
-            category,
-        )}&order=hot&limit=${limit}`,
-        20000,
-    );
-    const playlists = data?.playlists ?? [];
-    return playlists
-        .filter((it: any) => it?.id)
-        .map((it: any) => ({
-            id: String(it.id),
-            title: it.name ?? "未知歌单",
-            coverImg:
-                it.coverImgUrl ??
-                (it.coverImgId_str
-                    ? `https://p1.music.126.net/coverImgUrl/${it.coverImgId_str}.jpg`
-                    : undefined),
-            description: it.description,
-            worksNum: it.trackCount,
-            playCount: it.playCount,
-            artist: it.creator?.nickname ?? "",
-            platform: NETEASE_PLATFORM,
-            apiSource: "netease",
-        }));
-}
-
-/** 首页推荐信息流：每分类取热门歌单（每日缓存） */
-export async function getHomeFeed(
-    perCategory = 4,
-): Promise<Array<{ category: string; sheets: IMusic.IMusicSheetItemBase[] }>> {
-    const result: Array<{
-        category: string;
-        sheets: IMusic.IMusicSheetItemBase[];
-    }> = [];
-    for (const category of RECOMMEND_CATEGORIES) {
-        const list = await getHotPlaylists(category, perCategory);
-        if (list.length) {
-            result.push({ category, sheets: list });
-        }
-    }
-    return result;
 }

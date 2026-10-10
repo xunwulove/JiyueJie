@@ -124,11 +124,12 @@ const styles = StyleSheet.create({
     },
     titleBlock: {
         paddingHorizontal: 48,
-        alignItems: "flex-start",
+        alignItems: "center", // 歌名+作者顶端居中（对齐沉浸层顶部标题）
     },
     songTitle: {
         fontWeight: "700",
         includeFontPadding: false,
+        textAlign: "center",
     },
     songTitleTablet: {
         fontSize: 32,
@@ -139,6 +140,7 @@ const styles = StyleSheet.create({
     songArtist: {
         marginTop: 8,
         includeFontPadding: false,
+        textAlign: "center",
     },
     songArtistTablet: {
         fontSize: 18,

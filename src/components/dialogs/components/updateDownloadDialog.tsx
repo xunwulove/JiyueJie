@@ -80,6 +80,16 @@ export default function UpdateDownloadDialog(props: IProps) {
 
         (async () => {
             try {
+                // 复用已下载完成的 APK：目标文件已存在且大于 1MB（排除半成品/损坏文件）→ 直接进入"已下载完成"，不再重新下载
+                const stat = await RNFS.stat(plainPath).catch(() => null);
+                const statSize = (stat as any)?.size ?? 0;
+                if (!disposed && statSize > 1024 * 1024) {
+                    setFileSize(statSize);
+                    setDownloadedSize(statSize);
+                    setProgress(1);
+                    setStatus("completed");
+                    return;
+                }
                 await mkdirR(path.dirname(plainPath));
                 if (disposed) return;
                 // 清理上一次尝试的半成品
@@ -151,7 +161,10 @@ export default function UpdateDownloadDialog(props: IProps) {
         if (jobIdRef.current !== undefined) {
             RNFS.stopDownload(jobIdRef.current);
         }
-        RNFS.unlink(plainPath).catch(() => {});
+        // 已下载完成的文件保留，供下次直接安装；仅清理下载中/失败留下的半成品
+        if (statusRef.current !== "completed") {
+            RNFS.unlink(plainPath).catch(() => {});
+        }
         hideDialog();
     }
 

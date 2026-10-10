@@ -10,7 +10,8 @@ import useColors from "@/hooks/useColors";
 import TrackPlayer, { useCurrentMusic, usePlayList } from "@/core/trackPlayer";
 import { FlashList } from "@shopify/flash-list";
 
-const ITEM_HEIGHT = rpx(120);
+// 对齐媒体行规范：行高 64dp，左右 padding 16dp
+const ITEM_HEIGHT = rpx(128);
 
 interface IPlayListProps {
     item: IMusic.IMusicItem;
@@ -157,7 +158,7 @@ const style = StyleSheet.create({
     musicItem: {
         width: "100%",
         minHeight: ITEM_HEIGHT,
-        paddingHorizontal: rpx(24),
+        paddingHorizontal: rpx(32), // 对齐 16dp
         paddingVertical: rpx(20),
         flexDirection: "row",
         alignItems: "center",

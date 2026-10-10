@@ -19,7 +19,7 @@ import PlaylistCard from "@/components/mediaItem/playlistCard";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
 import {
     IPluginRecommendSheets,
-    fetchPluginRecommendSheets,
+    getCachedPluginRecommend,
 } from "@/core/pluginRecommend";
 import useOrientation from "@/hooks/useOrientation";
 import ListEmpty from "@/components/base/listEmpty";
@@ -116,7 +116,7 @@ function RecommendPanel({ hash }: { hash: string }) {
 
     const load = useCallback(async () => {
         setState(RequestStateCode.PENDING_FIRST_PAGE);
-        const result = await fetchPluginRecommendSheets(hash);
+        const result = await getCachedPluginRecommend(hash);
         setData(result);
         setState(
             result ? RequestStateCode.FINISHED : RequestStateCode.ERROR,

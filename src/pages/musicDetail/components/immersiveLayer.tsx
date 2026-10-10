@@ -44,6 +44,7 @@ export const immersiveTouch = {
  * 背景 = 深色渐变 + 缓慢流动光效；任意触摸或返回键退出。
  */
 export default function ImmersiveLayer() {
+    // 自动进入沉浸歌词默认开启；设置页可关闭
     const enable = useAppConfig("basic.immersiveEnable") ?? true;
     const delay = useAppConfig("basic.immersiveDelay") ?? 15;
     const effect = useAppConfig("basic.immersiveEffect") ?? true;
@@ -84,6 +85,8 @@ export default function ImmersiveLayer() {
 
     useEffect(() => {
         immersiveTouch.reset = reset;
+        // 挂载时立即启动无操作计时（此前只在触摸时 reset，进入页面后不触摸则永远不进入）
+        reset();
         return () => {
             immersiveTouch.reset = () => {};
             if (timerRef.current) {

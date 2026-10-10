@@ -100,24 +100,6 @@ export function getCachedSheets(
 }
 
 /**
- * 获取缓存版首页推荐信息流（每分类热门歌单，每日缓存）
- * 供首页"推荐歌单"横滑区 + 金刚区"每日推荐"使用（对齐 APlayer HomeFeed）
- */
-export function getCachedHomeFeed(): Promise<
-    Array<{ category: string; sheets: IMusic.IMusicSheetItemBase[] }> | null
-> {
-    const key = "netease:homefeed";
-    return getCachedOrFetch(
-        key,
-        neteaseApi.getHomeFeed,
-        (v): v is Array<{
-            category: string;
-            sheets: IMusic.IMusicSheetItemBase[];
-        }> => !!v && v.length > 0,
-    );
-}
-
-/**
  * 获取缓存版歌单/榜单详情（网易接口 / QQ 榜单接口 / QQ 歌单走插件）
  */
 export function getCachedSheetDetail(
