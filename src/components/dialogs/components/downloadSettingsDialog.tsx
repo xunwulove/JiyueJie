@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, View } from "react-native";
 import Dialog from "./base";
 import { hideDialog, showDialog } from "../useDialog";
 import ThemeText from "@/components/base/themeText";
+import ListItem from "@/components/base/listItem";
+import { ListDivider } from "@/components/base/divider";
 import Icon from "@/components/base/icon.tsx";
 import useColors from "@/hooks/useColors";
 import Config from "@/core/appConfig";
@@ -28,6 +30,7 @@ let cachedState: {
 /**
  * 下载设置（对齐 APlayer DownloadPage 3 级弹窗：默认音质 + 音质顺序 + 下载目录 + 最大并发）
  * 迁移自设置页"基本设置-下载"组；写同一组 appConfig 键，下载内核不变
+ * 样式与其他三级页面一致：分组标题 subTitle/bold/primary + ListItem small 行 + ListDivider
  */
 export default function DownloadSettingsDialog() {
     const { t } = useI18N();
@@ -110,71 +113,121 @@ export default function DownloadSettingsDialog() {
         hideDialog();
     };
 
+    const checked = (
+        <Icon
+            name="check-circle"
+            size={iconSizeConst.light}
+            color={colors.primary}
+        />
+    );
+
     return (
         <Dialog onDismiss={hideDialog}>
             <Dialog.Title withDivider>{t("downloadSettings.title")}</Dialog.Title>
             <Dialog.Content needScroll style={styles.content}>
                 <View>
                     <OptionGroup title={t("basicSettings.defaultDownloadQuality")}>
-                        {qualityKeys.map(key => (
-                            <OptionRow
-                                key={key}
-                                label={qualityLabels[key] ?? key}
-                                selected={quality === key}
-                                onPress={() => setQuality(key)}
-                            />
+                        {qualityKeys.map((key, i) => (
+                            <View key={key}>
+                                <ListItem
+                                    withHorizontalPadding
+                                    heightType="small"
+                                    onPress={() => setQuality(key)}>
+                                    <ListItem.Content
+                                        title={qualityLabels[key] ?? key}
+                                    />
+                                    {quality === key ? checked : null}
+                                </ListItem>
+                                {i < qualityKeys.length - 1 ? (
+                                    <ListDivider marginLeft={16} />
+                                ) : null}
+                            </View>
                         ))}
                     </OptionGroup>
                     <OptionGroup title={t("basicSettings.downloadQualityOrder")}>
-                        <OptionRow
-                            label={t("basicSettings.downloadQualityOrder.asc")}
-                            selected={order === "asc"}
-                            onPress={() => setOrder("asc")}
-                        />
-                        <OptionRow
-                            label={t("basicSettings.downloadQualityOrder.desc")}
-                            selected={order === "desc"}
-                            onPress={() => setOrder("desc")}
-                        />
+                        {(["asc", "desc"] as const).map((v, i) => (
+                            <View key={v}>
+                                <ListItem
+                                    withHorizontalPadding
+                                    heightType="small"
+                                    onPress={() => setOrder(v)}>
+                                    <ListItem.Content
+                                        title={
+                                            v === "asc"
+                                                ? t(
+                                                      "basicSettings.downloadQualityOrder.asc",
+                                                  )
+                                                : t(
+                                                      "basicSettings.downloadQualityOrder.desc",
+                                                  )
+                                        }
+                                    />
+                                    {order === v ? checked : null}
+                                </ListItem>
+                                {i === 0 ? <ListDivider marginLeft={16} /> : null}
+                            </View>
+                        ))}
                     </OptionGroup>
                     <OptionGroup title={t("basicSettings.maxDownload")}>
-                        {[1, 3, 5, 7].map(n => (
-                            <OptionRow
-                                key={n}
-                                label={`${n} 个`}
-                                selected={maxDownload === n}
-                                onPress={() => setMaxDownload(n)}
-                            />
+                        {[1, 3, 5, 7].map((n, i) => (
+                            <View key={n}>
+                                <ListItem
+                                    withHorizontalPadding
+                                    heightType="small"
+                                    onPress={() => setMaxDownload(n)}>
+                                    <ListItem.Content title={`${n} 个`} />
+                                    {maxDownload === n ? checked : null}
+                                </ListItem>
+                                {i < 3 ? <ListDivider marginLeft={16} /> : null}
+                            </View>
                         ))}
                     </OptionGroup>
                     <OptionGroup title={t("basicSettings.downloadNameOrder")}>
-                        <OptionRow
-                            label={t("basicSettings.downloadNameOrder.titleFirst")}
-                            selected={nameOrder === "title-first"}
-                            onPress={() => setNameOrder("title-first")}
-                        />
-                        <OptionRow
-                            label={t("basicSettings.downloadNameOrder.artistFirst")}
-                            selected={nameOrder === "artist-first"}
-                            onPress={() => setNameOrder("artist-first")}
-                        />
+                        {(["title-first", "artist-first"] as const).map(
+                            (v, i) => (
+                                <View key={v}>
+                                    <ListItem
+                                        withHorizontalPadding
+                                        heightType="small"
+                                        onPress={() => setNameOrder(v)}>
+                                        <ListItem.Content
+                                            title={
+                                                v === "title-first"
+                                                    ? t(
+                                                          "basicSettings.downloadNameOrder.titleFirst",
+                                                      )
+                                                    : t(
+                                                          "basicSettings.downloadNameOrder.artistFirst",
+                                                      )
+                                            }
+                                        />
+                                        {nameOrder === v ? checked : null}
+                                    </ListItem>
+                                    {i === 0 ? (
+                                        <ListDivider marginLeft={16} />
+                                    ) : null}
+                                </View>
+                            ),
+                        )}
                     </OptionGroup>
                     <OptionGroup title={t("basicSettings.downloadPath")} last>
-                        <Pressable onPress={onPickPath} style={styles.pathRow}>
-                            <ThemeText
-                                fontSize="normal"
-                                numberOfLines={2}
-                                style={styles.pathText}>
-                                {downloadPath ?? pathConst.downloadMusicPath}
-                            </ThemeText>
+                        <ListItem
+                            withHorizontalPadding
+                            heightType="small"
+                            onPress={onPickPath}>
+                            <ListItem.Content
+                                title={
+                                    downloadPath ?? pathConst.downloadMusicPath
+                                }
+                            />
                             <Icon
                                 name="folder-outline"
                                 size={iconSizeConst.light}
                                 color={colors.primary}
                             />
-                        </Pressable>
+                        </ListItem>
                         <ThemeText
-                            fontSize="caption"
+                            fontSize="description"
                             fontColor="textSecondary"
                             style={styles.pathNote}>
                             {t("basicSettings.fileSelector.selectFolder")}
@@ -221,32 +274,12 @@ function OptionGroup(props: {
     );
 }
 
-function OptionRow(props: {
-    label: string;
-    selected: boolean;
-    onPress: () => void;
-}) {
-    const colors = useColors();
-    return (
-        <Pressable onPress={props.onPress} style={styles.optionRow}>
-            <ThemeText
-                fontSize="subTitle"
-                style={styles.optionLabel}
-                fontWeight="medium">
-                {props.label}
-            </ThemeText>
-            {props.selected ? (
-                <Icon
-                    name="check-circle"
-                    size={iconSizeConst.light}
-                    color={colors.primary}
-                />
-            ) : null}
-        </Pressable>
-    );
-}
-
 const styles = StyleSheet.create({
+    content: {
+        paddingHorizontal: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+    },
     group: {
         marginBottom: 8,
     },
@@ -256,32 +289,11 @@ const styles = StyleSheet.create({
     groupTitle: {
         marginTop: 8,
         marginBottom: 2,
-    },
-    optionRow: {
-        width: "100%",
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 6,
         paddingHorizontal: 16,
-    },
-    optionLabel: {
-        flex: 1,
-    },
-    pathRow: {
-        width: "100%",
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 6,
-        paddingHorizontal: 16,
-    },
-    pathText: {
-        flex: 1,
-        marginRight: 8,
     },
     pathNote: {
         paddingHorizontal: 16,
-    },
-    content: {
-        paddingBottom: 0,
+        paddingTop: 4,
+        paddingBottom: 8,
     },
 });

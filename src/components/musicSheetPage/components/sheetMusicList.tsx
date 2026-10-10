@@ -15,13 +15,15 @@ interface IMusicListProps {
     musicList?: IMusic.IMusicItem[] | null;
     // 是否可收藏
     canStar?: boolean;
+    // 歌单来源音源名（插件歌单详情传入）
+    sourcePluginName?: string;
     // 状态
     state: RequestStateCode;
     onRetry?: () => void;
     onLoadMore?: () => void;
 }
 export default function SheetMusicList(props: IMusicListProps) {
-    const { sheetInfo, musicList, canStar, state, onRetry, onLoadMore } = props;
+    const { sheetInfo, musicList, canStar, state, onRetry, onLoadMore, sourcePluginName } = props;
 
     return (
         <View style={globalStyle.fwflex1}>
@@ -36,6 +38,7 @@ export default function SheetMusicList(props: IMusicListProps) {
                                 canStar={canStar}
                                 musicSheet={sheetInfo}
                                 musicList={musicList}
+                                sourcePluginName={sourcePluginName}
                             />
                         }
                         onLoadMore={onLoadMore}

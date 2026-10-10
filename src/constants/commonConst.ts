@@ -40,6 +40,8 @@ export const StorageKeys = {
     MediaCache: "media-cache",
     LocalMusicSheet: "local-music-sheet",
     PluginReliability: "plugin-reliability",
+    /** 推荐歌单专用可用率（独立于搜索/解析统计） */
+    PluginRecommendReliability: "plugin-recommend-reliability",
 };
 
 export const CacheControl = {

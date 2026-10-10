@@ -183,6 +183,7 @@ export interface ILanguageData {
     "pluginSetting.pluginItem.options.importSheetPlaceHolder": string; // 导入歌单链接
     "pluginSetting.pluginItem.options.importSheetDialogContent": string; // 导入歌单对话框内容
     "pluginSetting.pluginItem.options.userVariables": string; // 用户变量
+    "pluginSetting.pluginItem.options.importPlugin": string; // 导入（快捷打开导入歌单/单曲）
     "pluginSetting.pluginItem.versionHint": string; // 版本提示
     "pluginSetting.pluginItem.author": string; // 作者
     "pluginSetting.pluginItem.reliability": string; // 可用率

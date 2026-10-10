@@ -53,6 +53,25 @@ export default function TabletPanel() {
     const { lyrics, loading } = useLyricState();
     const currentLrcItem = useCurrentLyricItem();
     const currentLrc = currentLrcItem?.lrc;
+    /* 多行歌词：当前行上下各 4 行（弱化显示） */
+    const curIndex = currentLrcItem?.index ?? -1;
+    const sideCount = 4;
+    const upLines: { text: string; key: string }[] = [];
+    for (let i = sideCount; i >= 1; i--) {
+        const idx = curIndex - i;
+        upLines.push({
+            key: `up-${i}`,
+            text: idx >= 0 && idx < lyrics.length ? lyrics[idx].lrc : "",
+        });
+    }
+    const downLines: { text: string; key: string }[] = [];
+    for (let i = 1; i <= sideCount; i++) {
+        const idx = curIndex + i;
+        downLines.push({
+            key: `down-${i}`,
+            text: idx >= 0 && idx < lyrics.length ? lyrics[idx].lrc : "",
+        });
+    }
 
     return (
         <View
@@ -121,7 +140,7 @@ export default function TabletPanel() {
                     numberOfLines={1}>
                     {musicItem?.artist ?? "未知歌手"}
                 </ThemeText>
-                {/* 歌词弹性区：显示当前播放歌词行（无歌词时占位），水平居中 */}
+                {/* 歌词弹性区：多行歌词居中显示（当前行放大与歌名同尺寸，上下行弱化） */}
                 <View style={styles.lyricPlaceholder}>
                     {!musicItem ? null : loading && !lyrics.length ? (
                         <ThemeText
@@ -131,13 +150,34 @@ export default function TabletPanel() {
                             歌词加载中…
                         </ThemeText>
                     ) : currentLrc ? (
-                        <ThemeText
-                            fontSize="subTitle"
-                            fontColor="textSecondary"
-                            numberOfLines={2}
-                            style={styles.lyricText}>
-                            {currentLrc}
-                        </ThemeText>
+                        <>
+                            {upLines.map(l => (
+                                <ThemeText
+                                    key={l.key}
+                                    fontSize="body"
+                                    fontColor="textSecondary"
+                                    numberOfLines={1}
+                                    style={styles.lyricSideText}>
+                                    {l.text}
+                                </ThemeText>
+                            ))}
+                            <ThemeText
+                                fontWeight="bold"
+                                numberOfLines={1}
+                                style={styles.lyricCurrentText}>
+                                {currentLrc}
+                            </ThemeText>
+                            {downLines.map(l => (
+                                <ThemeText
+                                    key={l.key}
+                                    fontSize="body"
+                                    fontColor="textSecondary"
+                                    numberOfLines={1}
+                                    style={styles.lyricSideText}>
+                                    {l.text}
+                                </ThemeText>
+                            ))}
+                        </>
                     ) : (
                         <ThemeText
                             fontSize="subTitle"
@@ -290,12 +330,24 @@ const styles = StyleSheet.create({
     lyricPlaceholder: {
         flex: 1,
         width: "100%",
-        marginTop: 12,
+        marginTop: 8,
         alignItems: "center",
-        justifyContent: "flex-start",
+        justifyContent: "center", // 歌词区占满歌手与底部控制之间，歌词垂直居中
     },
     lyricText: {
         textAlign: "center",
+    },
+    /* 当前演唱行：与歌名同尺寸（20sp Bold），突出显示 */
+    lyricCurrentText: {
+        fontSize: 20,
+        textAlign: "center",
+        marginVertical: 6,
+    },
+    /* 上下行歌词：小字弱化 */
+    lyricSideText: {
+        textAlign: "center",
+        opacity: 0.7,
+        marginVertical: 2,
     },
     bottom: {
         width: "100%",

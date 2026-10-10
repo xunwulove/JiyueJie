@@ -311,7 +311,11 @@ export default function Lyric(props: IProps) {
                                     <LyricItemComponent
                                         index={index}
                                         text={text}
-                                        fontSize={fontSizeStyle.fontSize}
+                                        fontSize={
+                                            currentLrcItem?.index === index
+                                                ? fontSizeStyle.fontSize + 10
+                                                : fontSizeStyle.fontSize
+                                        }
                                         onLayout={handleLyricItemLayout}
                                         light={draggingIndex === index}
                                         highlight={

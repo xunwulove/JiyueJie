@@ -381,7 +381,7 @@ export default function PluginList() {
                             ListFooterComponent={<View style={style.blank} />}
                             data={plugins ?? []}
                             keyExtractor={_ => _.hash}
-                            numColumns={isTablet ? 2 : 1}
+                            numColumns={isTablet ? 3 : 1}
                             columnWrapperStyle={
                                 isTablet ? style.gridRow : undefined
                             }
@@ -453,14 +453,18 @@ const style = StyleSheet.create({
     blank: {
         height: rpx(200),
     },
-    /** 平板双列：行容器（左右留边 + 列间距） */
+    /** 平板三列：行容器（左右留边 + 列间距） */
     gridRow: {
         paddingHorizontal: rpx(24),
         columnGap: rpx(12),
     },
-    /** 平板双列：每列占 50% */
+    /**
+     * 平板三列：每列固定占 1/3 宽。
+     * 用固定百分比而非 flex:1 —— 末行不满 3 个时（余 1/2 个），
+     * FlatList 不包 columnWrapper，独立渲染的最后一个仍保持 1/3 宽、左对齐，不变形。
+     */
     gridItem: {
-        flex: 1,
+        width: "33.333%",
     },
     /** 平板双列：卡片紧凑间距（覆盖 PluginItem 默认大间距） */
     gridCard: {

@@ -77,6 +77,15 @@ export default function LyricOperations(props: ILyricOperationsProps) {
                     showDialog("TimingCloseDialog");
                 }}
             />
+            {/* 音量：弹音量调节三级浮窗（播放调节类，紧跟定时关闭） */}
+            <Icon
+                name="speaker-wave"
+                size={iconSizeConst.normal}
+                color={colors.textSecondary}
+                onPress={() => {
+                    showDialog("VolumeSettingDialog");
+                }}
+            />
             {/* 横屏操作行显示"我喜欢"爱心（竖屏顶部已有 HeartIcon，不重复） */}
             {orientation !== "vertical" ? <HeartIcon /> : null}
             {/* 下载：未下载显示下载箭头（弹音质选择）；已下载显示灰色对勾 */}

@@ -123,6 +123,7 @@ async function bootstrapImpl() {
     trace("已下载列表初始化完成");
 
     await pluginReliability.setup();
+    await pluginReliability.setupRecommend();
     trace("音源可用率统计初始化完成");
 
     Theme.setup();

@@ -7,9 +7,11 @@ import ThemeSwitch from "@/components/base/switch";
 import Config, { useAppConfig } from "@/core/appConfig";
 import Theme from "@/core/theme";
 import { useI18N } from "@/core/i18n";
+import useColors from "@/hooks/useColors";
 
 export default function Mode() {
     const { t } = useI18N();
+    const colors = useColors();
     const mode = useAppConfig("theme.followSystem") ?? false;
     return (
         <View>
@@ -20,7 +22,12 @@ export default function Mode() {
                 style={styles.header}>
                 {t("themeSettings.displayStyle")}
             </ThemeText>
-            <View style={styles.sectionWrapper}>
+            {/* 卡片式分组（对齐设置页 basicSetting）：行收进圆角卡片 */}
+            <View
+                style={[
+                    styles.sectionWrapper,
+                    { backgroundColor: colors.card },
+                ]}>
                 <ListItem withHorizontalPadding>
                     <ListItem.Content>
                         <View style={styles.itemRow}>
@@ -53,8 +60,12 @@ const styles = StyleSheet.create({
         paddingLeft: rpx(24),
         marginTop: rpx(36),
     },
+    /* 卡片容器（对齐 basicSetting card：圆角14 + 左右24） */
     sectionWrapper: {
         marginTop: rpx(24),
+        marginHorizontal: rpx(24),
+        borderRadius: rpx(14),
+        overflow: "hidden",
     },
     itemRow: {
         flexDirection: "row",

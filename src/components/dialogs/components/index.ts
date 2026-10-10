@@ -23,6 +23,7 @@ import UpdateDownloadDialog from "./updateDownloadDialog";
 import LyricSettingDialog from "./lyricSettingDialog";
 import SortDialog from "./sortDialog";
 import ImmersiveSettingDialog from "./immersiveSettingDialog";
+import VolumeSettingDialog from "./volumeSettingDialog";
 
 const dialogs = {
     SimpleDialog,
@@ -50,6 +51,7 @@ const dialogs = {
     LyricSettingDialog,
     SortDialog,
     ImmersiveSettingDialog,
+    VolumeSettingDialog,
 };
 
 export default dialogs;

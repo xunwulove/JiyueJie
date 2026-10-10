@@ -18,7 +18,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LinearGradient from "react-native-linear-gradient";
 import { useAppConfig } from "@/core/appConfig";
-import { useCurrentMusic } from "@/core/trackPlayer";
+import {
+    MusicState,
+    useCurrentMusic,
+    useMusicState,
+} from "@/core/trackPlayer";
 import {
     useCurrentLyricItem,
     useLyricState,
@@ -26,6 +30,7 @@ import {
 import { getCurrentDialog } from "@/components/dialogs/useDialog";
 import { panelInfoStore } from "@/components/panels/usePanel";
 import useOrientation from "@/hooks/useOrientation";
+import useColors from "@/hooks/useColors";
 import { fontWeightConst } from "@/constants/uiConst";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -58,14 +63,25 @@ export default function ImmersiveLayer() {
     const musicItem = useCurrentMusic();
     const { lyrics } = useLyricState();
     const currentLrcItem = useCurrentLyricItem();
+    // 仅播放中计时：暂停/停止时不启动（对齐 QQ音乐"播放15秒后进入沉浸歌词"）
+    const musicState = useMusicState();
+    const isPaused = musicState === MusicState.Paused;
     const orientation = useOrientation();
     const insets = useSafeAreaInsets();
     // 当前北京时间（右上角时间显示，每分钟变化）
     const [now, setNow] = useState(() => new Date());
 
     const isTablet = orientation === "horizontal";
+    /* 光带颜色跟随主题主色（白天品牌蓝 #2F6FED / 深色 #5A8FFF，hex+alpha 后缀） */
+    const colors = useColors();
+    const flowColors = [
+        `${colors.primary}00`,
+        `${colors.primary}14`,
+        `${colors.primary}24`,
+        `${colors.primary}00`,
+    ];
 
-    /* 重置计时：任意触摸后重新计算无操作时长 */
+    /* 重置计时：任意触摸后重新计算无操作时长；仅播放中计时，暂停/停止时不启动 */
     const reset = useCallback(() => {
         if (timerRef.current) {
             clearTimeout(timerRef.current);
@@ -74,14 +90,19 @@ export default function ImmersiveLayer() {
         if (!enable) {
             return;
         }
+        // 暂停/停止时不计时（对齐 QQ音乐"播放15秒后进入"语义）；播放恢复后由挂载 effect 重新计时
+        if (isPaused) {
+            return;
+        }
         timerRef.current = setTimeout(() => {
-            // 弹窗/面板打开期间不进入沉浸层
+            // 弹窗/面板打开期间不进入沉浸层：顺延重新计时，关闭后恢复，不丢失自动进入
             if (getCurrentDialog()?.name || panelInfoStore.getValue().name) {
+                reset();
                 return;
             }
             setVisible(true);
         }, (delay ?? 15) * 1000);
-    }, [enable, delay]);
+    }, [enable, delay, isPaused]);
 
     useEffect(() => {
         immersiveTouch.reset = reset;
@@ -132,7 +153,31 @@ export default function ImmersiveLayer() {
 
     const hide = useCallback(() => {
         setVisible(false);
-    }, []);
+        // 触摸被沉浸层自身拦截，下层 MusicDetail 的 onPressIn 收不到 reset；
+        // 退出后手动重启无操作计时，保证之后仍能自动进入
+        reset();
+    }, [reset]);
+
+    /* 歌词切换平滑动画：新歌词从下方滑入 + 淡入（避免硬切换）
+       【重要】hooks 必须在组件顶层调用（return null 之前），
+       否则 visible 切换时 hook 数量变化会导致 React 渲染崩溃 */
+    const slideAnim = useRef(new Animated.Value(0)).current;
+    const prevLrcIndexRef = useRef(-1);
+    useEffect(() => {
+        if (!visible) {
+            return;
+        }
+        const idx = currentLrcItem?.index ?? -1;
+        if (prevLrcIndexRef.current !== idx && idx >= 0) {
+            slideAnim.setValue(1);
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 320,
+                useNativeDriver: true,
+            }).start();
+        }
+        prevLrcIndexRef.current = idx;
+    }, [currentLrcItem?.index, slideAnim, visible]);
 
     /* 沉浸层显示期间每秒刷新北京时间 */
     useEffect(() => {
@@ -172,9 +217,10 @@ export default function ImmersiveLayer() {
         now.getMinutes(),
     ).padStart(2, "0")}`;
 
+    /* 光带从右侧屏外（+W）扫到左侧屏外（-W），全程经过屏幕内部 */
     const flowTranslate = flowAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [SCREEN_W * 0.5, -SCREEN_W * 1.2],
+        outputRange: [SCREEN_W, -SCREEN_W],
     });
 
     /* 顶部歌名 + 歌手 */
@@ -184,7 +230,7 @@ export default function ImmersiveLayer() {
                 numberOfLines={1}
                 style={[
                     styles.headerTitle,
-                    { fontSize: isTablet ? 20 : 16 },
+                    { fontSize: isTablet ? 24 : 18 },
                 ]}>
                 {musicItem?.title ?? "--"}
             </Text>
@@ -192,7 +238,7 @@ export default function ImmersiveLayer() {
                 numberOfLines={1}
                 style={[
                     styles.headerArtist,
-                    { fontSize: isTablet ? 15 : 13 },
+                    { fontSize: isTablet ? 16 : 14 },
                 ]}>
                 {musicItem?.artist}
             </Text>
@@ -218,8 +264,27 @@ export default function ImmersiveLayer() {
         });
     }
 
+    /* 歌词切换平滑动画：新歌词从下方滑入 + 淡入（避免硬切换）——hooks 已上移组件顶层 */
     const lyricBlock = (
-        <View style={styles.lyricWrap}>
+        <Animated.View
+            style={[
+                {
+                    opacity: slideAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 0],
+                    }),
+                    transform: [
+                        {
+                            translateY: slideAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0, 28],
+                            }),
+                        },
+                    ],
+                },
+                styles.lyricWrap,
+                isTablet ? styles.lyricWrapTablet : null,
+            ]}>
             {hasLyric ? (
                 <>
                     {upLines.map(l => (
@@ -228,7 +293,7 @@ export default function ImmersiveLayer() {
                             numberOfLines={1}
                             style={[
                                 styles.lyricSide,
-                                { fontSize: isTablet ? 18 : 15 },
+                                { fontSize: isTablet ? 25 : 15 },
                             ]}>
                             {l.text}
                         </Text>
@@ -250,7 +315,7 @@ export default function ImmersiveLayer() {
                             numberOfLines={1}
                             style={[
                                 styles.lyricSide,
-                                { fontSize: isTablet ? 18 : 15 },
+                                { fontSize: isTablet ? 25 : 15 },
                             ]}>
                             {l.text}
                         </Text>
@@ -260,12 +325,12 @@ export default function ImmersiveLayer() {
                 <Text
                     style={[
                         styles.lyricSide,
-                        { fontSize: isTablet ? 18 : 15 },
+                        { fontSize: isTablet ? 25 : 15 },
                     ]}>
                     暂无歌词
                 </Text>
             )}
-        </View>
+        </Animated.View>
     );
 
     /* 右下封面（仅平板/横屏左右分栏时展示）；无封面时显示可见占位 */
@@ -311,12 +376,7 @@ export default function ImmersiveLayer() {
                             },
                         ]}>
                         <LinearGradient
-                            colors={[
-                                "rgba(255,255,255,0)",
-                                "rgba(255,255,255,0.05)",
-                                "rgba(255,255,255,0.10)",
-                                "rgba(255,255,255,0)",
-                            ]}
+                            colors={flowColors}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={StyleSheet.absoluteFill}
@@ -399,7 +459,7 @@ const styles = StyleSheet.create({
         width: "100%",
         flexDirection: "row",
         alignItems: "center",
-        paddingBottom: 20,
+        paddingBottom: 4, // 歌词区上端更贴近歌名/作者
     },
     topLeft: {
         flex: 6,
@@ -414,7 +474,7 @@ const styles = StyleSheet.create({
     },
     topTime: {
         color: "rgba(255,255,255,0.85)",
-        fontSize: 20,
+        fontSize: 50, // 平板右上角时间
         fontWeight: fontWeightConst.medium,
         includeFontPadding: false,
     },
@@ -488,6 +548,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: 32,
+    },
+    /* 平板歌词区扩大：上端贴歌名、底部与右侧封面底端齐平（封面 paddingBottom 64） */
+    lyricWrapTablet: {
+        paddingTop: 8,
+        paddingBottom: 64,
     },
     lyricSide: {
         color: "rgba(255,255,255,0.5)",

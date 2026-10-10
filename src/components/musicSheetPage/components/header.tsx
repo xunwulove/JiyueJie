@@ -11,9 +11,11 @@ interface IHeaderProps {
     musicSheet: IMusic.IMusicSheetItem | null;
     musicList: IMusic.IMusicItem[] | null;
     canStar?: boolean;
+    // 歌单来源音源名（插件歌单详情传入，头部展示"来源：xxx"）
+    sourcePluginName?: string;
 }
 export default function Header(props: IHeaderProps) {
-    const { musicSheet, musicList, canStar } = props;
+    const { musicSheet, musicList, canStar, sourcePluginName } = props;
     const colors = useColors();
 
     const [maxLines, setMaxLines] = useState<number | undefined>(6);
@@ -39,14 +41,23 @@ export default function Header(props: IHeaderProps) {
                         <ThemeText numberOfLines={3} fontSize="title">
                             {musicSheet?.title}
                         </ThemeText>
-                        <ThemeText
-                            fontColor="textSecondary"
-                            fontSize="description">
-                            共
-                            {musicSheet?.worksNum ??
-                                (musicList ? musicList.length ?? 0 : "-")}
-                            首{" "}
-                        </ThemeText>
+                        <View>
+                            <ThemeText
+                                fontColor="textSecondary"
+                                fontSize="description">
+                                共
+                                {musicSheet?.worksNum ??
+                                    (musicList ? musicList.length ?? 0 : "-")}
+                                首{" "}
+                            </ThemeText>
+                            {sourcePluginName ? (
+                                <ThemeText
+                                    fontColor="textSecondary"
+                                    fontSize="description">
+                                    来源：{sourcePluginName}
+                                </ThemeText>
+                            ) : null}
+                        </View>
                     </View>
                 </View>
                 {musicSheet?.description ? (
@@ -96,9 +107,8 @@ const style = StyleSheet.create({
     },
     details: {
         flex: 1,
-        height: rpx(140),
         paddingHorizontal: rpx(36),
-        justifyContent: "space-between",
+        justifyContent: "center",
     },
     divider: {
         marginVertical: rpx(18),

@@ -124,24 +124,6 @@ function _PluginItem(props: IPluginItemProps) {
                 });
             },
         },
-        {
-            title: t("pluginSetting.pluginItem.options.userVariables"),
-            icon: "code-bracket-square",
-            onPress() {
-                if (Array.isArray(plugin.instance.userVariables)) {
-                    showPanel("SetUserVariables", {
-                        async onOk(newValue, closePanel) {
-                            pluginManager.setUserVariables(plugin, newValue);
-                            Toast.success(t("toast.settingSuccess"));
-                            closePanel();
-                        },
-                        variables: plugin.instance.userVariables,
-                        initValues: pluginManager.getUserVariables(plugin),
-                    });
-                }
-            },
-            show: Array.isArray(plugin.instance.userVariables),
-        },
     ];
 
     return (
@@ -223,7 +205,8 @@ function _PluginItem(props: IPluginItemProps) {
                         <IconTextButton
                             key={index}
                             icon={it.icon}
-                            onPress={it.onPress}>
+                            onPress={it.onPress}
+                            containerStyle={styles.actionButton}>
                             {it.title}
                         </IconTextButton>
                     ) : null,
@@ -299,7 +282,7 @@ const styles = StyleSheet.create({
     },
     reliabilityTag: {
         borderRadius: rpx(8),
-        paddingHorizontal: rpx(8),
+        paddingHorizontal: rpx(4),
         paddingVertical: rpx(2),
         marginLeft: rpx(4),
     },
@@ -325,8 +308,13 @@ const styles = StyleSheet.create({
     },
     contents: {
         flexDirection: "row",
-        justifyContent: "space-between",
         gap: rpx(8),
         paddingHorizontal: rpx(16),
+    },
+    /* 操作按钮等分占满一行（防多按钮溢出卡片；三列窄卡收窄内边距） */
+    actionButton: {
+        flex: 1,
+        justifyContent: "center",
+        paddingHorizontal: rpx(4),
     },
 });

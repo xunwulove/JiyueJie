@@ -70,7 +70,9 @@ export default function MusicDetail() {
     return (
         <Pressable
             style={globalStyle.fwflex1}
-            onPressIn={() => {
+            onTouchStart={() => {
+                // onTouchStart 为冒泡合成事件：任意触摸（含按钮/滑动/沉浸层自身）都重置无操作计时；
+                // 不能用 onPressIn（responder 机制，内层按钮触摸不触发）
                 immersiveTouch.reset();
             }}>
             <Background />

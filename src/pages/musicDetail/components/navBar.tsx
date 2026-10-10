@@ -1,6 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { fontSizeConst, fontWeightConst } from "@/constants/uiConst";
+import { StyleSheet, View } from "react-native";
 import IconButton from "@/components/base/iconButton";
 import { useGoBack } from "@/core/tabletNav";
 import useColors from "@/hooks/useColors";
@@ -9,8 +8,7 @@ import { showDialog } from "@/components/dialogs/useDialog";
 import TrackPlayer from "@/core/trackPlayer";
 
 /**
- * 全屏播放页顶栏 - 对齐 APlayer PlayingPage：返回 + "正在播放"16sp Bold
- * 右端：主题设置图标（衣服，弹沉浸歌词设置三级浮窗）+ 三点菜单（歌曲菜单，位于主题图标右侧）
+ * 全屏播放页顶栏：返回按钮 + 右端（主题设置图标（衣服，弹沉浸歌词设置三级浮窗）+ 三点菜单（歌曲菜单））
  */
 export default function NavBar() {
     const goBack = useGoBack();
@@ -22,16 +20,11 @@ export default function NavBar() {
                 name="arrow-left"
                 sizeType="normal"
                 color={colors.text}
-                style={styles.button}
+                style={[styles.button, styles.backButton]}
                 onPress={() => {
                     goBack();
                 }}
             />
-            <View style={styles.headerContent}>
-                <Text style={[styles.headerTitleText, { color: colors.text }]}>
-                    正在播放
-                </Text>
-            </View>
             <View style={styles.rightGroup}>
                 {/* 主题设置（衣服图标）：沉浸歌词设置三级浮窗 */}
                 <IconButton
@@ -74,16 +67,8 @@ const styles = StyleSheet.create({
     button: {
         marginHorizontal: 4,
     },
-    headerContent: {
-        flex: 1,
-        height: 56,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    headerTitleText: {
-        fontWeight: fontWeightConst.bold,
-        fontSize: fontSizeConst.content,
-        includeFontPadding: false,
+    backButton: {
+        marginLeft: 16, // 返回按钮离屏幕边缘留出距离
     },
     rightGroup: {
         flexDirection: "row",

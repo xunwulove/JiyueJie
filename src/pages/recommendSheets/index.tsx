@@ -26,29 +26,55 @@ import ListEmpty from "@/components/base/listEmpty";
 import { RequestStateCode } from "@/constants/commonConst";
 import Color from "color";
 import LinearGradient from "react-native-linear-gradient";
+import { getRecommendReliabilitySync } from "@/core/pluginReliability";
+import Toast from "@/utils/toast";
 
 /**
  * 推荐歌单二级页（插件版）
  * 数据链路 = MusicFree 官方"推荐歌单"：
  * 插件 getRecommendSheetTags → pinned + 分组歌单 → 点击进插件歌单详情（getMusicSheetInfo，可直接播放）
- * 每个具备该能力的已启用插件一个 Tab（按用户排序）。
+ * 每个具备该能力的已启用插件一个 Tab。
+ *
+ * 择优：Tab 按"推荐歌单专用可用率"降序排列（无数据 0.5 排后），
+ * 默认停靠可用率最高的源；当前 Tab 加载失败/空壳 → 自动切换下一个源。
  */
 export default function RecommendSheets() {
     const { t } = useI18N();
     const routes = PluginManager.getSortedPluginsWithAbility(
         "getRecommendSheetTags",
-    ).map(_ => ({
-        key: _.hash,
-        title: _.name,
-    }));
+    )
+        .slice()
+        .sort(
+            (a, b) =>
+                getRecommendReliabilitySync(b.instance.platform) -
+                getRecommendReliabilitySync(a.instance.platform),
+        )
+        .map(_ => ({
+            key: _.hash,
+            title: _.name,
+        }));
     const [index, setIndex] = useState(0);
     const colors = useColors();
 
+    /** 当前 Tab 加载失败 → 自动切到下一个可用率次高的源 */
+    const handleAutoSwitch = useCallback(() => {
+        setIndex(prev => {
+            if (prev + 1 < routes.length) {
+                Toast.warn("该音源推荐歌单不可用，已切换到下一个音源");
+                return prev + 1;
+            }
+            return prev;
+        });
+    }, [routes.length]);
+
     const renderScene = useCallback(
         ({ route }: { route: { key: string } }) => (
-            <RecommendPanel hash={route.key} />
+            <RecommendPanel
+                hash={route.key}
+                onAutoSwitch={handleAutoSwitch}
+            />
         ),
-        [],
+        [handleAutoSwitch],
     );
 
     if (!routes?.length) {
@@ -109,7 +135,13 @@ export default function RecommendSheets() {
 
 /* ---------------- 单个插件面板 ---------------- */
 
-function RecommendPanel({ hash }: { hash: string }) {
+interface IRecommendPanelProps {
+    hash: string;
+    /** 加载失败/空壳时由父组件自动切换下一个源 */
+    onAutoSwitch?: () => void;
+}
+
+function RecommendPanel({ hash, onAutoSwitch }: IRecommendPanelProps) {
     const navigate = useNavigate();
     const [data, setData] = useState<IPluginRecommendSheets | null>(null);
     const [state, setState] = useState(RequestStateCode.PENDING_FIRST_PAGE);
@@ -118,10 +150,16 @@ function RecommendPanel({ hash }: { hash: string }) {
         setState(RequestStateCode.PENDING_FIRST_PAGE);
         const result = await getCachedPluginRecommend(hash);
         setData(result);
+        if (!result) {
+            // 无任何可用数据（拉取失败且无缓存回退）→ 记失败已由 fetch 完成，通知父组件换源
+            setState(RequestStateCode.ERROR);
+            onAutoSwitch?.();
+            return;
+        }
         setState(
             result ? RequestStateCode.FINISHED : RequestStateCode.ERROR,
         );
-    }, [hash]);
+    }, [hash, onAutoSwitch]);
 
     useEffect(() => {
         load();

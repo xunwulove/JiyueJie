@@ -2,6 +2,9 @@ import PluginManager from "@/core/pluginManager";
 import { resetMediaItem } from "@/utils/mediaUtils";
 import { devLog } from "@/utils/log";
 import getOrCreateMMKV from "@/utils/getOrCreateMMKV";
+import pluginReliability, {
+    getRecommendReliabilitySync,
+} from "@/core/pluginReliability";
 
 const cacheStore = getOrCreateMMKV("Plugin.RecommendCache");
 
@@ -58,6 +61,10 @@ export interface IPluginRecommendSheets {
  *
  * 与原版一致：返回的歌单显式打上插件 platform 标记（resetMediaItem），
  * 使详情页能按 platform/pluginHash 找到对应插件。
+ *
+ * 统一在这里记录"推荐歌单专用可用率"（recordRecommendResult）：
+ * 成功返回非空数据=ok，异常/空壳=fail。所有调用方（二级页面板、
+ * 首页横滑区、刷新按钮）都走本函数，因此统计天然去重、无需各处手动记。
  */
 export async function fetchPluginRecommendSheets(
     pluginHash: string,
@@ -80,8 +87,17 @@ export async function fetchPluginRecommendSheets(
                 ),
             }));
         if (!pinned.length && !groups.length) {
+            // 空壳：接口返回了但没有可用歌单 → 记失败
+            pluginReliability.recordRecommendResult(
+                plugin.instance.platform,
+                false,
+            );
             return null;
         }
+        pluginReliability.recordRecommendResult(
+            plugin.instance.platform,
+            true,
+        );
         return { pluginHash, pluginName: plugin.name, pinned, groups };
     } catch (e: any) {
         devLog(
@@ -89,6 +105,10 @@ export async function fetchPluginRecommendSheets(
             "获取插件推荐歌单失败",
             plugin.name,
             e?.message ?? e,
+        );
+        pluginReliability.recordRecommendResult(
+            plugin.instance.platform,
+            false,
         );
         return null;
     }
@@ -136,10 +156,21 @@ export async function refreshCachedPluginRecommend(
 /**
  * 遍历所有具备 getRecommendSheetTags 能力的已启用插件，
  * 返回第一个成功返回数据的插件（失败自动尝试下一个）。带每日缓存。
+ *
+ * 择优规则：按"推荐歌单专用可用率"降序尝试（可用率高的源优先展示；
+ * 无数据默认 0.5 排在最后），而不是按插件安装顺序——避免
+ * "能搜索但推荐歌单拉胯"的源抢占首页推荐位。
  */
 export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecommendSheets | null> {
-    const plugins =
-        PluginManager.getSortedPluginsWithAbility("getRecommendSheetTags");
+    const plugins = PluginManager.getSortedPluginsWithAbility(
+        "getRecommendSheetTags",
+    )
+        .slice()
+        .sort(
+            (a, b) =>
+                getRecommendReliabilitySync(b.instance.platform) -
+                getRecommendReliabilitySync(a.instance.platform),
+        );
     for (const plugin of plugins) {
         const data = await getCachedPluginRecommend(plugin.hash);
         if (data) {
