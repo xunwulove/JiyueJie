@@ -121,6 +121,10 @@ function HorizontalBar({
     const navigate = useNavigate();
     const setSubPages = useSetAtom(tabletSubPagesAtom);
     const subPages = useAtomValue(tabletSubPagesAtom);
+    /* 设置页激活时：4 tab 取消高亮，齿轮高亮（表示当前处于设置层级） */
+    const inSetting = subPages.some(
+        p => p.path === ROUTE_PATH.SETTING,
+    );
     return (
         <View
             style={[
@@ -130,7 +134,8 @@ function HorizontalBar({
             {/* 4 tab 整体居中（中心与内容区中心水平对齐）；齿轮绝对定位右端不参与布局 */}
             <View style={styles.hTabGroup}>
                 {TABS.map(tab => {
-                    const selected = tab.key === selectedTab;
+                    const selected =
+                        !inSetting && tab.key === selectedTab;
                     const activeColor = colors.primary;
                     const idleColor =
                         colors.textSecondary ?? "rgba(0,0,0,0.6)";
@@ -178,7 +183,12 @@ function HorizontalBar({
             <IconButton
                 name="cog-8-tooth"
                 size={32}
-                color={colors.textSecondary ?? "rgba(0,0,0,0.6)"}
+                color={
+                    inSetting
+                        ? colors.primary
+                        : colors.textSecondary ??
+                          "rgba(0,0,0,0.6)"
+                }
                 accessibilityLabel="设置"
                 style={styles.gearBtn}
                 onPress={() => {

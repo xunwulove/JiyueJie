@@ -71,7 +71,7 @@ export default function PluginList() {
         },
         {
             type: "switch",
-            icon: "clock-outline",
+            icon: "moon",
             title: t("basicSettings.lazyLoadPlugin"),
             value: lazyLoadPlugin ?? false,
             onValueChange: v => Config.setConfig("basic.lazyLoadPlugin", v),

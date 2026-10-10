@@ -16,6 +16,7 @@ export default function Mode() {
             <ThemeText
                 fontSize="subTitle"
                 fontWeight="bold"
+                fontColor="primary"
                 style={styles.header}>
                 {t("themeSettings.displayStyle")}
             </ThemeText>

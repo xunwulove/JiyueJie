@@ -15,6 +15,7 @@ import ArrowsLeftRightIcon from '@/assets/icons/arrows-left-right.svg';
 import Bars3Icon from '@/assets/icons/bars-3.svg';
 import BookmarkSquareIcon from '@/assets/icons/bookmark-square.svg';
 import CalendarDaysIcon from '@/assets/icons/calendar-days.svg';
+import ChartBarIcon from '@/assets/icons/chart-bar.svg';
 import ChatBubbleOvalLeftEllipsisIcon from '@/assets/icons/chat-bubble-oval-left-ellipsis.svg';
 import CheckCircleOutlineIcon from '@/assets/icons/check-circle-outline.svg';
 import CheckCircleIcon from '@/assets/icons/check-circle.svg';
@@ -47,6 +48,7 @@ import LinkIcon from '@/assets/icons/link.svg';
 import LyricIcon from '@/assets/icons/lyric.svg';
 import MagnifyingGlassIcon from '@/assets/icons/magnifying-glass.svg';
 import MinusIcon from '@/assets/icons/minus.svg';
+import MoonIcon from '@/assets/icons/moon.svg';
 import MotionPlayIcon from '@/assets/icons/motion-play.svg';
 import MusicalNoteIcon from '@/assets/icons/musical-note.svg';
 import PauseCircleOutlineIcon from '@/assets/icons/pause-circle-outline.svg';
@@ -62,6 +64,8 @@ import PowerOutlineIcon from '@/assets/icons/power-outline.svg';
 import QuestionMarkCircleIcon from '@/assets/icons/question-mark-circle.svg';
 import RepeatSong1Icon from '@/assets/icons/repeat-song-1.svg';
 import RepeatSongIcon from '@/assets/icons/repeat-song.svg';
+import ServerStackIcon from '@/assets/icons/server-stack.svg';
+import ServerIcon from '@/assets/icons/server.svg';
 import ShareIcon from '@/assets/icons/share.svg';
 import ShieldKeyholeOutlineIcon from '@/assets/icons/shield-keyhole-outline.svg';
 import ShuffleIcon from '@/assets/icons/shuffle.svg';
@@ -77,7 +81,7 @@ import TrophyIcon from '@/assets/icons/trophy.svg';
 import UserIcon from '@/assets/icons/user.svg';
 import XMarkIcon from '@/assets/icons/x-mark.svg';
 
-export type IIconName = 'alarm-outline' | 'album-outline' | 'archive-box-x-mark' | 'arrow-down-tray' | 'arrow-left' | 'arrow-long-left' | 'arrow-path' | 'arrow-right-end-on-rectangle' | 'arrow-up-tray' | 'arrow-uturn-left' | 'arrows-left-right' | 'bars-3' | 'bookmark-square' | 'calendar-days' | 'chat-bubble-oval-left-ellipsis' | 'check-circle-outline' | 'check-circle' | 'check' | 'circle-stack' | 'clock-outline' | 'code-bracket-square' | 'cog-8-tooth' | 'crosshair' | 'document-outline' | 'ellipsis-vertical' | 'exclamation-circle' | 'fire-outline' | 'fire' | 'folder-music-outline' | 'folder-outline' | 'folder-plus' | 'font-size' | 'hand-thumb-up' | 'heart-outline' | 'heart' | 'home-outline' | 'identification' | 'inbox-arrow-down' | 'information-circle' | 'javascript' | 'language' | 'link-slash' | 'link' | 'lyric' | 'magnifying-glass' | 'minus' | 'motion-play' | 'musical-note' | 'pause-circle-outline' | 'pause' | 'pencil-outline' | 'pencil-square' | 'play-circle-outline' | 'play-circle' | 'play' | 'playlist' | 'plus' | 'power-outline' | 'question-mark-circle' | 'repeat-song-1' | 'repeat-song' | 'share' | 'shield-keyhole-outline' | 'shuffle' | 'skip-left' | 'skip-right' | 'sort-outline' | 'speedometer' | 'strategy' | 't-shirt-outline' | 'translation' | 'trash-outline' | 'trophy' | 'user' | 'x-mark';
+export type IIconName = 'alarm-outline' | 'album-outline' | 'archive-box-x-mark' | 'arrow-down-tray' | 'arrow-left' | 'arrow-long-left' | 'arrow-path' | 'arrow-right-end-on-rectangle' | 'arrow-up-tray' | 'arrow-uturn-left' | 'arrows-left-right' | 'bars-3' | 'bookmark-square' | 'calendar-days' | 'chart-bar' | 'chat-bubble-oval-left-ellipsis' | 'check-circle-outline' | 'check-circle' | 'check' | 'circle-stack' | 'clock-outline' | 'code-bracket-square' | 'cog-8-tooth' | 'crosshair' | 'document-outline' | 'ellipsis-vertical' | 'exclamation-circle' | 'fire-outline' | 'fire' | 'folder-music-outline' | 'folder-outline' | 'folder-plus' | 'font-size' | 'hand-thumb-up' | 'heart-outline' | 'heart' | 'home-outline' | 'identification' | 'inbox-arrow-down' | 'information-circle' | 'javascript' | 'language' | 'link-slash' | 'link' | 'lyric' | 'magnifying-glass' | 'minus' | 'moon' | 'motion-play' | 'musical-note' | 'pause-circle-outline' | 'pause' | 'pencil-outline' | 'pencil-square' | 'play-circle-outline' | 'play-circle' | 'play' | 'playlist' | 'plus' | 'power-outline' | 'question-mark-circle' | 'repeat-song-1' | 'repeat-song' | 'server-stack' | 'server' | 'share' | 'shield-keyhole-outline' | 'shuffle' | 'skip-left' | 'skip-right' | 'sort-outline' | 'speedometer' | 'strategy' | 't-shirt-outline' | 'translation' | 'trash-outline' | 'trophy' | 'user' | 'x-mark';
 
 interface IProps extends SvgProps {
     /** 图标名称 */
@@ -101,6 +105,7 @@ const iconMap = {
     'bars-3': Bars3Icon,
     'bookmark-square': BookmarkSquareIcon,
     'calendar-days': CalendarDaysIcon,
+    'chart-bar': ChartBarIcon,
     'chat-bubble-oval-left-ellipsis': ChatBubbleOvalLeftEllipsisIcon,
     'check-circle-outline': CheckCircleOutlineIcon,
     'check-circle': CheckCircleIcon,
@@ -133,6 +138,7 @@ const iconMap = {
     'lyric': LyricIcon,
     'magnifying-glass': MagnifyingGlassIcon,
     'minus': MinusIcon,
+    'moon': MoonIcon,
     'motion-play': MotionPlayIcon,
     'musical-note': MusicalNoteIcon,
     'pause-circle-outline': PauseCircleOutlineIcon,
@@ -148,6 +154,8 @@ const iconMap = {
     'question-mark-circle': QuestionMarkCircleIcon,
     'repeat-song-1': RepeatSong1Icon,
     'repeat-song': RepeatSongIcon,
+    'server-stack': ServerStackIcon,
+    'server': ServerIcon,
     'share': ShareIcon,
     'shield-keyhole-outline': ShieldKeyholeOutlineIcon,
     'shuffle': ShuffleIcon,

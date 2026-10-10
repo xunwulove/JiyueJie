@@ -155,19 +155,11 @@ export default function ImmersiveLayer() {
         return null;
     }
 
-    /* 歌词：当前行居中，上一行/下一行小字（内容来自现有歌词系统） */
+    /* 歌词：当前行居中，上下行小字（内容来自现有歌词系统） */
     const curIndex = currentLrcItem?.index ?? -1;
     const curLrc =
         curIndex >= 0 && curIndex < lyrics.length
             ? lyrics[curIndex].lrc
-            : "";
-    const prevLrc =
-        curIndex > 0 && curIndex - 1 < lyrics.length
-            ? lyrics[curIndex - 1].lrc
-            : "";
-    const nextLrc =
-        curIndex >= 0 && curIndex + 1 < lyrics.length
-            ? lyrics[curIndex + 1].lrc
             : "";
 
     const hasLyric = lyrics.length > 0;
@@ -204,38 +196,62 @@ export default function ImmersiveLayer() {
         </View>
     );
 
-    /* 歌词流：当前行 + 上下行 */
+    /* 歌词流：当前行居中 + 上下多行（平板各3行、手机各2行），内容来自现有歌词系统 */
+    const sideCount = isTablet ? 3 : 2;
+    const upLines: { text: string; key: string }[] = [];
+    for (let i = sideCount; i >= 1; i--) {
+        const idx = curIndex - i;
+        upLines.push({
+            key: `up-${i}`,
+            text: idx >= 0 && idx < lyrics.length ? lyrics[idx].lrc : "",
+        });
+    }
+    const downLines: { text: string; key: string }[] = [];
+    for (let i = 1; i <= sideCount; i++) {
+        const idx = curIndex + i;
+        downLines.push({
+            key: `down-${i}`,
+            text: idx >= 0 && idx < lyrics.length ? lyrics[idx].lrc : "",
+        });
+    }
+
     const lyricBlock = (
         <View style={styles.lyricWrap}>
             {hasLyric ? (
                 <>
-                    <Text
-                        numberOfLines={1}
-                        style={[
-                            styles.lyricSide,
-                            { fontSize: isTablet ? 18 : 15 },
-                        ]}>
-                        {prevLrc}
-                    </Text>
+                    {upLines.map(l => (
+                        <Text
+                            key={l.key}
+                            numberOfLines={1}
+                            style={[
+                                styles.lyricSide,
+                                { fontSize: isTablet ? 18 : 15 },
+                            ]}>
+                            {l.text}
+                        </Text>
+                    ))}
                     <Text
                         numberOfLines={2}
                         style={[
                             styles.lyricCurrent,
                             {
-                                fontSize: isTablet ? 32 : 26,
-                                lineHeight: isTablet ? 42 : 34,
+                                fontSize: isTablet ? 34 : 26,
+                                lineHeight: isTablet ? 44 : 34,
                             },
                         ]}>
                         {curLrc || "♪"}
                     </Text>
-                    <Text
-                        numberOfLines={1}
-                        style={[
-                            styles.lyricSide,
-                            { fontSize: isTablet ? 18 : 15 },
-                        ]}>
-                        {nextLrc}
-                    </Text>
+                    {downLines.map(l => (
+                        <Text
+                            key={l.key}
+                            numberOfLines={1}
+                            style={[
+                                styles.lyricSide,
+                                { fontSize: isTablet ? 18 : 15 },
+                            ]}>
+                            {l.text}
+                        </Text>
+                    ))}
                 </>
             ) : (
                 <Text
@@ -249,7 +265,7 @@ export default function ImmersiveLayer() {
         </View>
     );
 
-    /* 右下封面（仅平板/横屏左右分栏时展示） */
+    /* 右下封面（仅平板/横屏左右分栏时展示）；无封面时显示可见占位 */
     const coverBlock = isTablet ? (
         <View style={styles.coverPane}>
             {musicItem?.artwork ? (
@@ -259,7 +275,9 @@ export default function ImmersiveLayer() {
                     resizeMode="cover"
                 />
             ) : (
-                <View style={[styles.cover, styles.coverPlaceholder]} />
+                <View style={[styles.cover, styles.coverPlaceholder]}>
+                    <Text style={styles.coverPlaceholderText}>♪</Text>
+                </View>
             )}
         </View>
     ) : null;
@@ -270,12 +288,12 @@ export default function ImmersiveLayer() {
                 style={styles.pressArea}
                 onPress={hide}
                 onPressIn={hide}>
-                {/* 深色渐变背景 */}
+                {/* 深色渐变背景（完全不透明，不透出后层） */}
                 <LinearGradient
                     colors={[
-                        "rgba(10,12,18,0.86)",
-                        "rgba(8,10,16,0.92)",
-                        "rgba(5,6,10,0.97)",
+                        "#0A0C12",
+                        "#080A10",
+                        "#05060A",
                     ]}
                     style={StyleSheet.absoluteFill}
                 />
@@ -304,17 +322,19 @@ export default function ImmersiveLayer() {
                 ) : null}
 
                 {isTablet ? (
-                    /* 平板/横屏：顶部行（歌名+歌手 | 右上时间，同高度）+ 左 60% 歌词 + 右 40% 右下封面 */
+                    /* 平板/横屏：顶部行（左60%歌名居中 | 右40%时间居中，同高度）+ 左 60% 歌词 + 右 40% 右下封面 */
                     <View style={styles.bodyRow}>
                         <View
                             style={[
                                 styles.topRow,
                                 { paddingTop: (insets.top ?? 0) + 24 },
                             ]}>
-                            <View style={styles.topHeaderWrap}>
+                            <View style={styles.topLeft}>
                                 {headerBlock}
                             </View>
-                            <Text style={styles.topTime}>{timeText}</Text>
+                            <View style={styles.topRight}>
+                                <Text style={styles.topTime}>{timeText}</Text>
+                            </View>
                         </View>
                         <View style={styles.contentRow}>
                             <View style={styles.leftPane}>{lyricBlock}</View>
@@ -371,23 +391,27 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: "column",
     },
-    /* 顶部行：歌名+歌手（左） | 播放时间（右），同高度（对齐 QQ音乐 HD） */
+    /* 顶部行：左 60%（歌名+歌手居中）| 右 40%（时间居中），同高度（对齐 QQ音乐 HD） */
     topRow: {
         width: "100%",
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
-        paddingLeft: 40,
-        paddingRight: 48,
         paddingBottom: 20,
     },
-    topHeaderWrap: {
-        flexShrink: 1,
+    topLeft: {
+        flex: 6,
+        alignItems: "center",
+        paddingLeft: 40,
         paddingRight: 16,
+    },
+    topRight: {
+        flex: 4,
+        alignItems: "center",
+        paddingRight: 40,
     },
     topTime: {
         color: "rgba(255,255,255,0.85)",
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: fontWeightConst.medium,
         includeFontPadding: false,
     },
@@ -416,14 +440,22 @@ const styles = StyleSheet.create({
         borderColor: "rgba(255,255,255,0.18)",
         backgroundColor: "rgba(255,255,255,0.06)",
     },
-    coverPlaceholder: {},
+    coverPlaceholder: {
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    coverPlaceholderText: {
+        color: "rgba(255,255,255,0.35)",
+        fontSize: 56,
+        fontWeight: fontWeightConst.medium,
+    },
     /* 手机：纵向 */
     bodyCol: {
         flex: 1,
     },
     /* 顶部歌名歌手 */
     headerBlock: {
-        alignItems: "flex-start",
+        alignItems: "center",
     },
     headerPhone: {
         alignItems: "center",

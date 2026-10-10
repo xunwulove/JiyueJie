@@ -81,6 +81,7 @@ export default function Background() {
             <ThemeText
                 fontSize="subTitle"
                 fontWeight="bold"
+                fontColor="primary"
                 style={style.header}>
                 {t("themeSettings.setTheme")}
             </ThemeText>

@@ -93,7 +93,7 @@ export default function MineTab({
             action: () => navigate(ROUTE_PATH.BACKUP),
         },
         {
-            icon: "bookmark-square",
+            icon: "server-stack",
             title: "音源管理",
             value: "洛雪 · 插件",
             action: () => navigate(ROUTE_PATH.PLUGIN_SOURCES),
@@ -150,7 +150,7 @@ export default function MineTab({
             action: () => navigate(ROUTE_PATH.DOWNLOADING),
         },
         {
-            icon: "bookmark-square",
+            icon: "server-stack",
             title: "音源管理",
             action: () => navigate(ROUTE_PATH.PLUGIN_SOURCES),
         },

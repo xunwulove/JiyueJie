@@ -375,7 +375,8 @@ const styles = StyleSheet.create({
         height: "100%",
         left: 0,
         top: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        // 无遮盖：弹窗直接浮在当前页面上（保留透明点击层，点弹窗外部空白仍可关闭）
+        backgroundColor: "transparent",
     },
     dialogContainer: {
         position: "absolute",

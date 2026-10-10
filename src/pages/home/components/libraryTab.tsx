@@ -44,9 +44,9 @@ const SORT_OPTIONS: Array<{
     { label: "歌手", value: "artist", icon: "user" },
     { label: "专辑", value: "album", icon: "album-outline" },
     { label: "时长", value: "duration", icon: "clock-outline" },
-    { label: "文件大小", value: "size", icon: "archive-box-x-mark" },
+    { label: "文件大小", value: "size", icon: "server" },
     { label: "添加时间", value: "addTime", icon: "calendar-days" },
-    { label: "听歌频率", value: "playCount", icon: "hand-thumb-up" },
+    { label: "听歌频率", value: "playCount", icon: "chart-bar" },
 ];
 
 // Bug: localeCompare is slow sometimes https://github.com/facebook/hermes/issues/867
@@ -232,45 +232,9 @@ export default function LibraryTab() {
 
     return (
         <View style={styles.page}>
-            {/* 排序行：固定吸顶，不随列表滚动 */}
-            <View style={styles.sortRow}>
-                <ThemeText
-                    fontSize="content"
-                    fontWeight="medium"
-                    fontColor="textSecondary">
-                    本地歌曲
-                </ThemeText>
-                <View style={styles.sortRight}>
-                    {sort !== "default" ? (
-                        <ThemeText
-                            fontSize="normal"
-                            fontColor="textSecondary"
-                            numberOfLines={1}
-                            style={styles.sortCurrent}>
-                            {SORT_OPTIONS.find(
-                                o => o.value === sort,
-                            )?.label ?? ""}
-                            {direction === "asc" ? " ↑" : " ↓"}
-                        </ThemeText>
-                    ) : null}
-                    <Icon
-                        name="sort-outline"
-                        size={20}
-                        color={primary}
-                        style={styles.sortIcon}
-                        onPress={openSortDialog}
-                    />
-                </View>
-            </View>
-
-            <FlatList
-                style={styles.container}
-                data={sortedList}
-                keyExtractor={(item, index) =>
-                    `${item.platform}-${item.id}-${index}`
-                }
-                ListHeaderComponent={
-                    <View style={styles.cardRow}>
+            {/* 固定头部：卡片 + 排序行（歌曲列表表头，不随列表滚动） */}
+            <View style={styles.headerArea}>
+                <View style={styles.cardRow}>
                         {entries.map(entry => (
                             <Pressable
                                 key={entry.title}
@@ -411,6 +375,42 @@ export default function LibraryTab() {
                             </Pressable>
                         ))}
                     </View>
+                    {/* 排序行：位于卡片下方、歌曲列表上方，随列表滚动 */}
+                    <View style={styles.sortRow}>
+                        <ThemeText
+                            fontSize="content"
+                            fontWeight="bold">
+                            本地歌曲
+                        </ThemeText>
+                        <View style={styles.sortRight}>
+                            {sort !== "default" ? (
+                                <ThemeText
+                                    fontSize="normal"
+                                    fontColor="textSecondary"
+                                    numberOfLines={1}
+                                    style={styles.sortCurrent}>
+                                    {SORT_OPTIONS.find(
+                                        o => o.value === sort,
+                                    )?.label ?? ""}
+                                    {direction === "asc" ? " ↑" : " ↓"}
+                                </ThemeText>
+                            ) : null}
+                            <Icon
+                                name="sort-outline"
+                                size={20}
+                                color={primary}
+                                style={styles.sortIcon}
+                                onPress={openSortDialog}
+                            />
+                        </View>
+                    </View>
+                </View>
+
+            <FlatList
+                style={styles.container}
+                data={sortedList}
+                keyExtractor={(item, index) =>
+                    `${item.platform}-${item.id}-${index}`
                 }
                 ListEmptyComponent={
                     <ThemeText
@@ -590,13 +590,17 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 16,
     },
-    /* 排序行：固定吸顶（列表滚动时始终可见） */
+    /* 固定头部：卡片 + 排序行（不随歌曲列表滚动） */
+    headerArea: {
+        paddingHorizontal: 16,
+    },
+    /* 排序行：歌曲列表表头，位于卡片下方、不随列表滚动 */
     sortRow: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingTop: 8,
+        paddingHorizontal: 0,
+        paddingTop: 0,
         paddingBottom: 8,
     },
     sortRight: {
@@ -615,7 +619,7 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
         columnGap: 10, // 对齐 APlayer Arrangement.spacedBy(10.dp) / 首页金刚区 10
         rowGap: 10,
-        marginBottom: 20,
+        marginBottom: 8, // 卡片与下方排序行的间距
     },
     card: {
         borderRadius: 18,

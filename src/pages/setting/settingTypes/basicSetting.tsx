@@ -18,7 +18,7 @@ import { qualityKeys } from "@/utils/qualities";
 import rpx from "@/utils/rpx";
 import Toast from "@/utils/toast";
 import Slider from "@react-native-community/slider";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 
@@ -82,21 +82,33 @@ function useCacheSize() {
         lyric: 0,
         image: 0,
     });
+    /* 惰性统计：进入设置页不统计缓存大小（避免挂载即触发原生目录遍历），点击缓存行时才统计 */
+    const [queried, setQueried] = useState(false);
 
-    const refreshCacheSize = useCallback(async () => {
-        const [musicCache, lyricCache, imageCache] = await Promise.all([
-            getCacheSize("music"),
-            getCacheSize("lyric"),
-            getCacheSize("image"),
-        ]);
-        setCacheSize({
-            music: musicCache,
-            lyric: lyricCache,
-            image: imageCache,
-        });
-    }, []);
+    const refreshCacheSize = useCallback(
+        async (type?: "music" | "lyric" | "image") => {
+            if (type) {
+                const size = await getCacheSize(type);
+                setCacheSize(prev => ({ ...prev, [type]: size }));
+            } else {
+                const [musicCache, lyricCache, imageCache] =
+                    await Promise.all([
+                        getCacheSize("music"),
+                        getCacheSize("lyric"),
+                        getCacheSize("image"),
+                    ]);
+                setCacheSize({
+                    music: musicCache,
+                    lyric: lyricCache,
+                    image: imageCache,
+                });
+            }
+            setQueried(true);
+        },
+        [],
+    );
 
-    return [cacheSize, refreshCacheSize] as const;
+    return [cacheSize, refreshCacheSize, queried] as const;
 }
 
 export default function BasicSetting() {
@@ -125,11 +137,7 @@ export default function BasicSetting() {
     const navigate = useNavigate();
     const colors = useColors();
 
-    const [cacheSize, refreshCacheSize] = useCacheSize();
-
-    useEffect(() => {
-        refreshCacheSize();
-    }, []);
+    const [cacheSize, refreshCacheSize, cacheQueried] = useCacheSize();
 
     // ===== 播放 =====
     const playbackGroup = {
@@ -253,17 +261,21 @@ export default function BasicSetting() {
                 title: t("basicSettings.cache.clearMusicCache"),
                 right: (
                     <ThemeText style={styles.centerText}>
-                        {sizeFormatter(cacheSize.music)}
+                        {cacheQueried
+                            ? sizeFormatter(cacheSize.music)
+                            : "--"}
                     </ThemeText>
                 ),
                 onPress() {
+                    // 惰性统计：点击时才统计当前大小（只遍历音乐缓存目录）
+                    refreshCacheSize("music");
                     showDialog("SimpleDialog", {
                         title: t("dialog.clearMusicCacheTitle"),
                         content: t("dialog.clearMusicCacheContent"),
                         async onOk() {
                             await clearCache("music");
                             Toast.success(t("toast.musicCacheCleared"));
-                            refreshCacheSize();
+                            refreshCacheSize("music");
                         },
                     });
                 },
@@ -272,17 +284,20 @@ export default function BasicSetting() {
                 title: t("basicSettings.cache.clearLyricCache"),
                 right: (
                     <ThemeText style={styles.centerText}>
-                        {sizeFormatter(cacheSize.lyric)}
+                        {cacheQueried
+                            ? sizeFormatter(cacheSize.lyric)
+                            : "--"}
                     </ThemeText>
                 ),
                 onPress() {
+                    refreshCacheSize("lyric");
                     showDialog("SimpleDialog", {
                         title: t("dialog.clearLyricCacheTitle"),
                         content: t("dialog.clearLyricCacheContent"),
                         async onOk() {
                             await clearCache("lyric");
                             Toast.success(t("toast.lyricCacheCleared"));
-                            refreshCacheSize();
+                            refreshCacheSize("lyric");
                         },
                     });
                 },
@@ -291,17 +306,20 @@ export default function BasicSetting() {
                 title: t("basicSettings.cache.clearImageCache"),
                 right: (
                     <ThemeText style={styles.centerText}>
-                        {sizeFormatter(cacheSize.image)}
+                        {cacheQueried
+                            ? sizeFormatter(cacheSize.image)
+                            : "--"}
                     </ThemeText>
                 ),
                 onPress() {
+                    refreshCacheSize("image");
                     showDialog("SimpleDialog", {
                         title: t("dialog.clearImageCacheTitle"),
                         content: t("dialog.clearImageCacheContent"),
                         async onOk() {
                             await clearCache("image");
                             Toast.success(t("toast.imageCacheCleared"));
-                            refreshCacheSize();
+                            refreshCacheSize("image");
                         },
                     });
                 },
@@ -447,10 +465,15 @@ export default function BasicSetting() {
                 {groups.map((group, gi) => {
                     return (
                         <View key={gi} style={styles.group}>
-                            <View style={styles.groupHeader}>
+                            <View
+                                style={[
+                                    styles.groupHeader,
+                                    // 仅第一个分组标题离顶部 AppBar 收紧，其余保持统一间距
+                                    gi === 0 ? styles.firstGroupHeader : null,
+                                ]}>
                                 <ThemeText
                                     fontSize="subTitle"
-                                    fontColor="textSecondary"
+                                    fontColor="primary"
                                     fontWeight="bold">
                                     {group.title}
                                 </ThemeText>
@@ -506,6 +529,10 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginTop: rpx(8),
+    },
+    /* 仅第一个分组：标题离顶部 AppBar 收紧（其余分组保持统一间距） */
+    firstGroupHeader: {
+        marginTop: 0,
     },
     card: {
         marginHorizontal: rpx(24),

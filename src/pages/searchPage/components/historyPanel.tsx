@@ -87,7 +87,7 @@ export default function HistoryPanel() {
                                     color={colors.primary}
                                 />
                                 <ThemeText
-                                    fontSize="body"
+                                    fontSize="content"
                                     fontWeight="bold"
                                     style={style.headerText}>
                                     {t("searchPage.history")}

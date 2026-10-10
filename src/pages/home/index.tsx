@@ -76,10 +76,13 @@ function Home() {
         [setSubPages],
     );
 
-    // 搜索 tab（平板独占态 / 手机端整 tab 页）：硬件返回键退出搜索回首页 tab（避免直接退出 App）
-    // 优先级低于 SubPageOverlay/全屏层（后注册的监听先触发），覆盖层激活时仍先逐级 pop
+    // 搜索 tab（平板独占态 / 手机端整 tab 页）与我的 tab：硬件返回键回首页 tab（避免直接退出 App）
+    // 优先级低于 SubPageOverlay/全屏层（覆盖层激活时仍先逐级 pop，随后才落到本监听）
     useEffect(() => {
-        if (selectedTab !== SaltTab.SEARCH) {
+        if (
+            selectedTab !== SaltTab.SEARCH &&
+            selectedTab !== SaltTab.MINE
+        ) {
             return;
         }
         const sub = BackHandler.addEventListener(

@@ -16,6 +16,10 @@ import { musicIsPaused } from "@/utils/trackUtils";
 import { showPanel } from "@/components/panels/usePanel";
 import { fullPlayingAtom } from "@/core/tabletNav";
 import { useSetAtom } from "jotai";
+import lyricManager, {
+    useCurrentLyricItem,
+    useLyricState,
+} from "@/core/lyricManager";
 import repeatModeConst from "@/constants/repeatModeConst";
 import timeformat from "@/utils/timeformat";
 
@@ -45,6 +49,10 @@ export default function TabletPanel() {
     const setFullPlaying = useSetAtom(fullPlayingAtom);
 
     const isPaused = musicIsPaused(musicState);
+    /* 歌词：当前播放行（无歌/无歌词时显示占位） */
+    const { lyrics, loading } = useLyricState();
+    const currentLrcItem = useCurrentLyricItem();
+    const currentLrc = currentLrcItem?.lrc;
 
     return (
         <View
@@ -113,8 +121,32 @@ export default function TabletPanel() {
                     numberOfLines={1}>
                     {musicItem?.artist ?? "未知歌手"}
                 </ThemeText>
-                {/* 歌词弹性区（后续接入歌词体系） */}
-                <View style={styles.lyricPlaceholder} />
+                {/* 歌词弹性区：显示当前播放歌词行（无歌词时占位），水平居中 */}
+                <View style={styles.lyricPlaceholder}>
+                    {!musicItem ? null : loading && !lyrics.length ? (
+                        <ThemeText
+                            fontSize="subTitle"
+                            fontColor="textSecondary"
+                            style={styles.lyricText}>
+                            歌词加载中…
+                        </ThemeText>
+                    ) : currentLrc ? (
+                        <ThemeText
+                            fontSize="subTitle"
+                            fontColor="textSecondary"
+                            numberOfLines={2}
+                            style={styles.lyricText}>
+                            {currentLrc}
+                        </ThemeText>
+                    ) : (
+                        <ThemeText
+                            fontSize="subTitle"
+                            fontColor="textSecondary"
+                            style={styles.lyricText}>
+                            暂无歌词
+                        </ThemeText>
+                    )}
+                </View>
             </Pressable>
 
             {/* 底部：进度条 + 胶囊控制栏（无歌时禁用进度条、播放键显示 play） */}
@@ -252,13 +284,18 @@ const styles = StyleSheet.create({
     title: {
         width: "100%",
         marginBottom: 4,
-        textAlign: "left",
+        textAlign: "center", // 歌名水平居中
         fontSize: 20, // 对齐 APlayer 歌名 20sp
     },
     lyricPlaceholder: {
         flex: 1,
         width: "100%",
         marginTop: 12,
+        alignItems: "center",
+        justifyContent: "flex-start",
+    },
+    lyricText: {
+        textAlign: "center",
     },
     bottom: {
         width: "100%",
