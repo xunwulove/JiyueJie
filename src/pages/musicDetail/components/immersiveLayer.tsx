@@ -1,6 +1,7 @@
 import React, {
     useCallback,
     useEffect,
+    useMemo,
     useRef,
     useState,
 } from "react";
@@ -9,6 +10,7 @@ import {
     BackHandler,
     Dimensions,
     Easing,
+    FlatList,
     Image,
     Pressable,
     StyleSheet,
@@ -17,6 +19,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LinearGradient from "react-native-linear-gradient";
+import Svg, {
+    Defs,
+    RadialGradient as SvgRadialGradient,
+    Rect,
+    Stop,
+} from "react-native-svg";
+import ImageColors from "react-native-image-colors";
+import Color from "color";
 import { useAppConfig } from "@/core/appConfig";
 import {
     MusicState,
@@ -29,8 +39,10 @@ import {
 } from "@/core/lyricManager";
 import { getCurrentDialog } from "@/components/dialogs/useDialog";
 import { panelInfoStore } from "@/components/panels/usePanel";
+import { IParsedLrcItem } from "@/utils/lrcParser";
 import useOrientation from "@/hooks/useOrientation";
 import useColors from "@/hooks/useColors";
+import KaraokeText from "@/components/base/karaokeText";
 import { fontWeightConst } from "@/constants/uiConst";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -61,8 +73,16 @@ export default function ImmersiveLayer() {
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const flowAnim = useRef(new Animated.Value(0)).current;
+    // 反向光带（左→右，速度略慢于主光带）
+    const flowAnim2 = useRef(new Animated.Value(0)).current;
+    // 光斑呼吸动画值（0↔1 循环）
+    const blobAnimA = useRef(new Animated.Value(0)).current;
+    const blobAnimB = useRef(new Animated.Value(0)).current;
     // 流动光效循环动画句柄：退出/卸载时必须 stop，否则 native-driver 动画泄漏
     const flowLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+    const flowLoop2Ref = useRef<Animated.CompositeAnimation | null>(null);
+    const blobLoopARef = useRef<Animated.CompositeAnimation | null>(null);
+    const blobLoopBRef = useRef<Animated.CompositeAnimation | null>(null);
 
     const musicItem = useCurrentMusic();
     const { lyrics } = useLyricState();
@@ -83,13 +103,70 @@ export default function ImmersiveLayer() {
     const [now, setNow] = useState(() => new Date());
 
     const isTablet = orientation === "horizontal";
-    /* 光带颜色跟随主题主色（白天品牌蓝 #2F6FED / 深色 #5A8FFF，hex+alpha 后缀） */
+    /* 光效配色跟随主题主色（白天品牌蓝 #2F6FED / 深色 #5A8FFF）；封面主色可用时优先（贴合歌曲氛围） */
     const colors = useColors();
+
+    /* 封面主色提取：从当前歌曲封面异步取 2 个主色，失败/无封面回退主题主色 */
+    const artwork = musicItem?.artwork;
+    const [coverPalette, setCoverPalette] = useState<{
+        cA: string;
+        cB: string;
+    } | null>(null);
+    useEffect(() => {
+        let cancelled = false;
+        const primary = colors.primary;
+        const fallbackB = Color(primary).rotate(42).saturate(0.15).hex();
+        if (!artwork) {
+            setCoverPalette({ cA: primary, cB: fallbackB });
+            return;
+        }
+        setCoverPalette(null);
+        ImageColors.getColors(artwork, {
+            fallback: primary,
+            cache: true,
+            key: artwork,
+        })
+            .then(result => {
+                if (cancelled) {
+                    return;
+                }
+                // Android 平台字段：dominant/average/vibrant/darkVibrant/lightVibrant/muted
+                const r = result as any;
+                const cA =
+                    r?.dominant ?? r?.average ?? r?.vibrant ?? primary;
+                const cB =
+                    r?.vibrant ??
+                    r?.lightVibrant ??
+                    r?.muted ??
+                    fallbackB;
+                setCoverPalette({ cA, cB });
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setCoverPalette({ cA: primary, cB: fallbackB });
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [artwork]);
+
+    const blobColorA = coverPalette?.cA ?? colors.primary;
+    const blobColorB = coverPalette?.cB ?? Color(colors.primary).rotate(42).saturate(0.15).hex();
+    /* 主光带：封面主色/主题主色，透明度提升（00→42→2E→00）确保肉眼可见但不抢歌词 */
     const flowColors = [
-        `${colors.primary}00`,
-        `${colors.primary}14`,
-        `${colors.primary}24`,
-        `${colors.primary}00`,
+        `${blobColorA}00`,
+        `${blobColorA}42`,
+        `${blobColorA}2E`,
+        `${blobColorA}00`,
+    ];
+    /* 反向光带：第二主色系 */
+    const flowColors2 = [
+        `${blobColorB}00`,
+        `${blobColorB}30`,
+        `${blobColorB}1F`,
+        `${blobColorB}00`,
     ];
 
     /* 重置计时：任意触摸后重新计算无操作时长；仅播放中计时（暂停/停止/缓冲不启动） */
@@ -195,6 +272,41 @@ export default function ImmersiveLayer() {
                 }),
             );
             flowLoopRef.current.start();
+            flowAnim2.setValue(0);
+            flowLoop2Ref.current = Animated.loop(
+                Animated.timing(flowAnim2, {
+                    toValue: 1,
+                    duration: 13000,
+                    easing: Easing.linear,
+                    useNativeDriver: true,
+                }),
+            );
+            flowLoop2Ref.current.start();
+            const startBlobLoop = (
+                anim: Animated.Value,
+                ref: React.MutableRefObject<Animated.CompositeAnimation | null>,
+                duration: number,
+            ) => {
+                ref.current = Animated.loop(
+                    Animated.sequence([
+                        Animated.timing(anim, {
+                            toValue: 1,
+                            duration,
+                            easing: Easing.inOut(Easing.quad),
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(anim, {
+                            toValue: 0,
+                            duration,
+                            easing: Easing.inOut(Easing.quad),
+                            useNativeDriver: true,
+                        }),
+                    ]),
+                );
+                ref.current.start();
+            };
+            startBlobLoop(blobAnimA, blobLoopARef, 7000);
+            startBlobLoop(blobAnimB, blobLoopBRef, 9500);
         }
         const sub = BackHandler.addEventListener(
             "hardwareBackPress",
@@ -208,29 +320,59 @@ export default function ImmersiveLayer() {
             flowLoopRef.current?.stop();
             flowLoopRef.current = null;
             flowAnim.stopAnimation();
+            flowLoop2Ref.current?.stop();
+            flowLoop2Ref.current = null;
+            flowAnim2.stopAnimation();
+            blobLoopARef.current?.stop();
+            blobLoopARef.current = null;
+            blobAnimA.stopAnimation();
+            blobLoopBRef.current?.stop();
+            blobLoopBRef.current = null;
+            blobAnimB.stopAnimation();
         };
-    }, [visible, effect, fadeAnim, flowAnim]);
+    }, [visible, effect, fadeAnim, flowAnim, flowAnim2, blobAnimA, blobAnimB]);
 
-    /* 歌词切换平滑动画：新歌词从下方滑入 + 淡入（避免硬切换）
-       【重要】hooks 必须在组件顶层调用（return null 之前），
-       否则 visible 切换时 hook 数量变化会导致 React 渲染崩溃 */
+    /* 歌词块进入动画：沉浸层出现时整体淡入（0.4s）；换行由 FlatList 滚动平滑完成，不再整体滑出 */
     const slideAnim = useRef(new Animated.Value(0)).current;
-    const prevLrcIndexRef = useRef(-1);
+    useEffect(() => {
+        if (!visible) {
+            return;
+        }
+        slideAnim.setValue(1);
+        Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+        }).start();
+    }, [visible, slideAnim]);
+
+    /* 歌词滚动（对齐全屏播放页）：当前行始终垂直居中，随播放平滑滚动 */
+    const lyricListRef = useRef<FlatList<IParsedLrcItem> | null>(null);
+    const [lyricAreaH, setLyricAreaH] = useState<number>();
+    const lyricItemH = isTablet ? 44 : 36;
+    const lyricBlankH = useMemo(
+        () =>
+            lyricAreaH
+                ? Math.max((lyricAreaH - lyricItemH) / 2, 0)
+                : 0,
+        [lyricAreaH, lyricItemH],
+    );
     useEffect(() => {
         if (!visible) {
             return;
         }
         const idx = currentLrcItem?.index ?? -1;
-        if (prevLrcIndexRef.current !== idx && idx >= 0) {
-            slideAnim.setValue(1);
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 320,
-                useNativeDriver: true,
-            }).start();
+        const len = lyrics.length;
+        if (idx < 0 || len === 0) {
+            return;
         }
-        prevLrcIndexRef.current = idx;
-    }, [currentLrcItem?.index, slideAnim, visible]);
+        const target = Math.min(idx, len - 1);
+        lyricListRef.current?.scrollToIndex({
+            index: target,
+            viewPosition: 0.5,
+            animated: true,
+        });
+    }, [visible, currentLrcItem?.index, lyrics.length]);
 
     /* 沉浸层显示期间每秒刷新北京时间 */
     useEffect(() => {
@@ -247,12 +389,8 @@ export default function ImmersiveLayer() {
         return null;
     }
 
-    /* 歌词：当前行居中，上下行小字（内容来自现有歌词系统） */
+    /* 歌词：当前行索引（FlatList 滚动居中渲染用） */
     const curIndex = currentLrcItem?.index ?? -1;
-    const curLrc =
-        curIndex >= 0 && curIndex < lyrics.length
-            ? lyrics[curIndex].lrc
-            : "";
 
     const hasLyric = lyrics.length > 0;
 
@@ -265,6 +403,37 @@ export default function ImmersiveLayer() {
     const flowTranslate = flowAnim.interpolate({
         inputRange: [0, 1],
         outputRange: [SCREEN_W, -SCREEN_W],
+    });
+    /* 反向光带：左→右，错开节奏 */
+    const flowTranslate2 = flowAnim2.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-SCREEN_W * 0.8, SCREEN_W],
+    });
+    /* 光斑 A（左上半区）：位移 + 缩放呼吸 */
+    const blobATranslateX = blobAnimA.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-SCREEN_W * 0.05, SCREEN_W * 0.04],
+    });
+    const blobATranslateY = blobAnimA.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-SCREEN_W * 0.03, SCREEN_W * 0.05],
+    });
+    const blobAScale = blobAnimA.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 1.32],
+    });
+    /* 光斑 B（右下半区）：反向位移 + 呼吸 */
+    const blobBTranslateX = blobAnimB.interpolate({
+        inputRange: [0, 1],
+        outputRange: [SCREEN_W * 0.04, -SCREEN_W * 0.05],
+    });
+    const blobBTranslateY = blobAnimB.interpolate({
+        inputRange: [0, 1],
+        outputRange: [SCREEN_W * 0.03, -SCREEN_W * 0.04],
+    });
+    const blobBScale = blobAnimB.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1.18, 0.92],
     });
 
     /* 顶部歌名 + 歌手 */
@@ -289,26 +458,8 @@ export default function ImmersiveLayer() {
         </View>
     );
 
-    /* 歌词流：当前行居中 + 上下多行（平板各3行、手机各2行），内容来自现有歌词系统 */
-    const sideCount = isTablet ? 3 : 2;
-    const upLines: { text: string; key: string }[] = [];
-    for (let i = sideCount; i >= 1; i--) {
-        const idx = curIndex - i;
-        upLines.push({
-            key: `up-${i}`,
-            text: idx >= 0 && idx < lyrics.length ? lyrics[idx].lrc : "",
-        });
-    }
-    const downLines: { text: string; key: string }[] = [];
-    for (let i = 1; i <= sideCount; i++) {
-        const idx = curIndex + i;
-        downLines.push({
-            key: `down-${i}`,
-            text: idx >= 0 && idx < lyrics.length ? lyrics[idx].lrc : "",
-        });
-    }
-
-    /* 歌词切换平滑动画：新歌词从下方滑入 + 淡入（避免硬切换）——hooks 已上移组件顶层 */
+    /* 歌词流：FlatList 滚动（对齐全屏播放页）——当前行始终垂直居中、随播放平滑滚动，
+       平板当前行 34sp/其余 25sp，手机当前 26sp/其余 15sp；进入时整块淡入 */
     const lyricBlock = (
         <Animated.View
             style={[
@@ -330,41 +481,69 @@ export default function ImmersiveLayer() {
                 isTablet ? styles.lyricWrapTablet : null,
             ]}>
             {hasLyric ? (
-                <>
-                    {upLines.map(l => (
-                        <Text
-                            key={l.key}
-                            numberOfLines={1}
+                <FlatList
+                    ref={lyricListRef}
+                    data={lyrics}
+                    keyExtractor={(_, i) => `il-${i}`}
+                    showsVerticalScrollIndicator={false}
+                    overScrollMode="never"
+                    initialNumToRender={30}
+                    /* 边缘渐隐（对齐全屏播放页 fadingEdgeLength）：可视区上下边缘歌词微微隐入 */
+                    fadingEdgeLength={isTablet ? 160 : 120}
+                    style={styles.lyricList}
+                    onLayout={e => setLyricAreaH(e.nativeEvent.layout.height)}
+                    onScrollToIndexFailed={({ index }) => {
+                        setTimeout(() => {
+                            lyricListRef.current?.scrollToIndex({
+                                index: Math.min(index, lyrics.length - 1),
+                                viewPosition: 0.5,
+                                animated: true,
+                            });
+                        }, 120);
+                    }}
+                    ListHeaderComponent={
+                        <View style={{ height: lyricBlankH }} />
+                    }
+                    ListFooterComponent={
+                        <View style={{ height: lyricBlankH }} />
+                    }
+                    renderItem={({ item, index }) => (
+                        <View
                             style={[
-                                styles.lyricSide,
-                                { fontSize: isTablet ? 25 : 15 },
+                                styles.lyricRow,
+                                { height: lyricItemH },
                             ]}>
-                            {l.text}
-                        </Text>
-                    ))}
-                    <Text
-                        numberOfLines={2}
-                        style={[
-                            styles.lyricCurrent,
-                            {
-                                fontSize: isTablet ? 34 : 26,
-                                lineHeight: isTablet ? 44 : 34,
-                            },
-                        ]}>
-                        {curLrc || "♪"}
-                    </Text>
-                    {downLines.map(l => (
-                        <Text
-                            key={l.key}
-                            numberOfLines={1}
-                            style={[
-                                styles.lyricSide,
-                                { fontSize: isTablet ? 25 : 15 },
-                            ]}>
-                            {l.text}
-                        </Text>
-                    ))}
-                </>
+                            {index === curIndex ? (
+                                /* 卡拉OK进度染色当前行：已唱白色 0.98 / 未唱半透明白 0.5（去加粗，靠染色突出） */
+                                <KaraokeText
+                                    text={item.lrc}
+                                    startTime={item.time}
+                                    endTime={
+                                        index + 1 < lyrics.length
+                                            ? lyrics[index + 1].time
+                                            : item.time + 15000
+                                    }
+                                    sungColor="rgba(255,255,255,0.98)"
+                                    unsungColor="rgba(255,255,255,0.5)"
+                                    fontSize={isTablet ? 34 : 26}
+                                    lineHeight={lyricItemH}
+                                />
+                            ) : (
+                                <Text
+                                    numberOfLines={1}
+                                    style={[
+                                        styles.lyricSide,
+                                        {
+                                            fontSize: isTablet ? 25 : 15,
+                                            lineHeight: lyricItemH,
+                                        },
+                                    ]}>
+                                    {item.lrc}
+                                </Text>
+                            )}
+                        </View>
+                    )}
+                />
             ) : (
                 <Text
                     style={[
@@ -409,23 +588,71 @@ export default function ImmersiveLayer() {
                     ]}
                     style={StyleSheet.absoluteFill}
                 />
-                {/* 缓慢流动光效：横向渐变光带由右向左缓慢流动 */}
+                {/* 流光层：封面主色光斑呼吸 + 双渐变光带交错流动（纯 transform 动画，原生驱动） */}
                 {effect ? (
-                    <Animated.View
-                        pointerEvents="none"
-                        style={[
-                            styles.flowBand,
-                            {
-                                transform: [{ translateX: flowTranslate }],
-                            },
-                        ]}>
-                        <LinearGradient
-                            colors={flowColors}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={StyleSheet.absoluteFill}
-                        />
-                    </Animated.View>
+                    <>
+                        <Animated.View
+                            pointerEvents="none"
+                            style={[
+                                styles.blob,
+                                styles.blobA,
+                                {
+                                    transform: [
+                                        { translateX: blobATranslateX },
+                                        { translateY: blobATranslateY },
+                                        { scale: blobAScale },
+                                    ],
+                                },
+                            ]}>
+                            <RadialBlob color={blobColorA} />
+                        </Animated.View>
+                        <Animated.View
+                            pointerEvents="none"
+                            style={[
+                                styles.blob,
+                                styles.blobB,
+                                {
+                                    transform: [
+                                        { translateX: blobBTranslateX },
+                                        { translateY: blobBTranslateY },
+                                        { scale: blobBScale },
+                                    ],
+                                },
+                            ]}>
+                            <RadialBlob color={blobColorB} />
+                        </Animated.View>
+                        <Animated.View
+                            pointerEvents="none"
+                            style={[
+                                styles.flowBand,
+                                {
+                                    transform: [{ translateX: flowTranslate }],
+                                },
+                            ]}>
+                            <LinearGradient
+                                colors={flowColors}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={StyleSheet.absoluteFill}
+                            />
+                        </Animated.View>
+                        <Animated.View
+                            pointerEvents="none"
+                            style={[
+                                styles.flowBand,
+                                styles.flowBand2,
+                                {
+                                    transform: [{ translateX: flowTranslate2 }],
+                                },
+                            ]}>
+                            <LinearGradient
+                                colors={flowColors2}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={StyleSheet.absoluteFill}
+                            />
+                        </Animated.View>
+                    </>
                 ) : null}
 
                 {isTablet ? (
@@ -492,6 +719,23 @@ const styles = StyleSheet.create({
         bottom: 0,
         width: SCREEN_W * 0.8,
         left: 0,
+    },
+    flowBand2: {
+        width: SCREEN_W * 0.55,
+    },
+    /* 封面主色光斑：大尺寸径向渐变圆，缓慢位移+缩放呼吸 */
+    blob: {
+        position: "absolute",
+        width: SCREEN_W * 0.62,
+        height: SCREEN_W * 0.62,
+    },
+    blobA: {
+        left: -SCREEN_W * 0.18,
+        top: -SCREEN_W * 0.1,
+    },
+    blobB: {
+        right: -SCREEN_W * 0.16,
+        bottom: -SCREEN_W * 0.14,
     },
     /* 平板：左右分栏 */
     bodyRow: {
@@ -589,6 +833,7 @@ const styles = StyleSheet.create({
     /* 歌词 */
     lyricWrap: {
         flex: 1,
+        width: "100%",
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: 32,
@@ -598,17 +843,43 @@ const styles = StyleSheet.create({
         paddingTop: 8,
         paddingBottom: 64,
     },
+    /* FlatList 歌词流：占满歌词区，滚动时当前行垂直居中 */
+    lyricList: {
+        flex: 1,
+        width: "100%",
+    },
+    /* 歌词行容器：固定行高 + 垂直居中（对齐全屏页 scrollToIndex 定位） */
+    lyricRow: {
+        alignItems: "center",
+        justifyContent: "center",
+    },
     lyricSide: {
         color: "rgba(255,255,255,0.5)",
         textAlign: "center",
-        marginVertical: 8,
-        includeFontPadding: false,
-    },
-    lyricCurrent: {
-        color: "rgba(255,255,255,0.98)",
-        fontWeight: fontWeightConst.bold,
-        textAlign: "center",
-        marginVertical: 8,
         includeFontPadding: false,
     },
 });
+
+/** 径向渐变光斑（SVG）：中心不透明 → 边缘透明，作为封面主色呼吸光效的载体 */
+function RadialBlob({ color }: { color: string }) {
+    const gradientIdRef = useRef(`blob-${Math.random().toString(36).slice(2)}`);
+    return (
+        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+            <Defs>
+                <SvgRadialGradient
+                    id={gradientIdRef.current}
+                    cx="50%"
+                    cy="50%"
+                    r="50%">
+                    <Stop offset="0%" stopColor={color} stopOpacity={0.5} />
+                    <Stop offset="100%" stopColor={color} stopOpacity={0} />
+                </SvgRadialGradient>
+            </Defs>
+            <Rect
+                width="100%"
+                height="100%"
+                fill={`url(#${gradientIdRef.current})`}
+            />
+        </Svg>
+    );
+}

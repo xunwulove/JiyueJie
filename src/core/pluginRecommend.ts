@@ -226,3 +226,130 @@ export function flattenPluginRecommend(
         ...(data?.groups ?? []).flatMap(g => g?.data ?? []),
     ];
 }
+
+/* ------------------------------------------------------------------ */
+/* 标签歌单（getRecommendSheetsByTag）——推荐歌单二级页/首页横滑共用     */
+/* 对齐官方协议：getRecommendSheetTags 返回的 data[].data 是"标签"，    */
+/* 标签本身无封面；真实歌单需调 getRecommendSheetsByTag 获取（有封面）。 */
+/* ------------------------------------------------------------------ */
+
+const tagCacheStore = getOrCreateMMKV("Plugin.RecommendTagCache");
+
+interface ITagCacheEntry {
+    data: IMusic.IMusicSheetItemBase[];
+    fetchedAt: number;
+}
+
+function readTagCache(pluginHash: string, tagId: string): ITagCacheEntry | null {
+    const raw = tagCacheStore.getString(`${pluginHash}:${tagId}`);
+    if (!raw) {
+        return null;
+    }
+    try {
+        return JSON.parse(raw) as ITagCacheEntry;
+    } catch {
+        return null;
+    }
+}
+
+function writeTagCache(
+    pluginHash: string,
+    tagId: string,
+    data: IMusic.IMusicSheetItemBase[],
+): void {
+    tagCacheStore.set(
+        `${pluginHash}:${tagId}`,
+        JSON.stringify({ data, fetchedAt: Date.now() }),
+    );
+}
+
+/**
+ * 每日缓存版标签歌单（仿照推荐歌单 Plugin.RecommendCache）：
+ * 当天已拉取 → 直接复用（不再请求插件）；跨天 → 拉取 getRecommendSheetsByTag 第一页；
+ * 拉取失败/为空 → 回退上一次缓存（保证功能可用）。
+ * 分页加载请直接调用 fetchRecommendSheetsByTag（缓存仅用于首屏/横滑区）。
+ */
+export async function getCachedRecommendSheetsByTag(
+    pluginHash: string,
+    tag: ICommon.IUnique,
+): Promise<IMusic.IMusicSheetItemBase[] | null> {
+    const plugin = PluginManager.getByHash(pluginHash);
+    if (!plugin) {
+        return null;
+    }
+    const tagId = tag?.id ?? tag?.title ?? "";
+    if (!tagId) {
+        return null;
+    }
+    const cached = readTagCache(pluginHash, tagId);
+    const now = new Date();
+
+    if (cached && sameDay(cached.fetchedAt, now)) {
+        return cached.data;
+    }
+
+    try {
+        // 超时保护：插件 getRecommendSheetsByTag 无超时约定，卡住会导致首页横滑区/首屏永久挂起
+        const FETCH_TIMEOUT = 8000;
+        const result = await Promise.race([
+            plugin.methods.getRecommendSheetsByTag?.(tag, 1),
+            new Promise<null>(resolve =>
+                setTimeout(() => resolve(null), FETCH_TIMEOUT),
+            ),
+        ]);
+        const list = result?.data ?? [];
+        if (list.length) {
+            writeTagCache(pluginHash, tagId, list);
+            return list;
+        }
+    } catch (e: any) {
+        devLog(
+            "error",
+            "获取插件标签歌单失败",
+            plugin.name,
+            tagId,
+            e?.message ?? e,
+        );
+    }
+
+    return cached?.data ?? null;
+}
+
+/**
+ * 直接拉取某插件某标签下的推荐歌单（getRecommendSheetsByTag，分页）。
+ * 供二级页标签歌单分页加载使用（不写每日缓存，避免覆盖首屏缓存）。
+ */
+export async function fetchRecommendSheetsByTag(
+    pluginHash: string,
+    tag: ICommon.IUnique,
+    page: number,
+): Promise<ICommon.PaginationResponse<IMusic.IMusicSheetItemBase> | null> {
+    const plugin = PluginManager.getByHash(pluginHash);
+    if (!plugin) {
+        return null;
+    }
+    try {
+        const result = await plugin.methods.getRecommendSheetsByTag?.(tag, page);
+        return result ?? null;
+    } catch (e: any) {
+        devLog(
+            "error",
+            "获取插件标签歌单失败",
+            plugin.name,
+            tag?.id ?? tag?.title,
+            page,
+            e?.message ?? e,
+        );
+        return null;
+    }
+}
+
+/**
+ * 判定一个推荐歌单项是"真实歌单"还是"标签"：
+ * 有封面（coverImg/artwork）→ 真实歌单（直接展示卡片）；
+ * 无封面 → 标签（需调 getRecommendSheetsByTag 拉取歌单列表）。
+ * 官方协议下 pinned/分组项多为标签（无封面属正常），部分插件直接返回歌单。
+ */
+export function isRealSheetItem(item: IMusic.IMusicSheetItemBase): boolean {
+    return !!(item?.coverImg || item?.artwork);
+}

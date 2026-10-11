@@ -13,6 +13,7 @@ import { musicIsPaused } from "@/utils/trackUtils";
 import delay from "@/utils/delay";
 import DraggingTime from "./draggingTime";
 import LyricItemComponent from "./lyricItem";
+import KaraokeText from "@/components/base/karaokeText";
 import PersistStatus from "@/utils/persistStatus";
 import LyricOperations from "./lyricOperations";
 import { IParsedLrcItem } from "@/utils/lrcParser";
@@ -306,21 +307,45 @@ export default function Lyric(props: IProps) {
                                 if (showTranslation && hasTranslation) {
                                     text += `\n${item?.translation ?? ""}`;
                                 }
+                                const isCurrent =
+                                    currentLrcItem?.index === index;
+
+                                if (isCurrent) {
+                                    // 卡拉OK进度染色：已唱部分主色、未唱部分普通歌词色（不再加粗/瞬间高亮）
+                                    return (
+                                        <KaraokeText
+                                            text={text}
+                                            startTime={item.time}
+                                            endTime={
+                                                index + 1 < lyrics.length
+                                                    ? lyrics[index + 1].time
+                                                    : item.time + 15000
+                                            }
+                                            sungColor={colors.primary}
+                                            unsungColor={colors.text}
+                                            unsungOpacity={0.6}
+                                            fontSize={
+                                                fontSizeStyle.fontSize + 9
+                                            }
+                                            onLayout={e =>
+                                                handleLyricItemLayout(
+                                                    index,
+                                                    e.nativeEvent.layout
+                                                        .height,
+                                                )
+                                            }
+                                            style={styles.karaokeItem}
+                                        />
+                                    );
+                                }
 
                                 return (
                                     <LyricItemComponent
                                         index={index}
                                         text={text}
-                                        fontSize={
-                                            currentLrcItem?.index === index
-                                                ? fontSizeStyle.fontSize + 9
-                                                : fontSizeStyle.fontSize
-                                        }
+                                        fontSize={fontSizeStyle.fontSize}
                                         onLayout={handleLyricItemLayout}
                                         light={draggingIndex === index}
-                                        highlight={
-                                            currentLrcItem?.index === index
-                                        }
                                     />
                                 );
                             }}
@@ -388,9 +413,16 @@ export default function Lyric(props: IProps) {
 const styles = StyleSheet.create({
     wrapper: {
         width: "100%",
-        // 收紧上下留白，让歌词可视区域更大
-        marginVertical: rpx(24),
+        // 收紧上下留白，让歌词可视区域更大（固定 dp：组件间距跨屏稳定）
+        marginVertical: 20,
         flex: 1,
+    },
+    /* 卡拉OK当前行：与原歌词行同布局（全宽+紧凑内边距+水平居中），染色只改文字颜色 */
+    karaokeItem: {
+        width: "100%",
+        paddingHorizontal: 32,
+        paddingVertical: 8,
+        textAlign: "center",
     },
     empty: {
         paddingTop: "70%",
@@ -402,8 +434,8 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         left: 0,
-        paddingHorizontal: rpx(48),
-        bottom: rpx(48),
+        paddingHorizontal: 40,
+        bottom: 40,
     },
     lyricMetaText: {
         opacity: 0.8,
@@ -418,8 +450,8 @@ const styles = StyleSheet.create({
         width: "100%",
         height: ITEM_HEIGHT,
         top: "40%",
-        marginTop: rpx(48),
-        paddingHorizontal: rpx(18),
+        marginTop: 40,
+        paddingHorizontal: 16,
         right: 0,
         flexDirection: "row",
         alignItems: "center",
@@ -427,7 +459,7 @@ const styles = StyleSheet.create({
     },
     draggingTimeText: {
         fontSize: fontSizeConst.description,
-        width: rpx(90),
+        width: 76,
     },
     singleLine: {
         width: "67%",
@@ -436,13 +468,13 @@ const styles = StyleSheet.create({
         opacity: 0.4,
     },
     playIcon: {
-        width: rpx(100),
+        width: 84,
         textAlign: "right",
     },
     searchLyric: {
-        width: rpx(180),
-        marginTop: rpx(14),
-        paddingVertical: rpx(10),
+        width: 152,
+        marginTop: 12,
+        paddingVertical: 8,
         textAlign: "center",
         alignSelf: "center",
         color: "#66eeff",

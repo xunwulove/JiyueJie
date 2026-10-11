@@ -13,7 +13,10 @@ import ThemeText from "@/components/base/themeText";
 import LinearGradient from "react-native-linear-gradient";
 import Color from "color";
 import MusicSheet from "@/core/musicSheet";
-import { getFirstAvailablePluginRecommend } from "@/core/pluginRecommend";
+import {
+    getCachedRecommendSheetsByTag,
+    getFirstAvailablePluginRecommend,
+} from "@/core/pluginRecommend";
 
 /** 首页金刚区入口卡（复刻 APlayer EntryCard：渐变底 + 左渐变图标块 + 右文字 + 平板右下水印）
  *  对齐旧项目 4 入口：每日推荐/排行榜/我的喜欢/最近播放（旧图标 Today/LocalFireDepartment/Favorite/History；
@@ -34,26 +37,56 @@ export default function Operations() {
             iconName: "calendar-days",
             title: "每日推荐",
             action() {
-                // 对齐 APlayer：从插件推荐歌单中随机抽一个歌单，直接进入插件歌单详情（可播放）
-                getFirstAvailablePluginRecommend().then(data => {
-                    const all = data
-                        ? [
-                              ...(data.pinned ?? []),
-                              ...(data.groups ?? []).flatMap(
-                                  g => g?.data ?? [],
-                              ),
-                          ]
-                        : [];
-                    if (all.length) {
-                        const picked =
-                            all[Math.floor(Math.random() * all.length)];
-                        navigate(ROUTE_PATH.PLUGIN_SHEET_DETAIL, {
-                            sheetInfo: picked,
-                        });
-                    } else {
+                // 对齐官方两级结构：getRecommendSheetTags 返回的是"标签"（无封面、不可直接解析歌单），
+                // 真实歌单需调 getRecommendSheetsByTag 获取（带封面 artwork、可解析播放）。
+                // 每日推荐 = 随机抽一个标签 → 拉真实歌单 → 随机抽一首歌单进入详情（封面可显示、可播放）。
+                getFirstAvailablePluginRecommend().then(async data => {
+                    const pluginHash = data?.pluginHash;
+                    if (!data || !pluginHash) {
                         // 数据不可用 → 兜底进推荐歌单页
                         navigate(ROUTE_PATH.RECOMMEND_SHEETS);
+                        return;
                     }
+                    const tags = (data.groups ?? [])
+                        .flatMap(g => g?.data ?? [])
+                        .filter(Boolean);
+                    if (tags.length) {
+                        const tag =
+                            tags[Math.floor(Math.random() * tags.length)];
+                        const sheets = await getCachedRecommendSheetsByTag(
+                            pluginHash,
+                            tag,
+                        );
+                        if (sheets?.length) {
+                            const picked =
+                                sheets[
+                                    Math.floor(Math.random() * sheets.length)
+                                ];
+                            navigate(ROUTE_PATH.PLUGIN_SHEET_DETAIL, {
+                                sheetInfo: picked,
+                                pluginHash,
+                            });
+                            return;
+                        }
+                    }
+                    // 兜底 1：pinned 中有封面的真实歌单项
+                    const withCover = (data.pinned ?? []).filter(
+                        it => it?.artwork || it?.coverImg,
+                    );
+                    if (withCover.length) {
+                        navigate(ROUTE_PATH.PLUGIN_SHEET_DETAIL, {
+                            sheetInfo:
+                                withCover[
+                                    Math.floor(
+                                        Math.random() * withCover.length,
+                                    )
+                                ],
+                            pluginHash,
+                        });
+                        return;
+                    }
+                    // 兜底 2：推荐歌单页
+                    navigate(ROUTE_PATH.RECOMMEND_SHEETS);
                 });
             },
         },

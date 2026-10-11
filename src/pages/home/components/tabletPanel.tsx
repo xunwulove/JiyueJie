@@ -1,5 +1,5 @@
-import React from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import Slider from "@react-native-community/slider";
 import useColors from "@/hooks/useColors";
 import Icon from "@/components/base/icon.tsx";
@@ -20,8 +20,10 @@ import lyricManager, {
     useCurrentLyricItem,
     useLyricState,
 } from "@/core/lyricManager";
+import { IParsedLrcItem } from "@/utils/lrcParser";
 import repeatModeConst from "@/constants/repeatModeConst";
 import timeformat from "@/utils/timeformat";
+import KaraokeText from "@/components/base/karaokeText";
 
 /** 时段问候（对齐旧项目：播放页顶部仅问候，无时间；天气后续再做占位） */
 function getGreeting(): string {
@@ -52,26 +54,31 @@ export default function TabletPanel() {
     /* 歌词：当前播放行（无歌/无歌词时显示占位） */
     const { lyrics, loading } = useLyricState();
     const currentLrcItem = useCurrentLyricItem();
-    const currentLrc = currentLrcItem?.lrc;
-    /* 多行歌词：当前行上下各 3 行（共 7 行，弱化显示） */
     const curIndex = currentLrcItem?.index ?? -1;
-    const sideCount = 3;
-    const upLines: { text: string; key: string }[] = [];
-    for (let i = sideCount; i >= 1; i--) {
-        const idx = curIndex - i;
-        upLines.push({
-            key: `up-${i}`,
-            text: idx >= 0 && idx < lyrics.length ? lyrics[idx].lrc : "",
+
+    /* 歌词滚动（对齐全屏播放页）：当前行始终垂直居中，随播放平滑滚动 */
+    const lyricListRef = useRef<FlatList<IParsedLrcItem> | null>(null);
+    const [lyricAreaH, setLyricAreaH] = useState<number>();
+    const lyricItemH = 38;
+    const lyricBlankH = useMemo(
+        () =>
+            lyricAreaH
+                ? Math.max((lyricAreaH - lyricItemH) / 2, 0)
+                : 0,
+        [lyricAreaH],
+    );
+    useEffect(() => {
+        const idx = curIndex;
+        const len = lyrics.length;
+        if (idx < 0 || len === 0) {
+            return;
+        }
+        lyricListRef.current?.scrollToIndex({
+            index: Math.min(idx, len - 1),
+            viewPosition: 0.5,
+            animated: true,
         });
-    }
-    const downLines: { text: string; key: string }[] = [];
-    for (let i = 1; i <= sideCount; i++) {
-        const idx = curIndex + i;
-        downLines.push({
-            key: `down-${i}`,
-            text: idx >= 0 && idx < lyrics.length ? lyrics[idx].lrc : "",
-        });
-    }
+    }, [curIndex, lyrics.length]);
 
     return (
         <View
@@ -140,8 +147,12 @@ export default function TabletPanel() {
                     numberOfLines={1}>
                     {musicItem?.artist ?? "未知歌手"}
                 </ThemeText>
-                {/* 歌词弹性区：多行歌词居中显示（当前行放大与歌名同尺寸，上下行弱化） */}
-                <View style={styles.lyricPlaceholder}>
+                {/* 歌词弹性区：FlatList 滚动（对齐全屏播放页）——当前行始终居中，随播放平滑滚动 */}
+                <View
+                    style={styles.lyricPlaceholder}
+                    onLayout={e =>
+                        setLyricAreaH(e.nativeEvent.layout.height)
+                    }>
                     {!musicItem ? null : loading && !lyrics.length ? (
                         <ThemeText
                             fontSize="subTitle"
@@ -149,35 +160,74 @@ export default function TabletPanel() {
                             style={styles.lyricText}>
                             歌词加载中…
                         </ThemeText>
-                    ) : currentLrc ? (
-                        <>
-                            {upLines.map(l => (
-                                <ThemeText
-                                    key={l.key}
-                                    fontSize="body"
-                                    fontColor="textSecondary"
-                                    numberOfLines={1}
-                                    style={styles.lyricSideText}>
-                                    {l.text}
-                                </ThemeText>
-                            ))}
-                            <ThemeText
-                                fontWeight="bold"
-                                numberOfLines={1}
-                                style={styles.lyricCurrentText}>
-                                {currentLrc}
-                            </ThemeText>
-                            {downLines.map(l => (
-                                <ThemeText
-                                    key={l.key}
-                                    fontSize="body"
-                                    fontColor="textSecondary"
-                                    numberOfLines={1}
-                                    style={styles.lyricSideText}>
-                                    {l.text}
-                                </ThemeText>
-                            ))}
-                        </>
+                    ) : lyrics.length ? (
+                        <FlatList
+                            ref={lyricListRef}
+                            data={lyrics}
+                            keyExtractor={(_, i) => `tp-${i}`}
+                            showsVerticalScrollIndicator={false}
+                            overScrollMode="never"
+                            initialNumToRender={30}
+                            /* 边缘渐隐（对齐全屏播放页 fadingEdgeLength） */
+                            fadingEdgeLength={120}
+                            style={styles.lyricList}
+                            onScrollToIndexFailed={({ index }) => {
+                                setTimeout(() => {
+                                    lyricListRef.current?.scrollToIndex({
+                                        index: Math.min(
+                                            index,
+                                            lyrics.length - 1,
+                                        ),
+                                        viewPosition: 0.5,
+                                        animated: true,
+                                    });
+                                }, 120);
+                            }}
+                            ListHeaderComponent={
+                                <View style={{ height: lyricBlankH }} />
+                            }
+                            ListFooterComponent={
+                                <View style={{ height: lyricBlankH }} />
+                            }
+                            renderItem={({ item, index }) => (
+                                <View
+                                    style={[
+                                        styles.lyricRow,
+                                        { height: lyricItemH },
+                                    ]}>
+                                    {index === curIndex ? (
+                                        /* 卡拉OK进度染色当前行：已唱品牌主色 / 未唱 textSecondary（去加粗，靠染色突出） */
+                                        <KaraokeText
+                                            text={item.lrc ?? ""}
+                                            startTime={item.time}
+                                            endTime={
+                                                index + 1 < lyrics.length
+                                                    ? lyrics[index + 1].time
+                                                    : item.time + 15000
+                                            }
+                                            sungColor={colors.primary}
+                                            unsungColor={
+                                                colors.textSecondary ??
+                                                colors.text
+                                            }
+                                            fontSize={20}
+                                            lineHeight={lyricItemH}
+                                        />
+                                    ) : (
+                                        <ThemeText
+                                            fontSize="body"
+                                            fontColor="textSecondary"
+                                            numberOfLines={1}
+                                            style={[
+                                                styles.lyricSideText,
+                                                { lineHeight: lyricItemH },
+                                            ]}>
+                                            {item.lrc}
+                                        </ThemeText>
+                                    )}
+                                </View>
+                            )}
+                        />
                     ) : (
                         <ThemeText
                             fontSize="subTitle"
@@ -337,17 +387,20 @@ const styles = StyleSheet.create({
     lyricText: {
         textAlign: "center",
     },
-    /* 当前演唱行：与歌名同尺寸（20sp Bold），突出显示 */
-    lyricCurrentText: {
-        fontSize: 20,
-        textAlign: "center",
-        marginVertical: 6,
+    /* FlatList 歌词流：占满弹性歌词区，滚动时当前行垂直居中 */
+    lyricList: {
+        flex: 1,
+        width: "100%",
     },
-    /* 上下行歌词：小字弱化 */
+    /* 歌词行容器：固定行高 + 垂直居中 */
+    lyricRow: {
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    /* 上下行歌词：小字弱化（行高由 lineHeight 控制） */
     lyricSideText: {
         textAlign: "center",
         opacity: 0.7,
-        marginVertical: 2,
     },
     bottom: {
         width: "100%",

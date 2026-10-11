@@ -92,6 +92,8 @@
     "recommendSheet.autoSelect": "自動擇優",
     "recommendSheet.sourceApplied": "推薦歌單已更新",
     "recommendSheet.sourceUnavailable": "該音源推薦歌單不可用，已回退自動擇優",
+    "recommendSheet.recommended": "推薦",
+    "recommendSheet.allTags": "全部標籤",
     "common.restoreDefault": "還原預設",
     "searchMusicList.searchPlaceHolder": "在列表中搜尋歌曲",
     "searchMusicList.searchLabel.a11y": "搜尋框",

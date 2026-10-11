@@ -121,6 +121,8 @@ export interface ILanguageData {
     "recommendSheet.sourceSetting": string; // 推荐歌单来源
     "recommendSheet.autoSelect": string; // 自动择优
     "recommendSheet.sourceApplied": string; // 推荐歌单已更新
+    "recommendSheet.recommended": string; // 推荐
+    "recommendSheet.allTags": string; // 全部标签
     "recommendSheet.sourceUnavailable": string; // 该音源推荐歌单不可用，已回退自动择优
     "common.restoreDefault": string; // 恢复默认
 

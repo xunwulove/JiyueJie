@@ -349,8 +349,9 @@ export default function MineTab({
         </LinearGradient>
     ) : null;
 
-    /* ---- MineEntryCard（平板 3 卡行，对齐 APlayer MineEntryCard：subtle 工具卡灰调） ---- */
-    const renderMineEntryCard = (entry: IEntry, subtle = false) => (
+    /* ---- MineEntryCard（平板 3 卡行，对齐 APlayer MineEntryCard：全软件统一品牌色渐变，
+        "数据与设置"与"我的音乐"同款，不单独用灰调） ---- */
+    const renderMineEntryCard = (entry: IEntry) => (
         <Pressable
             key={entry.title}
             style={({ pressed }) => [
@@ -365,19 +366,10 @@ export default function MineTab({
             ]}
             onPress={entry.action}>
             <LinearGradient
-                colors={
-                    subtle
-                        ? [
-                              Color(colors.surfaceVariant ?? colors.card)
-                                  .alpha(0.9)
-                                  .toString(),
-                              Color(colors.card).alpha(0.4).toString(),
-                          ]
-                        : [
-                              Color(primary).alpha(0.16).toString(),
-                              Color(primary).alpha(0.04).toString(),
-                          ]
-                }
+                colors={[
+                    Color(primary).alpha(0.16).toString(),
+                    Color(primary).alpha(0.04).toString(),
+                ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[
@@ -393,26 +385,15 @@ export default function MineTab({
                 <Icon
                     name={entry.icon}
                     size={44}
-                    color={Color("#808080")
-                        .alpha(subtle ? 0.22 : 0.35)
-                        .toString()}
+                    color={Color("#808080").alpha(0.35).toString()}
                     style={styles.watermark}
                 />
                 <View style={styles.mineCardRow}>
                     <LinearGradient
-                        colors={
-                            subtle
-                                ? [
-                                      Color(colors.textSecondary).toString(),
-                                      Color(colors.textSecondary)
-                                          .alpha(0.75)
-                                          .toString(),
-                                  ]
-                                : [
-                                      primary,
-                                      Color(primary).alpha(0.75).toString(),
-                                  ]
-                        }
+                        colors={[
+                            primary,
+                            Color(primary).alpha(0.75).toString(),
+                        ]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.mineIconBox}>
@@ -427,7 +408,7 @@ export default function MineTab({
                         </ThemeText>
                         <ThemeText
                             fontSize="subTitle"
-                            color={subtle ? colors.textSecondary : primary}
+                            color={primary}
                             fontWeight="medium"
                             numberOfLines={1}>
                             {entry.value}
@@ -553,7 +534,7 @@ export default function MineTab({
                     </ThemeText>
                     <View style={styles.entryRow}>
                         {toolCards.map(entry =>
-                            renderMineEntryCard(entry, true),
+                            renderMineEntryCard(entry),
                         )}
                     </View>
                 </>

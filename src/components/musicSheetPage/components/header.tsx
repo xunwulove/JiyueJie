@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import rpx from "@/utils/rpx";
 import ThemeText from "@/components/base/themeText";
 import { ImgAsset } from "@/constants/assetsConst";
 import FastImage from "@/components/base/fastImage";
@@ -34,7 +33,13 @@ export default function Header(props: IHeaderProps) {
                 <View style={style.content}>
                     <FastImage
                         style={style.coverImg}
-                        source={musicSheet?.artwork ?? musicSheet?.coverImg}
+                        source={
+                            musicSheet?.artwork ??
+                            musicSheet?.coverImg ??
+                            // 兜底：歌单本身无封面时取第一首歌封面（推荐歌单标签对象等场景）
+                            musicList?.[0]?.artwork ??
+                            musicList?.[0]?.coverImg
+                        }
                         placeholderSource={ImgAsset.albumDefault}
                     />
                     <View style={style.details}>
@@ -90,7 +95,8 @@ export default function Header(props: IHeaderProps) {
 const style = StyleSheet.create({
     wrapper: {
         width: "100%",
-        padding: rpx(24),
+        // 固定 dp：歌单头部内边距跨屏稳定（原 rpx(24) 手机≈11.5dp/平板≈25.6dp）
+        padding: 20,
         justifyContent: "center",
         alignItems: "flex-start",
     },
@@ -101,21 +107,22 @@ const style = StyleSheet.create({
         alignItems: "center",
     },
     coverImg: {
-        width: rpx(210),
-        height: rpx(210),
-        borderRadius: rpx(24),
+        // 固定 dp：封面 176dp 方图 + 圆角 20（原 rpx(210)/rpx(24)）
+        width: 176,
+        height: 176,
+        borderRadius: 20,
     },
     details: {
         flex: 1,
-        paddingHorizontal: rpx(36),
+        paddingHorizontal: 32,
         justifyContent: "center",
     },
     divider: {
-        marginVertical: rpx(18),
+        marginVertical: 16,
     },
 
     albumDesc: {
         width: "100%",
-        marginTop: rpx(28),
+        marginTop: 24,
     },
 });

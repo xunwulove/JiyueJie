@@ -92,6 +92,8 @@
     "recommendSheet.autoSelect": "Auto Select",
     "recommendSheet.sourceApplied": "Recommend sheets updated",
     "recommendSheet.sourceUnavailable": "Source unavailable, switched back to auto select",
+    "recommendSheet.recommended": "Recommended",
+    "recommendSheet.allTags": "All Tags",
     "common.restoreDefault": "Restore Default",
     "searchMusicList.searchPlaceHolder": "Search songs in list",
     "searchMusicList.searchLabel.a11y": "Search Box",
