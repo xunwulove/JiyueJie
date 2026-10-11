@@ -17,6 +17,8 @@ export const lightTheme = {
         textSecondary: "#64748B",
         primary: "#2F6FED",
         pageBackground: "#F8F9FA",
+        // 白天背景顶部微蓝起点：全局浅品牌色微渐变（方案A），由 PageBackground 渐变到底部 pageBackground
+        pageBackgroundTop: "#F2F5FC",
         shadow: "#000",
         appBar: "#2F6FED",
         appBarText: "#FFFFFF",
@@ -49,6 +51,8 @@ export const darkTheme = {
         textSecondary: "#94A3B8",
         primary: "#5A8FFF",
         pageBackground: "#0F172A",
+        // 深色不启用顶部渐变（PageBackground 仅白天使用），同色占位以满足类型
+        pageBackgroundTop: "#0F172A",
         shadow: "#999",
         appBar: "#2F6FED",
         appBarText: "#FFFFFF",

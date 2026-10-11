@@ -13,6 +13,8 @@ export interface CustomizedColors extends IColors {
     textHighlight?: string;
     /** 页面背景 */
     pageBackground?: string;
+    /** 白天背景顶部微蓝起点（方案A：PageBackground 渐变到底部 pageBackground） */
+    pageBackgroundTop?: string;
     /** 阴影 */
     shadow?: string;
     /** 标题栏颜色 */
