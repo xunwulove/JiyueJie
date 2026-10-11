@@ -9,7 +9,7 @@
 > - 版本：0.6.2.9（versionCode 400020）；更新源：`gitee.com/xunwulove/jiyuejie-updates`（latest tag 固定链路，发版流程见 PROJECT_DECISIONS.md）
 > 以下为上游原版说明（引擎与插件体系通用）：
 
-**中文** | [English](./readme-en.md)
+**中文**
 
 ![GitHub Repo stars](https://img.shields.io/github/stars/maotoumao/MusicFree) 
 ![GitHub forks](https://img.shields.io/github/forks/maotoumao/MusicFree)

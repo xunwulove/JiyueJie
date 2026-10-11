@@ -64,7 +64,7 @@
 3. **Toast 尺寸自适应**：容器 minWidth/maxWidth/minHeight 随内容变化，不再固定宽高。
 4. **全屏播放页功能三级化**：功能区仅保留 倍速(speedometer)/定时关闭(alarm-outline，倒计时高亮) + 垂直模式心形 + 下载按钮；字号/歌词偏移/歌词进度移入三点菜单（SetFontSizeDialog/SetLyricOffsetDialog）；三点菜单新增"从该播放列表移除"（TrackPlayer.remove）与"永久删除"（本地，SimpleDialog 确认）；翻译/评论/歌词四项死入口删除（代码接口同步删）。
 5. **音源管理**：三点菜单由面板改**三级浮窗 MenuDialog**（支持 switch 项），新增"订阅设置"→ SubscriptionSettingDialog（三级内再弹三级，仍守三级规范）。
-6. **列表行样式统一**（2026-10-08 全项目 80+ 文件核查）：两套行体系收敛为基座档位 big64/normal56/small48/smallest36；修复清单见《MusicFree列表行样式统一性核查报告.md》（遗留 3 项见报告第 6 节）。
+6. **列表行样式统一**（2026-10-08 全项目 80+ 文件核查）：两套行体系收敛为基座档位 big64/normal56/small48/smallest36；修复清单见《列表行与浮窗样式一致性核查报告.md》（合并版，遗留 3 项见上篇第 6 节）。
 7. **检查更新弹窗**：有新版 → DownloadDialog 三级浮窗（changelog 滚动 + 跳过此版本 + 下载更新 + 备用链接）；无新版 → Toast"当前已是最新版本"。
 8. **三级浮窗字体统一**（2026-10-09）：三级浮窗选项行统一 **14sp（subTitle 档）+ medium 字重**，选中高亮由 primary 图标承担（不再用粗体区分）；三分支例外——导入歌单/文件选择器维持 13sp（记录为差异）；分组标题惯例 = 14sp + bold，primary 着色可作品牌强调（仅下载设置有分组标题）。同步修复：手机端搜索页返回手势（去 isTablet 限制回首页 tab）、Android 12+ 启动页图标（改引用正方形透明图标 `splashscreen_icon.png`，系统图标区不再拉伸变形）。
 
