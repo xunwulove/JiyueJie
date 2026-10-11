@@ -17,6 +17,8 @@ import { ReduceMotion, ReducedMotionConfig } from "react-native-reanimated";
 import { routes } from "@/core/router/routes.tsx";
 import ErrorBoundary from "@/components/errorBoundary";
 import BrandSplash from "./bootstrap/BrandSplash";
+import Onboarding from "./onboarding/Onboarding";
+import PersistStatus from "@/utils/persistStatus";
 
 /**
  * 字体颜色
@@ -30,6 +32,9 @@ const Stack = createNativeStackNavigator<any>();
 
 export default function Pages() {
     const theme = Theme.useTheme();
+    // 首次启动（引导页未完成）时不挂主界面：只显示品牌启动页 + 引导页，
+    // 避免"主界面先渲染一帧再被覆盖"的闪现；引导完成（写 app.onboardingDone）后自动切换完整界面
+    const onboardingDone = PersistStatus.useValue("app.onboardingDone");
 
     return (
         <ErrorBoundary>
@@ -37,40 +42,48 @@ export default function Pages() {
             <ReducedMotionConfig mode={ReduceMotion.Never} />
             <GestureHandlerRootView style={globalStyle.flex1}>
                 <SafeAreaProvider>
-                    <NavigationContainer theme={theme}>
-                        <PageBackground />
-                        <Stack.Navigator
-                            initialRouteName={routes[0].path}
-                            screenOptions={{
-                                headerShown: false,
-                                animation: "slide_from_right",
-                                animationDuration: 100,
-                            }}>
-                            {routes.map(route => {
-                                const ScreenComponent = route.component;
-                                // 按屏局部 ErrorBoundary：单页崩溃不拖垮整个 App，
-                                // 全局 ErrorBoundary 仍作最外层兜底
-                                const WrappedScreen = (props: any) => (
-                                    <ErrorBoundary>
-                                        <ScreenComponent {...props} />
-                                    </ErrorBoundary>
-                                );
-                                return (
-                                    <Stack.Screen
-                                        key={route.path}
-                                        name={route.path}
-                                        component={WrappedScreen}
-                                    />
-                                );
-                            })}
-                        </Stack.Navigator>                        
-                        <Panels />
-                        <Dialogs />
-                        <ToastBaseComponent />
-                        <PortalHost />
-                        {/* 自绘启动页：原生渐变底之上，bootstrap 完成前覆盖全屏（图标占比/字标可控） */}
-                        <BrandSplash />
-                    </NavigationContainer>
+                    <PageBackground />
+                    {onboardingDone ? (
+                        <NavigationContainer theme={theme}>
+                            <Stack.Navigator
+                                initialRouteName={routes[0].path}
+                                screenOptions={{
+                                    headerShown: false,
+                                    animation: "slide_from_right",
+                                    animationDuration: 100,
+                                }}>
+                                {routes.map(route => {
+                                    const ScreenComponent = route.component;
+                                    // 按屏局部 ErrorBoundary：单页崩溃不拖垮整个 App，
+                                    // 全局 ErrorBoundary 仍作最外层兜底
+                                    const WrappedScreen = (props: any) => (
+                                        <ErrorBoundary>
+                                            <ScreenComponent {...props} />
+                                        </ErrorBoundary>
+                                    );
+                                    return (
+                                        <Stack.Screen
+                                            key={route.path}
+                                            name={route.path}
+                                            component={WrappedScreen}
+                                        />
+                                    );
+                                })}
+                            </Stack.Navigator>
+                            <Panels />
+                            <Dialogs />
+                            <ToastBaseComponent />
+                            <PortalHost />
+                            {/* 自绘启动页：原生渐变底之上，bootstrap 完成前覆盖全屏（图标占比/字标可控） */}
+                            <BrandSplash />
+                        </NavigationContainer>
+                    ) : (
+                        <>
+                            {/* 首次启动：品牌启动页 + 引导页（无主界面，杜绝闪现） */}
+                            <BrandSplash />
+                            <Onboarding />
+                        </>
+                    )}
                 </SafeAreaProvider>
             </GestureHandlerRootView>
         </ErrorBoundary>

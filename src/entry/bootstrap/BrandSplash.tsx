@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Animated, Dimensions, StyleSheet, View } from "react-native";
+import { Animated, StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { useAtomValue } from "jotai";
 import bootstrapAtom from "./bootstrap.atom";
@@ -7,50 +7,53 @@ import { ImgAsset } from "@/constants/assetsConst";
 
 /**
  * RN 自绘启动页（BrandSplash）
- * 原生层只显示渐变底（系统图标位已透明），此组件接管品牌图标展示：
- *  - 图标边长 = 屏幕短边 × ICON_RATIO（默认 40%），手机/平板统一按百分比自适应
- *  - 字标"极悦界"使用华文行楷（android/app/src/main/assets/fonts/STXINGKA.TTF）
- *  - bootstrap 完成后淡出
+ * 原生窗口背景（windowBackground=splashscreen_brand_window）已先显示品牌整图（渐变+图标+行楷"极悦界"），
+ * 此组件用同一张整图 + 同一渐变无缝接管（对齐网易云/QQ音乐实测：品牌图放窗口背景，App 首帧同图承接）：
+ *  - 渐变与窗口背景/主界面完全一致（底部 #EAF0FA 浅蓝 → 顶部 #F8F9FA 白，从下到上）
+ *  - 整图 contain 全图适配（与原生 windowBackground 的 fitCenter 同效果，切换无大小跳变）
+ *  - bootstrap 完成后至少展示 MIN_DISPLAY_MS 再淡出（行楷字标可感知，对齐网易云自绘启动页）
  */
-const ICON_RATIO = 0.4; // 图标边长占屏幕短边比例（可调）
+/** 最小展示时长（ms）：bootstrap 完成后仍保持展示，确保行楷字标可感知（对齐网易云自绘启动页停留） */
+const MIN_DISPLAY_MS = 1500;
 
 export default function BrandSplash() {
     const bootstrapState = useAtomValue(bootstrapAtom);
     const [visible, setVisible] = useState(true);
+    const [bootstrapDoneAt, setBootstrapDoneAt] = useState<number | null>(null);
     const fadeOpacity = React.useRef(new Animated.Value(1)).current;
-    // 接管过渡：图标从原生系统位视觉尺寸平滑放大到 40% 短边，字标随后淡入，
-    // 配合全程一致的渐变底，观感是"同一画面逐渐成型"，而非切换画面
-    const iconScale = React.useRef(new Animated.Value(0.55)).current;
-    const textOpacity = React.useRef(new Animated.Value(0)).current;
-
-    const shortEdge = Math.min(
-        Dimensions.get("window").width,
-        Dimensions.get("window").height,
-    );
-    const iconSize = shortEdge * ICON_RATIO;
+    // 接管过渡：整图从轻微缩小平滑放大到 100%，配合全程一致的渐变底
+    const iconScale = React.useRef(new Animated.Value(0.92)).current;
 
     useEffect(() => {
-        // 首帧接管：图标放大 + 字标淡入（仅一次）
-        Animated.parallel([
-            Animated.spring(iconScale, {
-                toValue: 1,
-                friction: 8,
-                tension: 40,
-                useNativeDriver: true,
-            }),
-            Animated.timing(textOpacity, {
-                toValue: 1,
-                duration: 280,
-                delay: 180,
-                useNativeDriver: true,
-            }),
-        ]).start();
+        // 首帧接管：整图放大（仅一次）
+        Animated.spring(iconScale, {
+            toValue: 1,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true,
+        }).start();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    /* 记录 bootstrap 完成时刻（只记一次） */
     useEffect(() => {
-        if (bootstrapState.state !== "Loading") {
-            // 淡出 350ms 后卸载
+        if (
+            bootstrapState.state !== "Loading" &&
+            bootstrapDoneAt === null
+        ) {
+            setBootstrapDoneAt(Date.now());
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bootstrapState.state]);
+
+    /* 淡出：bootstrap 完成后至少再展示 MIN_DISPLAY_MS 才淡出（让行楷字标清晰可见） */
+    useEffect(() => {
+        if (bootstrapDoneAt === null) {
+            return;
+        }
+        const elapsed = Date.now() - bootstrapDoneAt;
+        const delay = Math.max(0, MIN_DISPLAY_MS - elapsed);
+        const timer = setTimeout(() => {
             Animated.timing(fadeOpacity, {
                 toValue: 0,
                 duration: 350,
@@ -60,9 +63,10 @@ export default function BrandSplash() {
                     setVisible(false);
                 }
             });
-        }
+        }, delay);
+        return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bootstrapState.state]);
+    }, [bootstrapDoneAt]);
 
     if (!visible) {
         return null;
@@ -73,31 +77,16 @@ export default function BrandSplash() {
             style={[styles.container, { opacity: fadeOpacity }]}
             pointerEvents={bootstrapState.state === "Loading" ? "auto" : "none"}>
             <LinearGradient
-                colors={["#D8E9FA", "#F0F8F3"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+                colors={["#EAF0FA", "#F8F9FA"]}
+                start={{ x: 0, y: 1 }}
+                end={{ x: 0, y: 0 }}
                 style={styles.gradient}>
                 <View style={styles.center}>
                     <Animated.Image
-                        source={ImgAsset.logoTransparent}
-                        style={{
-                            width: iconSize,
-                            height: iconSize,
-                            transform: [{ scale: iconScale }],
-                        }}
+                        source={ImgAsset.splashBrand}
+                        style={[styles.brand, { transform: [{ scale: iconScale }] }]}
                         resizeMode="contain"
                     />
-                    <Animated.Text
-                        style={[
-                            styles.brandText,
-                            {
-                                // 行楷三字近似方形：字号 = 图标宽×0.6÷3，宽度自然≈0.6×图标宽
-                                fontSize: iconSize * 0.2,
-                                opacity: textOpacity,
-                            },
-                        ]}>
-                        极悦界
-                    </Animated.Text>
                 </View>
             </LinearGradient>
         </Animated.View>
@@ -118,11 +107,8 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
-    brandText: {
-        marginTop: 24,
-        textAlign: "center",
-        fontFamily: "STXINGKA",
-        color: "#3D5A80",
-        includeFontPadding: false,
+    brand: {
+        flex: 1,
+        alignSelf: "stretch",
     },
 });

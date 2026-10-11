@@ -1,5 +1,6 @@
 import { musicHistorySheetId } from "@/constants/commonConst";
 import { isSameMediaItem } from "@/utils/mediaUtils";
+import { normalizeDurationSec } from "@/utils/durationUtil";
 import { getStorage } from "@/utils/storage";
 import { atom, getDefaultStore, useAtomValue } from "jotai";
 
@@ -70,6 +71,28 @@ class MusicHistory implements IMusicHistory, IInjectable {
         
         musicHistoryStore.set("history", safeStringify(newMusicHistory));
         getDefaultStore().set(musicHistoryAtom, newMusicHistory);
+    }
+
+    /** 用播放器实际解析时长回填：不降级（已有有效时长且不小于实际值则跳过），保证听歌时长统计有效 */
+    async updateDuration(musicItem: IMusic.IMusicItem, durationSec: number) {
+        if (!durationSec || durationSec <= 0 || Number.isNaN(durationSec)) {
+            return;
+        }
+        const idx = this.history.findIndex(item =>
+            isSameMediaItem(item, musicItem),
+        );
+        if (idx < 0) {
+            return;
+        }
+        const item = this.history[idx] as IMusicHistoryItem;
+        const normalized = normalizeDurationSec(item.duration);
+        if (normalized > 0 && normalized >= durationSec) {
+            return; // 已有有效时长，且不低于播放器实测值 → 不降级
+        }
+        const newHistory = [...this.history];
+        newHistory[idx] = { ...item, duration: Math.round(durationSec) };
+        musicHistoryStore.set("history", safeStringify(newHistory));
+        getDefaultStore().set(musicHistoryAtom, newHistory);
     }
 
     async clearMusic() {

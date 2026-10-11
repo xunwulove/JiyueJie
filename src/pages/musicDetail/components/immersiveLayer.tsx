@@ -349,7 +349,7 @@ export default function ImmersiveLayer() {
     /* 歌词滚动（对齐全屏播放页）：当前行始终垂直居中，随播放平滑滚动 */
     const lyricListRef = useRef<FlatList<IParsedLrcItem> | null>(null);
     const [lyricAreaH, setLyricAreaH] = useState<number>();
-    const lyricItemH = isTablet ? 44 : 36;
+    const lyricItemH = isTablet ? 56 : 44;
     const lyricBlankH = useMemo(
         () =>
             lyricAreaH
@@ -514,7 +514,7 @@ export default function ImmersiveLayer() {
                                 { height: lyricItemH },
                             ]}>
                             {index === curIndex ? (
-                                /* 卡拉OK进度染色当前行：已唱白色 0.98 / 未唱半透明白 0.5（去加粗，靠染色突出） */
+                                /* 当前行整体主题色（uniform：不做进度染色） */
                                 <KaraokeText
                                     text={item.lrc}
                                     startTime={item.time}
@@ -523,7 +523,8 @@ export default function ImmersiveLayer() {
                                             ? lyrics[index + 1].time
                                             : item.time + 15000
                                     }
-                                    sungColor="rgba(255,255,255,0.98)"
+                                    uniform
+                                    sungColor={colors.primary}
                                     unsungColor="rgba(255,255,255,0.5)"
                                     fontSize={isTablet ? 34 : 26}
                                     lineHeight={lyricItemH}

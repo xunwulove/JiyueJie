@@ -21,6 +21,12 @@ export const checkUpdateAndShowResult = (
             ) {
                 return;
             }
+            // 记录检查结果：有新版本（供我的页卡片动态显示）
+            PersistStatus.set("app.updateCheckResult", {
+                checkedAt: Date.now(),
+                latestVersion: data.version,
+                needUpdate: true,
+            });
             showDialog("DownloadDialog", {
                 version: data.version,
                 content: data.changeLog,
@@ -28,6 +34,12 @@ export const checkUpdateAndShowResult = (
                 backUrl: data.download[1],
             });
         } else {
+            // 记录检查结果：已是最新（供我的页卡片动态显示）
+            PersistStatus.set("app.updateCheckResult", {
+                checkedAt: Date.now(),
+                latestVersion: null,
+                needUpdate: false,
+            });
             if (showToast) {
                 Toast.success(i18n.t("checkUpdate.error.latestVersion"));
             }

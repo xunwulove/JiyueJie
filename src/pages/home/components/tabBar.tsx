@@ -129,7 +129,8 @@ function HorizontalBar({
         <View
             style={[
                 styles.hContainer,
-                { backgroundColor: colors.background },
+                // 背景透明：透出全局 PageBackground（白天 A+B 渐变 / 深色纯色），与左播放区/内容区整屏统一
+                { backgroundColor: "transparent" },
             ]}>
             {/* 4 tab 整体居中（中心与内容区中心水平对齐）；齿轮绝对定位右端不参与布局 */}
             <View style={styles.hTabGroup}>
@@ -249,7 +250,8 @@ function SearchBar({
         <View
             style={[
                 styles.hContainer,
-                { backgroundColor: colors.background },
+                // 搜索独占态顶栏同样透明：透出全局渐变，与平板顶栏一致
+                { backgroundColor: "transparent" },
             ]}>
             <IconButton
                 name="arrow-left"

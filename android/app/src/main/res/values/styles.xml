@@ -4,17 +4,17 @@
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+        <!-- 窗口背景 = 品牌启动画面（图标+行楷"极悦界"整图）：窗口一创建立即全屏显示，
+             对齐网易云/QQ音乐实测实现（windowBackground 承载品牌图，非圆、不被遮罩裁切）；
+             系统 splash（v31 纯色）退出后无缝承接，直到 RN BrandSplash 接管 -->
+        <item name="android:windowBackground">@drawable/splashscreen_brand_window</item>
     </style>
 
-    <!-- Splash screen -->
+    <!-- Splash screen：API<31 无系统 splash，窗口背景即启动画面（品牌整图直接显示，避免黑屏/白屏）
+         API 31+ 的系统 splash 属性在 values-v31/styles.xml 中覆盖（纯色+隐形图标） -->
     <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@drawable/splashscreen_background</item>
-        <!-- Android 12+ 原生图标位显示真实品牌图标：启动即刻可见，避免空白等待；
-             RN 首帧后由 BrandSplash 无缝接管（同渐变底 + 40% 大图标 + 行楷字标） -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen_icon</item>
+        <item name="android:windowBackground">@drawable/splashscreen_brand_window</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
-        <!-- API<31 兼容：全屏浅色渐变背景，避免黑屏 -->
-        <item name="android:windowBackground">@drawable/splashscreen_background</item>
     </style>
 
 </resources>

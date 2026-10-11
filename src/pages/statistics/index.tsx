@@ -3,6 +3,7 @@ import ThemeText from "@/components/base/themeText";
 import { useMusicHistory } from "@/core/musicHistory";
 import useColors from "@/hooks/useColors";
 import useIsTablet from "@/hooks/useIsTablet";
+import { normalizeDurationSec } from "@/utils/durationUtil";
 import Color from "color";
 import React, { useMemo, useState } from "react";
 import {
@@ -42,9 +43,9 @@ function periodStartMs(period: Period): number | null {
     return null;
 }
 
-/** 毫秒 → "0 分钟" / "x 分钟" / "x小时x分钟"（对齐 APlayer formatTotalTime） */
-function formatTotalTime(ms: number): string {
-    const minutes = Math.floor(ms / 60000);
+/** 秒 → "0 分钟" / "x 分钟" / "x小时x分钟"（MusicFree IMusicItem.duration 单位为秒） */
+function formatTotalTime(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
     if (minutes <= 0) return "0 分钟";
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -100,7 +101,9 @@ export default function Statistics() {
             (a, b) => b.count - a.count,
         );
         const totalMs = ranked.reduce(
-            (acc, it) => acc + it.count * (it.music.duration ?? 0),
+            (acc, it) =>
+                acc +
+                it.count * normalizeDurationSec(it.music.duration),
             0,
         );
         const label =
@@ -225,7 +228,7 @@ export default function Statistics() {
                             fontSize="description"
                             fontColor="textSecondary">
                             {formatTotalTime(
-                                item.count * (item.music.duration ?? 0),
+                                item.count * normalizeDurationSec(item.music.duration),
                             )}
                         </ThemeText>
                     </View>

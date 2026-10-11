@@ -7,6 +7,7 @@ import {
 } from "@/constants/commonConst";
 import { MusicRepeatMode } from "@/constants/repeatModeConst";
 import delay from "@/utils/delay";
+import { normalizeDurationSec } from "@/utils/durationUtil";
 import getUrlExt from "@/utils/getUrlExt";
 import { errorLog, trace } from "@/utils/log";
 import { createMediaIndexMap } from "@/utils/mediaIndexMap";
@@ -624,16 +625,14 @@ class TrackPlayer extends EventEmitter<{
             // 7. 合并结果
             track = this.mergeTrackSource(musicItem, source) as IMusic.IMusicItem;
 
-            // 8. 新增历史记录
-            this.musicHistoryService.addMusic(musicItem);
-
+            // 先设置音源（不等待补充信息，避免播放被元数据请求阻塞）
             trace("获取音源成功", track);
-            // 9. 设置音源
+            // 8. 设置音源
             await this.setTrackSource(track as Track);
             // 播放链路成功，重置"未初始化"重试计数
             this.playerInitRetries = 0;
 
-            // 10. 获取补充信息
+            // 9. 获取补充信息
             let info: Partial<IMusic.IMusicItem> | null = null;
             try {
                 info =
@@ -645,6 +644,19 @@ class TrackPlayer extends EventEmitter<{
                     delete info.url;
                 }
             } catch { }
+
+            // 10. 新增历史记录（在补充信息之后：合并 duration，供"听歌时长"统计；
+            // 网络歌曲点击播放时 duration 常缺失，需用补充信息补全后再写入）
+            this.musicHistoryService.addMusic({
+                ...musicItem,
+                duration: normalizeDurationSec(
+                    info?.duration ?? track.duration ?? musicItem.duration,
+                ),
+            } as IMusic.IMusicItem);
+
+            // 10.5 时长回填：第三方音源常缺 duration（历史条目 duration=0 → 统计 0 分钟），
+            // 播放器实际解析出时长后回填，保证听歌时长统计有效（不阻塞播放）
+            this.backfillHistoryDuration(musicItem);
 
             // 11. 设置补充信息
             if (info && this.isCurrentMusic(musicItem)) {
@@ -924,6 +936,33 @@ class TrackPlayer extends EventEmitter<{
         const newList = [...list];
         newList[idx] = replacement;
         this.setPlayList(newList, true);
+    }
+
+    /** 时长回填（异步，不阻塞播放）：第三方音源常缺 duration → 历史条目 0 时长 →
+     * 听歌时长统计为 0；轮询播放器实际解析时长（最长约 6s），拿到有效值后回填历史。
+     * 已切歌 / 播放器异常时静默放弃。 */
+    private backfillHistoryDuration(musicItem: IMusic.IMusicItem) {
+        (async () => {
+            try {
+                for (let i = 0; i < 12; i++) {
+                    if (!this.isCurrentMusic(musicItem)) {
+                        return; // 已切歌，放弃回填
+                    }
+                    const progress = await ReactNativeTrackPlayer.getProgress();
+                    const d = progress?.duration;
+                    if (d && d > 0 && Number.isFinite(d)) {
+                        await this.musicHistoryService.updateDuration(
+                            musicItem,
+                            d,
+                        );
+                        return;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            } catch {
+                // 拿不到实际时长不影响播放
+            }
+        })();
     }
 
 

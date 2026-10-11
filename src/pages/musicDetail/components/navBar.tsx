@@ -15,7 +15,7 @@ export default function NavBar() {
     const colors = useColors();
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.container}>
             <IconButton
                 name="arrow-left"
                 sizeType="normal"

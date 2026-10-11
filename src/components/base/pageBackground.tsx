@@ -19,12 +19,12 @@ function PageBackground() {
 
     return (
         <>
-            {/* 方案A：白天顶部微品牌蓝 → 底部 pageBackground 微渐变；深色保持单色 */}
+            {/* 方案A：白天顶部 pageBackground（白）→ 底部微品牌蓝（从下到上逐渐变白）；深色保持单色 */}
             {isLight && top ? (
                 <LinearGradient
                     colors={[
-                        top,
                         colors?.pageBackground ?? colors.background,
+                        top,
                     ]}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}
@@ -42,12 +42,13 @@ function PageBackground() {
                     ]}
                 />
             )}
-            {/* 方案B：播放封面主色氛围层（极浅 α0.05 → 0，只作用于白天，无封面/取色失败自动跳过） */}
+            {/* 方案B：播放封面主色氛围层（极浅 α0.05 → 0，只作用于白天，无封面/取色失败自动跳过）
+                方向与方案A一致：顶部无、底部带封面氛围 */}
             {isLight && tint ? (
                 <LinearGradient
                     colors={[
-                        Color(tint).alpha(0.05).toString(),
                         Color(tint).alpha(0).toString(),
+                        Color(tint).alpha(0.05).toString(),
                     ]}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}

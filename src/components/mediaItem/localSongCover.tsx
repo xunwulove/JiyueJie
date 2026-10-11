@@ -66,12 +66,14 @@ export default function LocalSongCover(props: ILocalSongCoverProps) {
     const colors = useColors();
 
     const localPath = normalizeLocalPath(getLocalPath(musicItem));
-    // 网络歌曲封面直接走 artwork（无本地路径时无 read 缓存）
-    const networkArtwork = !localPath ? musicItem.artwork : undefined;
+    // artwork（网络 URL 或下载保存的本地封面）作为内嵌封面缺失时的回退：
+    // 部分下载歌曲音频未写入内嵌封面，播放页用 artwork 显示正常，列表也应一致
+    const artwork = musicItem.artwork;
 
-    // 同步读缓存：已知结果（URI 或 null）直接作为初始 state，避免占位→封面闪烁
+    // 同步读缓存：已知结果（URI 或 null）直接作为初始 state，避免占位→封面闪烁；
+    // 无本地路径（纯网络歌曲）视为"无内嵌封面可读"，直接走 artwork
     const [coverUri, setCoverUri] = useState<string | null | undefined>(
-        () => (localPath ? coverResultCache.get(localPath) : undefined),
+        () => (localPath ? coverResultCache.get(localPath) : null),
     );
     const [loadError, setLoadError] = useState(false);
 
@@ -92,7 +94,7 @@ export default function LocalSongCover(props: ILocalSongCoverProps) {
 
     useEffect(() => {
         setLoadError(false);
-    }, [coverUri, networkArtwork]);
+    }, [coverUri, artwork]);
 
     const boxStyle: ViewStyle = {
         width: size,
@@ -101,16 +103,20 @@ export default function LocalSongCover(props: ILocalSongCoverProps) {
         overflow: "hidden",
     };
 
-    // 本地歌曲：内嵌封面 URI；网络歌曲：artwork 网络图
+    // 封面展示优先级：内嵌封面（读取完成）> artwork 回退（确认无内嵌封面后）> 占位
+    // coverUri === undefined 表示内嵌封面仍在读取中，先显示占位避免闪烁
     const showImage =
-        (coverUri || networkArtwork) && !loadError;
+        coverUri !== undefined &&
+        coverUri !== null &&
+        (coverUri || artwork) &&
+        !loadError;
 
     if (showImage) {
         return (
             <View style={[boxStyle, style]}>
                 <Image
                     style={{ width: size, height: size, borderRadius }}
-                    source={{ uri: (coverUri ?? networkArtwork) as string }}
+                    source={{ uri: (coverUri ?? artwork) as string }}
                     onError={() => setLoadError(true)}
                 />
             </View>

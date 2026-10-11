@@ -49,11 +49,14 @@ async function bootstrapImpl() {
         .catch(console.warn); // it's good to explicitly catch and inspect any error
     const logger = perfLogger();
     // 1. 检查权限
+    // 首次启动（引导页未完成）时由引导页统一引导权限，不弹旧"存储权限"弹窗；
+    // 仅引导已完成后权限仍缺失（老用户/跳过后）才补弹
     if (Platform.OS === "android" && Platform.Version >= 30) {
         const hasPermission = await NativeUtils.checkStoragePermission();
         if (
             !hasPermission &&
-            !PersistStatus.get("app.skipBootstrapStorageDialog")
+            !PersistStatus.get("app.skipBootstrapStorageDialog") &&
+            PersistStatus.get("app.onboardingDone")
         ) {
             showDialog("CheckStorage");
         }

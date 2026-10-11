@@ -53,7 +53,7 @@ export default function NavBar({ hideBack }: { hideBack?: boolean }) {
           : "rgba(30,41,59,0.7)";
 
     return (
-        <View style={[style.appbar, { backgroundColor: colors.background }]}>
+        <View style={[style.appbar, { backgroundColor: "transparent" }]}>
             {hideBack ? null : (
                 <IconButton
                     name="arrow-left"

@@ -28,12 +28,20 @@ interface IPersistStatus {
     "app.skipVersion": string;
     /** 开屏弹窗 */
     "app.skipBootstrapStorageDialog": boolean;
+    /** 首次启动引导页是否已完成（true 后不再展示；false/未设置则首启展示） */
+    "app.onboardingDone": boolean;
     /** 语言设置 */
     "app.language": string;
     /** 上次更新插件的时间 */
     "app.pluginUpdateTime": number;
     /** 上次自动检查 app 更新的时间（用于每日节流） */
     "app.lastUpdateCheckTime": number;
+    /** 最近一次检查更新的结果（我的页版本卡动态显示） */
+    "app.updateCheckResult": {
+        checkedAt: number;
+        latestVersion: string | null;
+        needUpdate: boolean;
+    };
     /** 缓存的定时关闭自定义时间（分钟） */
     "app.scheduleCloseTime": number;
     /** 歌词-是否启用翻译 */

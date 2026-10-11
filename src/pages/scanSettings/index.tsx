@@ -175,7 +175,7 @@ export default function ScanSettings() {
     }
 
     return (
-        <View style={[globalStyle.flex1, { backgroundColor: colors.background }]}>
+        <View style={[globalStyle.flex1, { backgroundColor: "transparent" }]}>
             <AppBar>媒体来源</AppBar>
             <ScrollView
                 style={globalStyle.flex1}

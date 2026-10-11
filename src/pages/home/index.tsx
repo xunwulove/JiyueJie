@@ -22,6 +22,12 @@ import useIsTablet from "@/hooks/useIsTablet";
 import { BackHandler } from "react-native";
 import { useEffect } from "react";
 import SubPageOverlay from "./components/subPageOverlay";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
+} from "react-native-reanimated";
+import { vw } from "@/utils/rpx";
 
 function renderTab(
     tab: SaltTab,
@@ -67,7 +73,22 @@ function Home() {
     const [selectedTab, setSelectedTab] = useState<SaltTab>(SaltTab.HOME);
     const isTablet = useIsTablet();
     const setSubPages = useSetAtom(tabletSubPagesAtom);
+    const subPages = useAtomValue(tabletSubPagesAtom);
     const navigation = useNavigation<any>();
+
+    // 共享轴转场：二级页从右滑入时，一级内容同向左移被"推走"（tab 栏与左播放区固定不动）。
+    // 位移量 = 内容区宽（70% 屏宽）的 40%，与 FullOverlay 进入动画同时长（240ms），视觉接力推进
+    const shiftDistance = vw(100) * 0.7 * 0.4;
+    const contentShift = useSharedValue(0);
+    useEffect(() => {
+        contentShift.value = withTiming(
+            subPages.length > 0 ? -shiftDistance : 0,
+            { duration: 240 },
+        );
+    }, [subPages.length, shiftDistance]);
+    const contentAnimStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: contentShift.value }],
+    }));
 
     // 任何界面（含二级页/三级浮窗）点击 tab：清空覆盖层栈 + 切换到对应一级页
     const switchTab = useCallback(
@@ -125,11 +146,18 @@ function Home() {
                             }
                         />
                         <View style={globalStyle.flex1}>
-                            {renderTab(
-                                selectedTab,
-                                switchTab,
-                                isTablet,
-                            )}
+                            {/* 共享轴：一级内容随二级页滑入同向左移；tab 栏在其上方保持固定 */}
+                            <Animated.View
+                                style={[
+                                    globalStyle.flex1,
+                                    contentAnimStyle,
+                                ]}>
+                                {renderTab(
+                                    selectedTab,
+                                    switchTab,
+                                    isTablet,
+                                )}
+                            </Animated.View>
                             {/* 平板二级页覆盖层：从右滑入，不盖 tab 与左播放区 */}
                             {isTablet ? <SubPageOverlay /> : null}
                         </View>

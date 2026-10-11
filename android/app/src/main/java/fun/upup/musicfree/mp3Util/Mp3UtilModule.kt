@@ -7,9 +7,12 @@ import android.net.Uri
 import com.facebook.react.bridge.*
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
+import org.jaudiotagger.tag.images.ArtworkFactory
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
 
 class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
@@ -183,6 +186,60 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
             } else {
                 promise.reject("Error", "File Not Found")
             }
+        } catch (e: Exception) {
+            promise.reject("Error", e.message)
+        }
+    }
+
+    /**
+     * 写入内嵌专辑图（ID3 APIC / 封面 Artwork）：
+     * - coverUri 支持网络 URL（下载到缓存后嵌入）与本地 file:// 路径
+     * - 下载/嵌入失败会 reject，由 JS 侧 catch（不影响歌曲入库）
+     */
+    @ReactMethod
+    fun setMediaCover(filePath: String, coverUri: String, promise: Promise) {
+        try {
+            val file = File(filePath)
+            if (!file.exists()) {
+                promise.reject("Error", "File Not Exist")
+                return
+            }
+            // 解析封面来源：网络 URL 先下载到缓存；本地 file:// 直接取路径
+            val coverFile: File = if (coverUri.startsWith("http://") || coverUri.startsWith("https://")) {
+                val conn = URL(coverUri).openConnection() as HttpURLConnection
+                conn.connectTimeout = 10000
+                conn.readTimeout = 15000
+                conn.setRequestProperty("Referer", "https://music.163.com")
+                conn.connect()
+                val tmp = File(reactContext.cacheDir, "cover_${System.currentTimeMillis()}.img")
+                try {
+                    conn.inputStream.use { input ->
+                        FileOutputStream(tmp).use { output ->
+                            input.copyTo(output, 1024 * 64)
+                        }
+                    }
+                } finally {
+                    conn.disconnect()
+                }
+                tmp
+            } else {
+                val p = if (coverUri.startsWith("file://")) coverUri.removePrefix("file://") else coverUri
+                File(p)
+            }
+            if (!coverFile.exists()) {
+                promise.reject("Error", "Cover File Not Found")
+                return
+            }
+            val audioFile = AudioFileIO.read(file)
+            val tag = audioFile.tag
+            // jaudiotagger 2.2.5：ArtworkFactory.createArtworkFromFile(File)
+            val artwork = ArtworkFactory.createArtworkFromFile(coverFile)
+            if (artwork != null) {
+                tag.deleteArtworkField()
+                tag.setField(artwork)
+                audioFile.commit()
+            }
+            promise.resolve(true)
         } catch (e: Exception) {
             promise.reject("Error", e.message)
         }

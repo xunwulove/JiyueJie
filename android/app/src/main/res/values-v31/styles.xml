@@ -1,0 +1,13 @@
+<resources>
+    <!-- Android 12+（API 31+）系统 splash：
+         - windowSplashScreenBackground = 品牌纯色（单一不透明色，官方契约要求；取品牌渐变中间色 #F1F4FA）
+           与窗口背景渐变无缝衔接 → 无白屏、无渐变 drawable 违规
+         - windowSplashScreenAnimatedIcon = 透明（隐形图标）：避免系统 splash 圆形遮罩裁切品牌图、
+           避免"先看到圆形 logo 再变整图"的两段感（对齐网易云/QQ音乐：不显示圆形系统图标）
+         - 退出后 postSplashScreenTheme=AppTheme，其 windowBackground 立即显示品牌整图，无缝承接 -->
+    <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_splash</item>
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+    </style>
+</resources>

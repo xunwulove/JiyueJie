@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 启动页浅色渐变背景（与极悦界品牌浅蓝调性一致；API<31 全屏渐变兜底） -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <gradient
-        android:startColor="#D8E9FA"
-        android:endColor="#F0F8F3"
-        android:angle="135" />
-</shape>
+<!-- 启动页背景 = 全屏浅蓝渐变（#EAF0FA 底 → #F8F9FA 顶，与主界面一致）+ 下方行楷"极悦界"文字图
+     图标由 windowSplashScreenAnimatedIcon（系统图标位）显示：任何设备不白屏；
+     文字放背景层（gravity=center、画布下半部），非圆形、不被遮罩裁切，对齐网易云开屏图；
+     API<31 同时作为 windowBackground 兜底 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#EAF0FA"
+                android:endColor="#F8F9FA"
+                android:angle="90" />
+        </shape>
+    </item>
+    <item>
+        <bitmap
+            android:src="@drawable/splashscreen_brand_text"
+            android:gravity="center" />
+    </item>
+</layer-list>

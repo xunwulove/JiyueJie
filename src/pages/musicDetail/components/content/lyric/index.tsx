@@ -311,7 +311,7 @@ export default function Lyric(props: IProps) {
                                     currentLrcItem?.index === index;
 
                                 if (isCurrent) {
-                                    // 卡拉OK进度染色：已唱部分主色、未唱部分普通歌词色（不再加粗/瞬间高亮）
+                                    // 当前行整体主题色（uniform：不做进度染色）
                                     return (
                                         <KaraokeText
                                             text={text}
@@ -321,6 +321,7 @@ export default function Lyric(props: IProps) {
                                                     ? lyrics[index + 1].time
                                                     : item.time + 15000
                                             }
+                                            uniform
                                             sungColor={colors.primary}
                                             unsungColor={colors.text}
                                             unsungOpacity={0.6}

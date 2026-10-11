@@ -22,6 +22,8 @@ interface IMp3Util {
     /** 写入meta信息 */
     setMediaTag: (filePath: string, meta: IWritableMeta) => Promise<void>;
     getMediaTag: (filePath: string) => Promise<IWritableMeta>;
+    /** 写入内嵌专辑图（coverUri 支持网络 URL 或本地 file:// 路径） */
+    setMediaCover: (filePath: string, coverUri: string) => Promise<void>;
 }
 
 const Mp3Util = NativeModules.Mp3Util;

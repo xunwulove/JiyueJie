@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     Pressable,
     ScrollView,
@@ -18,7 +18,10 @@ import MusicSheet, { useSheetsBase } from "@/core/musicSheet";
 import LocalMusicSheet from "@/core/localMusicSheet";
 import { useMusicHistory } from "@/core/musicHistory";
 import { checkUpdateAndShowResult } from "@/hooks/useCheckUpdate";
+import PersistStatus from "@/utils/persistStatus";
 import DeviceInfo from "react-native-device-info";
+import pluginManager, { usePlugins } from "@/core/pluginManager";
+import { useDownloadedList } from "@/core/downloader";
 
 /**
  * 我的页 - 复刻 APlayer MinePage：
@@ -50,7 +53,38 @@ export default function MineTab({
     const history = useMusicHistory();
     const localMusicList = LocalMusicSheet.useMusicList();
 
+    // 音源数（已启用插件数，响应式）+ 已下载歌曲数（响应式）
+    const plugins = usePlugins();
+    const enabledPluginCount = plugins.filter(p =>
+        pluginManager.isPluginEnabled(p),
+    ).length;
+    const downloadedList = useDownloadedList();
+
+    // 设备名称（异步获取，兜底品牌+型号）+ 系统信息（同步 API）
+    const [deviceName, setDeviceName] = useState("");
+    useEffect(() => {
+        let mounted = true;
+        DeviceInfo.getDeviceName()
+            .then(name => {
+                if (mounted && name) {
+                    setDeviceName(name);
+                }
+            })
+            .catch(() => {});
+        return () => {
+            mounted = false;
+        };
+    }, []);
+    const deviceTitle =
+        deviceName || `${DeviceInfo.getBrand()} ${DeviceInfo.getModel()}`.trim();
+    const systemInfo = `${DeviceInfo.getSystemName()} ${DeviceInfo.getSystemVersion()}`.trim();
+
     const onCheckUpdate = () => checkUpdateAndShowResult(true);
+
+    // 最近一次检查更新结果（供平板版本卡动态显示："发现新版本"/"已是最新"）
+    const updateCheckResult = PersistStatus.useValue(
+        "app.updateCheckResult",
+    );
 
     const favoriteAction = () =>
         navigate(ROUTE_PATH.LOCAL_SHEET_DETAIL, {
@@ -95,7 +129,7 @@ export default function MineTab({
         {
             icon: "server-stack",
             title: "音源管理",
-            value: "洛雪 · 插件",
+            value: "插件 · 订阅",
             action: () => navigate(ROUTE_PATH.PLUGIN_SOURCES),
         },
     ];
@@ -160,22 +194,23 @@ export default function MineTab({
     const avatarBox = (
         <View style={[styles.avatar, { backgroundColor: primary }]}>
             <ThemeText fontWeight="bold" style={styles.avatarText}>
-                盐
+                极
             </ThemeText>
         </View>
     );
     /* 用户卡信息区：平板显示标题+副标题；手机副标题统一放底部行（避免与右上齿轮/底部重复叠字） */
+    /* 字号规范（对齐三卡 MineEntryCard）：大卡标题统一 large(22)/bold，副标题统一 normal(16) */
     const userInfo = (withDesc: boolean) => (
         <View style={styles.userInfo}>
-            <ThemeText fontSize="title" fontWeight="bold" numberOfLines={1}>
-                极悦界用户
+            <ThemeText fontSize="large" fontWeight="bold" numberOfLines={1}>
+                {systemInfo}
             </ThemeText>
             {withDesc ? (
                 <ThemeText
-                    fontSize="description"
+                    fontSize="normal"
                     fontColor="textSecondary"
                     numberOfLines={1}>
-                    本地播放器 · 无账号 · 数据都在本机
+                    {deviceTitle}
                 </ThemeText>
             ) : null}
         </View>
@@ -193,9 +228,17 @@ export default function MineTab({
             />
         </Pressable>
     ) : null;
-    /* 三格统计行（平板/手机共用：本地音乐 / 我的喜欢 / 歌单） */
+    /* 三格统计行（平板/手机共用：音源 / 本地音乐 / 已下载） */
     const statsRow = (
         <View style={styles.userStatsRow}>
+            <View style={styles.userStatItem}>
+                <ThemeText fontSize="large" fontWeight="bold" color={primary}>
+                    {enabledPluginCount}
+                </ThemeText>
+                <ThemeText fontSize="caption" fontColor="textSecondary">
+                    音源
+                </ThemeText>
+            </View>
             <View style={styles.userStatItem}>
                 <ThemeText fontSize="large" fontWeight="bold" color={primary}>
                     {localMusicList.length}
@@ -206,18 +249,10 @@ export default function MineTab({
             </View>
             <View style={styles.userStatItem}>
                 <ThemeText fontSize="large" fontWeight="bold" color={primary}>
-                    {favCount}
+                    {downloadedList.length}
                 </ThemeText>
                 <ThemeText fontSize="caption" fontColor="textSecondary">
-                    我的喜欢
-                </ThemeText>
-            </View>
-            <View style={styles.userStatItem}>
-                <ThemeText fontSize="large" fontWeight="bold" color={primary}>
-                    {sheetsBase.length}
-                </ThemeText>
-                <ThemeText fontSize="caption" fontColor="textSecondary">
-                    歌单
+                    已下载
                 </ThemeText>
             </View>
         </View>
@@ -242,7 +277,8 @@ export default function MineTab({
             ]}>
             <View style={styles.userCardTop}>
                 {avatarBox}
-                {userInfo(!isTablet)}
+                {/* 平板左卡副标题显示系统信息；手机副标题统一放底部行（避免顶部/底部重复叠字） */}
+                {userInfo(isTablet)}
                 {settingGear}
             </View>
             {!isTablet ? (
@@ -250,15 +286,15 @@ export default function MineTab({
                     {statsRow}
                     <View style={styles.userCardBottom}>
                         <ThemeText
-                            fontSize="description"
+                            fontSize="normal"
                             fontColor="textSecondary"
                             numberOfLines={1}
                             style={styles.userCardBottomText}>
-                            本地播放器 · 无账号 · 数据都在本机
+                            {deviceTitle}
                         </ThemeText>
                         <View style={styles.versionRow}>
                             <ThemeText
-                                fontSize="normal"
+                                fontSize="large"
                                 fontWeight="bold"
                                 color={primary}>
                                 v{DeviceInfo.getVersion()}
@@ -312,25 +348,39 @@ export default function MineTab({
                         styles.versionIcon,
                         { backgroundColor: primary },
                     ]}>
-                    <ThemeText
-                        fontSize="large"
-                        fontWeight="bold"
-                        style={styles.avatarText}>
-                        v
-                    </ThemeText>
+                    <Icon
+                        name="arrow-path"
+                        size={24}
+                        color="#FFFFFF"
+                    />
                 </View>
                 <View style={styles.userInfo}>
                     <ThemeText
-                        fontSize="title"
+                        fontSize="large"
                         fontWeight="bold"
                         color={primary}>
                         v{DeviceInfo.getVersion()}
                     </ThemeText>
-                    <ThemeText
-                        fontSize="description"
-                        fontColor="textSecondary">
-                        软件版本
-                    </ThemeText>
+                    {updateCheckResult?.needUpdate ? (
+                        <ThemeText
+                            fontSize="normal"
+                            fontWeight="medium"
+                            color={primary}>
+                            发现新版本 v{updateCheckResult.latestVersion}
+                        </ThemeText>
+                    ) : updateCheckResult ? (
+                        <ThemeText
+                            fontSize="normal"
+                            fontColor="textSecondary">
+                            已是最新版本
+                        </ThemeText>
+                    ) : (
+                        <ThemeText
+                            fontSize="normal"
+                            fontColor="textSecondary">
+                            软件版本
+                        </ThemeText>
+                    )}
                 </View>
             </View>
             <Pressable
@@ -346,6 +396,12 @@ export default function MineTab({
                     检查更新
                 </ThemeText>
             </Pressable>
+            <ThemeText
+                fontSize="caption"
+                fontColor="textSecondary"
+                style={styles.versionCardFooter}>
+                正式版 · 更新通道 Gitee
+            </ThemeText>
         </LinearGradient>
     ) : null;
 
@@ -611,7 +667,14 @@ const styles = StyleSheet.create({
     versionBtn: {
         borderRadius: 20,
         paddingVertical: 8,
+        paddingHorizontal: 28,
         alignItems: "center",
+        // 不占满卡片全宽：靠右下角的胶囊按钮
+        alignSelf: "flex-end",
+    },
+    versionCardFooter: {
+        marginTop: 10,
+        alignSelf: "flex-end",
     },
     settingGear: {
         // 流内布局放行尾（不再 absolute 悬浮，避免盖住标题/副标题文字）
@@ -641,7 +704,8 @@ const styles = StyleSheet.create({
     versionIcon: {
         width: 56,
         height: 56,
-        borderRadius: 16,
+        // 与左卡"极"字头像同款圆形，两卡顶部对称
+        borderRadius: 28,
         alignItems: "center",
         justifyContent: "center",
         marginRight: 16,

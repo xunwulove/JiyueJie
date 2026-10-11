@@ -1,4 +1,6 @@
 <resources>
     <!-- 启动页背景：浅蓝（极悦界品牌浅色调性，替代原深黑） -->
     <color name="splashscreen_background">#E9F2FC</color> <!-- #AARRGGBB or #RRGGBB format -->
+    <!-- Android 12+ 系统 splash 纯色背景：品牌渐变（#EAF0FA→#F8F9FA）的视觉中间色，与窗口背景/BrandSplash 无缝衔接 -->
+    <color name="brand_splash">#F1F4FA</color>
 </resources>

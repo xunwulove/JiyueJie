@@ -85,8 +85,9 @@ export default function TabletPanel() {
             style={[
                 styles.container,
                 {
-                    backgroundColor:
-                        (colors as any).surface ?? colors.background,
+                    // 背景透明：透出全局 PageBackground（白天 A+B 渐变 / 深色纯色），
+                    // 与内容区整屏统一；不再用 surface 不透明底色盖住渐变
+                    backgroundColor: "transparent",
                 },
             ]}>
             {/* 顶部：品牌图标 + 时段问候（与内容区 4 tab 同层；问候水平居中） */}
@@ -196,7 +197,7 @@ export default function TabletPanel() {
                                         { height: lyricItemH },
                                     ]}>
                                     {index === curIndex ? (
-                                        /* 卡拉OK进度染色当前行：已唱品牌主色 / 未唱 textSecondary（去加粗，靠染色突出） */
+                                        /* 当前行整体主题色（uniform：不做进度染色） */
                                         <KaraokeText
                                             text={item.lrc ?? ""}
                                             startTime={item.time}
@@ -205,6 +206,7 @@ export default function TabletPanel() {
                                                     ? lyrics[index + 1].time
                                                     : item.time + 15000
                                             }
+                                            uniform
                                             sungColor={colors.primary}
                                             unsungColor={
                                                 colors.textSecondary ??

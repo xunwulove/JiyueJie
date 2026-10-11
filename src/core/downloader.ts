@@ -6,6 +6,7 @@ import { addFileScheme, escapeCharacter, mkdirR } from "@/utils/fileUtils";
 import { errorLog } from "@/utils/log";
 import { patchMediaExtra } from "@/utils/mediaExtra";
 import { getMediaUniqueKey, isSameMediaItem } from "@/utils/mediaUtils";
+import Mp3Util from "@/native/mp3Util";
 import network from "@/utils/network";
 import { getQualityOrder } from "@/utils/qualities";
 import EventEmitter from "eventemitter3";
@@ -373,6 +374,13 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                 await unlink(targetDownloadPath).catch(() => {});
                 this.cleanupCancelledTask(musicItem);
             } else {
+                // 内嵌专辑图：有 artwork 时写入音频文件（失败不影响入库）
+                if (musicItem.artwork) {
+                    Mp3Util.setMediaCover(
+                        targetDownloadPath,
+                        musicItem.artwork,
+                    ).catch(() => {});
+                }
                 LocalMusicSheet.addMusic({
                     ...musicItem,
                     [internalSerializeKey]: {

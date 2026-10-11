@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 窗口背景 = 品牌启动画面（对齐网易云/QQ音乐实测：品牌整图放 windowBackground，窗口一创建立即全屏显示）
+     结构：全屏浅蓝渐变（#EAF0FA 下 → #F8F9FA 上，与主界面一致）+ 完整品牌整图（图标+行楷"极悦界"，透明底）等比缩放居中
+     特性：整图、非圆、不被圆形遮罩裁切；API<31 直接作为启动画面，API 31+ 作为系统 splash 退出后的窗口画面 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#EAF0FA"
+                android:endColor="#F8F9FA"
+                android:angle="90" />
+        </shape>
+    </item>
+    <item>
+        <bitmap
+            android:src="@drawable/splashscreen_brand"
+            android:gravity="center"
+            android:scaleType="fitCenter" />
+    </item>
+</layer-list>

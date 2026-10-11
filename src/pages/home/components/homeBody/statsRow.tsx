@@ -4,6 +4,7 @@ import { useMusicHistory } from "@/core/musicHistory";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
 import useColors from "@/hooks/useColors";
 import useIsTablet from "@/hooks/useIsTablet";
+import { normalizeDurationSec } from "@/utils/durationUtil";
 import Color from "color";
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -29,11 +30,13 @@ export default function StatsRow() {
         const todayEvents = history.filter(
             h => (h.playedAt ?? 0) >= todayTs,
         );
-        const durationMs = todayEvents.reduce(
-            (sum, h) => sum + (h.duration ?? 0),
+        // MusicFree duration 单位为秒：今日听歌时长 = Σ歌曲时长(秒) → 分钟
+        // （第三方插件可能返回毫秒，normalizeDurationSec 防御性归一化）
+        const totalSeconds = todayEvents.reduce(
+            (sum, h) => sum + normalizeDurationSec(h.duration),
             0,
         );
-        const minutes = Math.floor(durationMs / 60000);
+        const minutes = Math.floor(totalSeconds / 60);
 
         const mostPlayedItem = [...history].sort(
             (a, b) => (b.playCount ?? 0) - (a.playCount ?? 0),

@@ -15,12 +15,14 @@ interface IKaraokeTextProps {
     startTime: number;
     /** 本行结束时间（ms）= 下一行开始时间 */
     endTime: number;
-    /** 已唱部分颜色（卡拉OK填充色） */
+    /** 已唱部分颜色（卡拉OK填充色 / uniform 模式下整行颜色） */
     sungColor: string;
-    /** 未唱部分颜色 */
+    /** 未唱部分颜色（仅进度染色模式使用） */
     unsungColor: string;
     /** 未唱部分透明度（默认 1） */
     unsungOpacity?: number;
+    /** true = 整行直接 sungColor，不做进度染色（当前行整体用主题色突出） */
+    uniform?: boolean;
     fontSize?: number;
     lineHeight?: number;
     fontWeight?: TextStyle["fontWeight"];
@@ -29,14 +31,8 @@ interface IKaraokeTextProps {
     onLayout?: (event: any) => void;
 }
 
-/**
- * 卡拉OK进度染色歌词行：
- * 随播放进度将当前行逐字染成 sungColor（已唱部分），未唱部分保持 unsungColor；
- * 本行唱完 → 整行被染色，切到下一行后重新开始。
- * 支持多行文本（歌词+翻译）：染色字数按行顺序分配，逐行染色。
- * 组件内部订阅播放进度（200ms 刷新），只重渲染本行，不影响歌词列表其他行。
- */
-export default function KaraokeText(props: IKaraokeTextProps) {
+/** 进度染色模式：随播放进度逐字染成 sungColor（原卡拉OK实现） */
+function ProgressKaraokeText(props: IKaraokeTextProps) {
     const {
         text,
         startTime,
@@ -98,6 +94,50 @@ export default function KaraokeText(props: IKaraokeTextProps) {
             })}
         </View>
     );
+}
+
+/** 整体着色模式：整行直接 sungColor（不订阅进度、不逐字染色，零重渲染） */
+function UniformKaraokeText(props: IKaraokeTextProps) {
+    const {
+        text,
+        sungColor,
+        fontSize,
+        lineHeight,
+        fontWeight,
+        style,
+        onLayout,
+    } = props;
+
+    const textStyle: TextStyle = {
+        fontSize,
+        lineHeight,
+        fontWeight,
+        color: sungColor,
+    };
+    const lines = text.split("\n");
+    return (
+        <View onLayout={onLayout} style={[styles.container, style]}>
+            {lines.map((line, li) => (
+                <View key={li} style={styles.row}>
+                    <Text style={textStyle}>{line}</Text>
+                </View>
+            ))}
+        </View>
+    );
+}
+
+/**
+ * 歌词当前行渲染组件：
+ * - uniform=true：整行直接 sungColor（当前行整体用主题色突出，不做进度染色）
+ * - 默认：卡拉OK进度染色（逐字染 sungColor，未唱保持 unsungColor）
+ * 支持多行文本（歌词+翻译）；进度染色模式内部订阅播放进度（200ms 刷新），
+ * uniform 模式不订阅进度、零额外重渲染。
+ */
+export default function KaraokeText(props: IKaraokeTextProps) {
+    if (props.uniform) {
+        return <UniformKaraokeText {...props} />;
+    }
+    return <ProgressKaraokeText {...props} />;
 }
 
 const styles = StyleSheet.create({
