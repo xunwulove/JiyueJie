@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import ListItem from "@/components/base/listItem";
+import { iconSizeConst } from "@/constants/uiConst";
 import ThemeText from "@/components/base/themeText";
 import useColors from "@/hooks/useColors";
 import { useI18N } from "@/core/i18n";
@@ -48,6 +49,7 @@ export default function PlayRateDialog() {
                         {currentRate === rate.value ? (
                             <ListItem.ListItemIcon
                                 icon="check"
+                                iconSize={iconSizeConst.light}
                                 color={colors.primary}
                             />
                         ) : null}

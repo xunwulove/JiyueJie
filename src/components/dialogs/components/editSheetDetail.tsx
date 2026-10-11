@@ -148,16 +148,16 @@ export default function EditSheetDetailDialog(props: IEditSheetDetailProps) {
 
 const style = StyleSheet.create({
     row: {
-        marginTop: rpx(28),
-        height: rpx(120),
+        marginTop: 28,
+        height: 60,
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        paddingBottom: rpx(12),
+        paddingBottom: 12,
     },
     coverImg: {
-        width: rpx(100),
-        height: rpx(100),
-        borderRadius: rpx(28),
+        width: 56,
+        height: 56,
+        borderRadius: 8,
     },
 });

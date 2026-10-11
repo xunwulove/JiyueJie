@@ -156,10 +156,22 @@ class PluginManager implements IPluginManager, IInjectable {
                     const plugin = allPlugins[i];
 
                     if (plugin.state === PluginState.Initializing) {
-                        await plugin.ensureMounted();
-                        this.updatePluginCache(plugin);
+                        try {
+                            await plugin.ensureMounted();
+                            this.updatePluginCache(plugin);
+                        } catch (e: any) {
+                            // 单个插件挂载失败不应中断其余插件，也不产生 unhandled rejection
+                            errorLog(
+                                "插件延迟挂载失败",
+                                plugin?.name
+                                    ? `${plugin.name}: ${e?.message ?? e}`
+                                    : e?.message ?? e,
+                            );
+                        }
                     }
                 }
+            }).catch((e: any) => {
+                errorLog("插件延迟挂载失败", e?.message ?? e);
             });
         } catch (e: any) {
             showToast({
@@ -458,9 +470,16 @@ class PluginManager implements IPluginManager, IInjectable {
      * @returns 匹配名称的插件实例或本地文件插件
      */
     getByName(name: string) {
-        return name === localPluginPlatform
-            ? localFilePlugin
-            : this.getPlugins().find(_ => _.name === name);
+        if (name === localPluginPlatform) {
+            return localFilePlugin;
+        }
+        const plugin = this.getPlugins().find(_ => _.name === name);
+        // 取源/歌词/下载/替代名解析链路统一经此方法：
+        // 禁用的插件不返回，避免其音源/歌词仍被请求（UI 列表走 getPlugins/getEnabledPlugins，不受影响）
+        if (plugin && !pluginMeta.isPluginEnabled(plugin.name)) {
+            return undefined;
+        }
+        return plugin;
     }
 
     /**
@@ -491,9 +510,9 @@ class PluginManager implements IPluginManager, IInjectable {
     getSortedPlugins() {
         const order = pluginMeta.getPluginOrder();
         return [...this.getPlugins()].sort((a, b) =>
-            (order[a.name] ?? Infinity) - (order[b.name] ?? Infinity) < 0
-                ? -1
-                : 1,
+            Math.sign(
+                (order[a.name] ?? Infinity) - (order[b.name] ?? Infinity),
+            ),
         );
     }
 
@@ -524,9 +543,9 @@ class PluginManager implements IPluginManager, IInjectable {
         const order = pluginMeta.getPluginOrder();
         return [...this.getSearchablePlugins(supportedSearchType)].sort(
             (a, b) =>
-                (order[a.name] ?? Infinity) - (order[b.name] ?? Infinity) < 0
-                    ? -1
-                    : 1,
+                Math.sign(
+                    (order[a.name] ?? Infinity) - (order[b.name] ?? Infinity),
+                ),
         );
     }
 
@@ -568,9 +587,9 @@ class PluginManager implements IPluginManager, IInjectable {
                     return relB - relA;
                 }
             }
-            return (order[a.name] ?? Infinity) - (order[b.name] ?? Infinity) < 0
-                ? -1
-                : 1;
+            return Math.sign(
+                (order[a.name] ?? Infinity) - (order[b.name] ?? Infinity),
+            );
         });
     }
 
@@ -646,10 +665,10 @@ export function useSortedPlugins() {
             const order = pluginMeta.getPluginOrder();
             setSortedPlugins(
                 [...plugins].sort((a, b) =>
-                    (order[a.name] ?? Infinity) - (order[b.name] ?? Infinity) <
-                    0
-                        ? -1
-                        : 1,
+                    Math.sign(
+                        (order[a.name] ?? Infinity) -
+                            (order[b.name] ?? Infinity),
+                    ),
                 ),
             );
         };

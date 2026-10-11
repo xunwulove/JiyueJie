@@ -37,13 +37,13 @@ export default function Fab(props: IFabProps) {
 
 const styles = StyleSheet.create({
     container: {
-        width: rpx(88),
-        height: rpx(88),
-        borderRadius: rpx(44),
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         position: "absolute",
         zIndex: 10010,
-        right: rpx(36),
-        bottom: rpx(72),
+        right: 24,
+        bottom: 16,
         justifyContent: "center",
         alignItems: "center",
         shadowOffset: {

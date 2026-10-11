@@ -15,7 +15,7 @@ import CheckBox from "@/components/base/checkbox";
 import useColors from "@/hooks/useColors";
 import Empty from "@/components/base/empty";
 
-const ITEM_HEIGHT = rpx(120);
+const ITEM_HEIGHT = 64;
 
 interface IMusicEditorItemProps {
     index: number;
@@ -42,7 +42,7 @@ function _MusicEditorItem(props: IMusicEditorItemProps) {
                 </View>
             )}
             showMoreIcon={false}
-            itemPaddingRight={rpx(100)}
+            itemPaddingRight={50}
             onItemPress={onPress}
         />
     );

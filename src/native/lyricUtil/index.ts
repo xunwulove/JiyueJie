@@ -44,7 +44,27 @@ interface ILyricUtil extends NativeModule {
     requestSystemAlertPermission: () => Promise<boolean>;
 }
 
-const LyricUtil: ILyricUtil = NativeModules.LyricUtil;
+// iOS 侧无原生 LyricUtil 实现时 NativeModules.LyricUtil 为 undefined，
+// 此处先补齐一组 no-op，避免模块加载期解引用方法导致 import 即崩
+const defaultLyricUtil: ILyricUtil = {
+    addListener: () => {},
+    removeListeners: () => {},
+    showStatusBarLyric: async () => Promise.resolve(),
+    hideStatusBarLyric: () => Promise.resolve(),
+    setStatusBarLyricText: () => Promise.resolve(),
+    setStatusBarLyricTop: () => Promise.resolve(),
+    setStatusBarLyricLeft: () => Promise.resolve(),
+    setStatusBarLyricWidth: () => Promise.resolve(),
+    setStatusBarLyricFontSize: () => Promise.resolve(),
+    setStatusBarLyricAlign: () => Promise.resolve(),
+    setStatusBarColors: () => Promise.resolve(),
+    checkSystemAlertPermission: () => Promise.resolve(false),
+    requestSystemAlertPermission: () => Promise.resolve(false),
+};
+
+const LyricUtil: ILyricUtil = NativeModules.LyricUtil
+    ? { ...defaultLyricUtil, ...NativeModules.LyricUtil }
+    : defaultLyricUtil;
 
 const originalShowStatusBarLyric = LyricUtil.showStatusBarLyric;
 
@@ -52,6 +72,9 @@ const showStatusBarLyric: ILyricUtil["showStatusBarLyric"] = async (
     initLyric,
     config,
 ) => {
+    if (typeof originalShowStatusBarLyric !== "function") {
+        return;
+    }
     try {
         await originalShowStatusBarLyric(initLyric, config);
     } catch (e) {

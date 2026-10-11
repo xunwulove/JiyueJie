@@ -77,7 +77,7 @@ function ResultWrapper(props: IResultWrapperProps) {
                     searchState === RequestStateCode.IDLE) &&
                     search(undefined, undefined, tab, pluginHash);
             }}
-            estimatedItemSize={tab === "sheet" ? rpx(306) : rpx(120)}
+            estimatedItemSize={tab === "sheet" ? rpx(306) : 64}
             numColumns={
                 tab === "sheet" ? (orientation === "vertical" ? 3 : 4) : 1
             }

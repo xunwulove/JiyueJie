@@ -42,7 +42,7 @@ export default function ActionButton(props: IActionButtonProps) {
                     accessible={false}
                     name={iconName}
                     color={iconColor ?? "#FFFFFF"}
-                    size={rpx(40)}
+                    size={24}
                 />
             </LinearGradient>
             <ThemeText

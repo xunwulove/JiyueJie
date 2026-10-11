@@ -26,13 +26,23 @@ const DEFAULTS: IScanSettings = {
 };
 
 let cache: IScanSettings | null = null;
+/** 进行中的首次加载 Promise：并发调用复用同一份，避免后赋值覆盖先赋值的竞态 */
+let loadingPromise: Promise<IScanSettings> | null = null;
 
-export async function getScanSettings(): Promise<IScanSettings> {
-    if (!cache) {
-        const stored = await getStorage(SCAN_SETTINGS_KEY);
-        cache = { ...DEFAULTS, ...(stored ?? {}) };
+export function getScanSettings(): Promise<IScanSettings> {
+    if (cache) {
+        return Promise.resolve(cache);
     }
-    return cache as IScanSettings;
+    if (!loadingPromise) {
+        loadingPromise = (async () => {
+            const stored = await getStorage(SCAN_SETTINGS_KEY);
+            const next: IScanSettings = { ...DEFAULTS, ...(stored ?? {}) };
+            cache = next;
+            loadingPromise = null;
+            return next;
+        })();
+    }
+    return loadingPromise!;
 }
 
 export async function updateScanSettings(patch: Partial<IScanSettings>) {

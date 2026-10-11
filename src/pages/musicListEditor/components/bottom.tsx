@@ -133,7 +133,7 @@ function BottomIcon(props: IBottomIconProps) {
 const style = StyleSheet.create({
     wrapper: {
         width: "100%",
-        height: rpx(144),
+        height: 88,
         flexDirection: "row",
     },
 
@@ -144,7 +144,7 @@ const style = StyleSheet.create({
         justifyContent: "center",
     },
     bottomIconText: {
-        marginTop: rpx(12),
+        marginTop: 6,
     },
     opacity_06: {
         opacity: 0.6,

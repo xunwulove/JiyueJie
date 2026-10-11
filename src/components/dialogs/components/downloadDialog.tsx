@@ -125,7 +125,7 @@ const style = StyleSheet.create({
     },
     scrollView: {
         maxHeight: vh(40),
-        paddingHorizontal: rpx(26),
+        paddingHorizontal: 13,
     },
     checkboxRow: {
         paddingTop: 12,
@@ -146,7 +146,7 @@ const style = StyleSheet.create({
         marginLeft: rpx(12),
     },
     button: {
-        paddingLeft: rpx(28),
+        paddingLeft: 14,
         paddingVertical: 8,
         marginLeft: rpx(16),
         alignItems: "flex-end",

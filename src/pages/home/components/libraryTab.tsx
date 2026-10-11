@@ -421,8 +421,8 @@ export default function LibraryTab() {
                     </ThemeText>
                 }
                 ItemSeparatorComponent={() => (
-                    // 行内封面 44 + 间距 12 = 56，与歌名文字左缘对齐
-                    <ListDivider marginLeft={56} />
+                    // 行内封面 48 + 间距 12 = 60，与歌名文字左缘对齐
+                    <ListDivider marginLeft={60} />
                 )}
                 renderItem={({ item }) => (
                     <LocalSongItem item={item} list={sortedList} />
@@ -537,17 +537,17 @@ function LocalSongItem({
                     : null,
             ]}
             onPress={onPress}>
-            <LocalSongCover musicItem={item} size={44} borderRadius={8} />
+            <LocalSongCover musicItem={item} size={48} borderRadius={8} />
             <View style={styles.songInfo}>
                 <ThemeText
-                    fontSize="content"
+                    fontSize="body"
                     fontWeight="medium"
                     numberOfLines={1}
                     ellipsizeMode="tail">
                     {item.title ?? "未知歌曲"}
                 </ThemeText>
                 <ThemeText
-                    fontSize="normal"
+                    fontSize="description"
                     fontColor="textSecondary"
                     numberOfLines={1}
                     ellipsizeMode="tail"

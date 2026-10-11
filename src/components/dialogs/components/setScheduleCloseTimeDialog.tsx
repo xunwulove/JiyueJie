@@ -118,9 +118,9 @@ export default function SetScheduleCloseTimeDialog(
 
 const style = StyleSheet.create({
     dialogContent: {
-        paddingHorizontal: rpx(24),
-        paddingVertical: rpx(20),
-        borderRadius: rpx(12),
+        paddingHorizontal: 0,
+        paddingVertical: 8,
+        borderRadius: 12,
     },
     inputSection: {
         marginBottom: rpx(8),
@@ -132,25 +132,25 @@ const style = StyleSheet.create({
     },
     inputContainer: {
         flex: 1,
-        borderWidth: rpx(2),
-        borderRadius: rpx(8),
-        paddingHorizontal: rpx(16),
-        paddingVertical: rpx(4),
-        minHeight: rpx(72),
+        borderWidth: 1,
+        borderRadius: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 4,
+        minHeight: 48,
         justifyContent: "center",
         shadowOffset: {
             width: 0,
-            height: rpx(2),
+            height: 2,
         },
         shadowOpacity: 0.1,
-        shadowRadius: rpx(4),
+        shadowRadius: 4,
         elevation: 2,
     },
     textInput: {
         fontSize: fontSizeConst.content,
         lineHeight: 24,
         includeFontPadding: false,
-        paddingVertical: rpx(12),
+        paddingVertical: 6,
         borderWidth: 0,
         backgroundColor: "transparent",
         textAlign: "center",

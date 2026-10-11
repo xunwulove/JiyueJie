@@ -87,7 +87,7 @@ const style = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginBottom: rpx(6),
-        paddingHorizontal: rpx(24),
+        paddingHorizontal: 16,
     },
 
     opeartions: {
@@ -99,10 +99,10 @@ const style = StyleSheet.create({
         justifyContent: "space-between",
     },
     input: {
-        borderRadius: rpx(12),
+        borderRadius: 6,
         fontSize: fontSizeConst.content,
         lineHeight: fontSizeConst.content * 1.5,
-        padding: rpx(12),
+        padding: 12,
         flex: 1,
     },
     searchBtn: {
@@ -159,7 +159,7 @@ function LyricResultBodyWrapper() {
                         <Text
                             numberOfLines={1}
                             style={{
-                                width: rpx(160),
+                                width: 120,
                                 fontWeight: focused
                                     ? fontWeightConst.bolder
                                     : fontWeightConst.medium,
@@ -171,7 +171,7 @@ function LyricResultBodyWrapper() {
                     )}
                     indicatorStyle={{
                         backgroundColor: colors.primary,
-                        height: rpx(4),
+                        height: 3,
                     }}
                 />
             )}

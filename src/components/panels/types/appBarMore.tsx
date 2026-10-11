@@ -64,7 +64,7 @@ export default function AppBarMore(props: IAppBarMoreProps) {
                                     withHorizontalPadding
                                     heightType="small">
                                     <ListItem.ListItemIcon
-                                        width={rpx(48)}
+                                        width={28}
                                         icon={item.icon}
                                         iconSize={iconSizeConst.light}
                                     />
@@ -96,7 +96,7 @@ export default function AppBarMore(props: IAppBarMoreProps) {
                                         item.onPress?.();
                                     }}>
                                     <ListItem.ListItemIcon
-                                        width={rpx(48)}
+                                        width={28}
                                         icon={item.icon}
                                         iconSize={iconSizeConst.light}
                                     />

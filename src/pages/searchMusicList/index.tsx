@@ -8,7 +8,7 @@ import { fontSizeConst } from "@/constants/uiConst";
 import { useI18N } from "@/core/i18n";
 import { useParams } from "@/core/router";
 import useColors from "@/hooks/useColors";
-import rpx from "@/utils/rpx";
+import useIsTablet from "@/hooks/useIsTablet";
 import React, { useState } from "react";
 import { StyleSheet } from "react-native";
 import SearchResult from "./searchResult";
@@ -31,6 +31,7 @@ export default function SearchMusicList() {
 
     const colors = useColors();
     const { t } = useI18N();
+    const isTablet = useIsTablet();
 
     const onChangeSearch = (_: string) => {
         setQuery(_);
@@ -47,7 +48,7 @@ export default function SearchMusicList() {
                     fontColor={colors.appBarText}
                     placeholder={t("searchMusicList.searchPlaceHolder")}
                     accessible
-                    autoFocus
+                    autoFocus={!isTablet}
                     accessibilityLabel="搜索框"
                     accessibilityHint={t("searchMusicList.searchLabel.a11y")}
                     value={query}
@@ -62,10 +63,10 @@ export default function SearchMusicList() {
 
 const style = StyleSheet.create({
     searchBar: {
-        minWidth: rpx(375),
+        minWidth: 180,
         flex: 1,
-        borderRadius: rpx(64),
-        height: rpx(64),
+        borderRadius: 20,
+        height: 40,
         fontSize: fontSizeConst.content,
     },
 });

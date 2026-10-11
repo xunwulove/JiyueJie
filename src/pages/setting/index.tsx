@@ -7,23 +7,12 @@ import { useParams } from "@/core/router";
 import HorizontalSafeAreaView from "@/components/base/horizontalSafeAreaView.tsx";
 import AppBar from "@/components/base/appBar";
 import { useI18N } from "@/core/i18n";
-import PluginList from "./settingTypes/pluginSetting/views/pluginList";
 
 export default function Setting() {
     const { type } = useParams<"setting">();
     const settingItem = settingTypes[type];
 
     const { t } = useI18N();
-
-    // 音源管理：直接渲染插件列表（自带 AppBar，不嵌套原生 Stack，避免盖 tab 与双顶栏）
-    if (type === "plugin") {
-        return (
-            <SafeAreaView edges={["bottom", "top"]} style={style.wrapper}>
-                <StatusBar />
-                <PluginList />
-            </SafeAreaView>
-        );
-    }
 
     return (
         <SafeAreaView edges={["bottom", "top"]} style={style.wrapper}>

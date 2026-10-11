@@ -55,7 +55,7 @@ function ResultPanel() {
                         <Text
                             numberOfLines={1}
                             style={{
-                                width: rpx(160),
+                                width: 120,
                                 fontWeight: focused
                                     ? fontWeightConst.bolder
                                     : fontWeightConst.medium,
@@ -67,7 +67,7 @@ function ResultPanel() {
                     )}
                     indicatorStyle={{
                         backgroundColor: colors.primary,
-                        height: rpx(4),
+                        height: 3,
                     }}
                 />
             )}

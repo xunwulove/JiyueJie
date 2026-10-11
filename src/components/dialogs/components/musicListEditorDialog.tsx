@@ -142,8 +142,8 @@ export default function MusicListEditorDialog(
 const style = StyleSheet.create({
     header: {
         flexDirection: "row",
-        height: rpx(64),
-        paddingHorizontal: rpx(8),
+        height: 48,
+        paddingHorizontal: 16,
         alignItems: "center",
         justifyContent: "space-between",
     },

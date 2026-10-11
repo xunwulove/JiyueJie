@@ -1,6 +1,6 @@
 import React, { Fragment } from "react";
 import { ScrollView, StyleSheet } from "react-native";
-import rpx from "@/utils/rpx";
+import rpx, { vh } from "@/utils/rpx";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PanelBase from "../base/panelBase";
 import { hidePanel } from "../usePanel";
@@ -21,7 +21,7 @@ interface ISimpleSelectProps {
 
 export default function SimpleSelect(props: ISimpleSelectProps) {
     const {
-        height = rpx(520),
+        height = vh(65),
         header = "",
         candidates = [],
         onPress,

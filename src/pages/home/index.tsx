@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
 import NavBar from "./components/navBar";
 import MusicBar from "@/components/musicBar";
@@ -66,6 +67,7 @@ function Home() {
     const [selectedTab, setSelectedTab] = useState<SaltTab>(SaltTab.HOME);
     const isTablet = useIsTablet();
     const setSubPages = useSetAtom(tabletSubPagesAtom);
+    const navigation = useNavigation<any>();
 
     // 任何界面（含二级页/三级浮窗）点击 tab：清空覆盖层栈 + 切换到对应一级页
     const switchTab = useCallback(
@@ -89,12 +91,16 @@ function Home() {
         const sub = BackHandler.addEventListener(
             "hardwareBackPress",
             () => {
+                // 原生栈 push 了二级页时先交还给原生栈 pop，避免本监听吞掉首个返回键导致落点错误
+                if (navigation.canGoBack()) {
+                    return false;
+                }
                 switchTab(SaltTab.HOME);
                 return true;
             },
         );
         return () => sub.remove();
-    }, [selectedTab, switchTab]);
+    }, [selectedTab, switchTab, navigation]);
 
     return (
         <SafeAreaView edges={["top", "bottom"]} style={styles.appWrapper}>

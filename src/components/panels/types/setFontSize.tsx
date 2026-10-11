@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import rpx from "@/utils/rpx";
+import rpx, { vh } from "@/utils/rpx";
 import ThemeText from "@/components/base/themeText";
 
 import PanelBase from "../base/panelBase";
@@ -23,7 +23,7 @@ export default function SetFontSize(props: IProps) {
 
     return (
         <PanelBase
-            height={rpx(520)}
+            height={vh(65)}
             keyboardAvoidBehavior="none"
             renderBody={() => (
                 <>

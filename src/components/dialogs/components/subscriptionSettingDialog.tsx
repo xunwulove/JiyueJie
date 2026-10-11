@@ -115,6 +115,14 @@ export default function SubscriptionSettingDialog(
         });
     }
 
+    /** 恢复默认订阅：重置为内置默认订阅源（极悦界音源库） */
+    function onRestoreDefault() {
+        const next = [{ url: DEFAULT_PLUGIN_SUBSCRIPTION_URL }];
+        setUrls(next);
+        saveSubscriptions(next);
+        Toast.success("已恢复默认订阅");
+    }
+
     return (
         <Dialog onDismiss={hideDialog}>
             <Dialog.Title withDivider>订阅设置</Dialog.Title>
@@ -169,6 +177,21 @@ export default function SubscriptionSettingDialog(
                         />
                     </Pressable>
                 </View>
+                <Pressable
+                    style={styles.restoreRow}
+                    onPress={onRestoreDefault}>
+                    <Icon
+                        name="arrow-path"
+                        size={iconSizeConst.light}
+                        color={colors.primary}
+                    />
+                    <ThemeText
+                        fontSize="content"
+                        fontColor="primary"
+                        style={styles.restoreText}>
+                        恢复默认订阅
+                    </ThemeText>
+                </Pressable>
             </Dialog.Content>
             <Dialog.Actions
                 actions={[
@@ -200,16 +223,26 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginTop: rpx(8),
-        paddingHorizontal: rpx(4),
+        paddingHorizontal: 16,
     },
     input: {
         flex: 1,
         borderBottomWidth: 1,
         borderBottomColor: "#99999999",
-        paddingVertical: rpx(8),
+        paddingVertical: 8,
     },
     addBtn: {
-        paddingHorizontal: rpx(12),
-        paddingVertical: rpx(8),
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    restoreRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 4,
+        paddingVertical: 8,
+    },
+    restoreText: {
+        marginLeft: 6,
     },
 });

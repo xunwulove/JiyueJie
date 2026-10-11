@@ -10,8 +10,8 @@ import useColors from "@/hooks/useColors";
 import TrackPlayer, { useCurrentMusic, usePlayList } from "@/core/trackPlayer";
 import { FlashList } from "@shopify/flash-list";
 
-// 对齐媒体行规范：行高 64dp，左右 padding 16dp
-const ITEM_HEIGHT = rpx(128);
+// 对齐媒体行规范：行高 64dp（固定值，跨设备一致），左右 padding 16dp
+const ITEM_HEIGHT = 64;
 
 interface IPlayListProps {
     item: IMusic.IMusicItem;
@@ -77,7 +77,7 @@ function _PlayListItem(props: IPlayListProps) {
                 </ThemeText>
             ) : null}
             <IconButton
-                style={{ marginLeft: rpx(14) }}
+                style={{ marginLeft: 8 }}
                 name="x-mark"
                 sizeType="small"
                 onPress={() => {
@@ -158,14 +158,14 @@ const style = StyleSheet.create({
     musicItem: {
         width: "100%",
         minHeight: ITEM_HEIGHT,
-        paddingHorizontal: rpx(32), // 对齐 16dp
-        paddingVertical: rpx(20),
+        paddingHorizontal: 16, // 对齐 16dp（固定值）
+        paddingVertical: 8,
         flexDirection: "row",
         alignItems: "center",
-        borderRadius: 10,
+        borderRadius: 0,
     },
     index: {
-        width: rpx(56), // 对齐 28dp
+        width: 28, // 对齐 28dp（固定值）
         textAlign: "center",
     },
     info: {

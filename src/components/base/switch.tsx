@@ -16,7 +16,7 @@ import { timingConfig } from "@/constants/commonConst";
 
 interface ISwitchProps extends SwitchProps {}
 
-const fixedWidth = rpx(40);
+const fixedWidth = 20;
 
 export default function ThemeSwitch(props: ISwitchProps) {
     const { value, onValueChange } = props;
@@ -43,6 +43,7 @@ export default function ThemeSwitch(props: ISwitchProps) {
 
     return (
         <TouchableWithoutFeedback
+            hitSlop={{ top: 12, bottom: 12 }}
             onPress={() => {
                 onValueChange?.(!value);
             }}>
@@ -64,16 +65,16 @@ export default function ThemeSwitch(props: ISwitchProps) {
 
 const styles = StyleSheet.create({
     container: {
-        width: rpx(80),
-        height: rpx(40),
-        borderRadius: rpx(40),
+        width: 52,
+        height: 32,
+        borderRadius: 16,
         justifyContent: "center",
     },
     thumb: {
-        width: rpx(34),
-        height: rpx(34),
-        borderRadius: rpx(17),
+        width: 22,
+        height: 22,
+        borderRadius: 11,
         backgroundColor: "white",
-        left: rpx(3),
+        left: 5,
     },
 });

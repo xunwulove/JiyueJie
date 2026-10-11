@@ -40,7 +40,7 @@ interface IMusicItemOptionsProps {
     from?: string;
 }
 
-const ITEM_HEIGHT = rpx(96);
+const ITEM_HEIGHT = 48;
 
 interface IOption {
     icon: IIconName;
@@ -266,7 +266,7 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
                                         heightType="small"
                                         onPress={item.onPress}>
                                         <ListItem.ListItemIcon
-                                            width={rpx(48)}
+                                            width={28}
                                             icon={item.icon}
                                             iconSize={iconSizeConst.light}
                                         />
@@ -289,7 +289,7 @@ const style = StyleSheet.create({
     },
     header: {
         width: rpx(750),
-        height: rpx(200),
+        height: 100,
         flexDirection: "row",
         padding: rpx(24),
     },
@@ -297,14 +297,14 @@ const style = StyleSheet.create({
         paddingTop: rpx(12),
     },
     artwork: {
-        width: rpx(140),
-        height: rpx(140),
-        borderRadius: rpx(16),
+        width: 72,
+        height: 72,
+        borderRadius: 8,
     },
     content: {
         marginLeft: rpx(36),
         width: rpx(526),
-        height: rpx(140),
+        height: 72,
         justifyContent: "space-around",
     },
     title: {

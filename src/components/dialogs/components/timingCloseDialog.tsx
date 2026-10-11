@@ -121,7 +121,8 @@ const styles = StyleSheet.create({
         borderRadius: rpx(12),
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: rpx(16),
+        paddingVertical: 10,
+        marginVertical: 2,
     },
     bottomLine: {
         width: "100%",

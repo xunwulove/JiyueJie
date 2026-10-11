@@ -110,6 +110,7 @@ export default function SortDialog(props: ISortDialogProps) {
                             {selected ? (
                                 <ListItem.ListItemIcon
                                     icon={"check"}
+                                    iconSize={iconSizeConst.light}
                                     color={colors.primary}
                                 />
                             ) : null}

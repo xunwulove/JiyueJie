@@ -7,7 +7,6 @@ import Dialogs from "@/components/dialogs";
 import Panels from "@/components/panels";
 import PageBackground from "@/components/base/pageBackground";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import Debug from "@/components/debug";
 import { PortalHost } from "@/components/base/portal";
 import globalStyle from "@/constants/globalStyle";
 import Theme from "@/core/theme";
@@ -47,17 +46,26 @@ export default function Pages() {
                                 animation: "slide_from_right",
                                 animationDuration: 100,
                             }}>
-                            {routes.map(route => (
-                                <Stack.Screen
-                                    key={route.path}
-                                    name={route.path}
-                                    component={route.component}
-                                />
-                            ))}
+                            {routes.map(route => {
+                                const ScreenComponent = route.component;
+                                // 按屏局部 ErrorBoundary：单页崩溃不拖垮整个 App，
+                                // 全局 ErrorBoundary 仍作最外层兜底
+                                const WrappedScreen = (props: any) => (
+                                    <ErrorBoundary>
+                                        <ScreenComponent {...props} />
+                                    </ErrorBoundary>
+                                );
+                                return (
+                                    <Stack.Screen
+                                        key={route.path}
+                                        name={route.path}
+                                        component={WrappedScreen}
+                                    />
+                                );
+                            })}
                         </Stack.Navigator>                        
                         <Panels />
                         <Dialogs />
-                        <Debug />
                         <ToastBaseComponent />
                         <PortalHost />
                         {/* 自绘启动页：原生渐变底之上，bootstrap 完成前覆盖全屏（图标占比/字标可控） */}

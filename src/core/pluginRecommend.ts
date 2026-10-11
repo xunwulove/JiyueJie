@@ -4,7 +4,9 @@ import { devLog } from "@/utils/log";
 import getOrCreateMMKV from "@/utils/getOrCreateMMKV";
 import pluginReliability, {
     getRecommendReliabilitySync,
+    ensureRecommendLoaded,
 } from "@/core/pluginReliability";
+import Config from "@/core/appConfig";
 
 const cacheStore = getOrCreateMMKV("Plugin.RecommendCache");
 
@@ -116,11 +118,17 @@ export async function fetchPluginRecommendSheets(
 
 /**
  * 每日缓存版插件推荐歌单（首页横滑区 + 推荐歌单二级页共用）：
- * 当天已拉取 → 直接复用缓存（不再请求插件）；跨天 → 拉取；拉取失败/为空 → 回退上一次缓存
+ * 当天已拉取 → 直接复用缓存（不再请求插件）；跨天 → 拉取；
+ * 拉取失败/为空 → 回退上一次缓存（默认保证功能可用）。
+ *
+ * allowStaleFallback=false 时（"择优"场景）：跨天旧缓存不再作为结果返回，
+ * 返回 null 让调用方继续尝试下一个更健康的插件，避免首个插件失败即被旧缓存截胡。
  */
 export async function getCachedPluginRecommend(
     pluginHash: string,
+    options?: { allowStaleFallback?: boolean },
 ): Promise<IPluginRecommendSheets | null> {
+    const allowStaleFallback = options?.allowStaleFallback ?? true;
     const cached = readCache(pluginHash);
     const now = new Date();
 
@@ -136,7 +144,10 @@ export async function getCachedPluginRecommend(
     }
 
     // 拉取失败/为空 → 回退上一次数据（即使过期，保证功能可用）
-    return cached?.data ?? null;
+    if (allowStaleFallback) {
+        return cached?.data ?? null;
+    }
+    return null;
 }
 
 /**
@@ -160,8 +171,14 @@ export async function refreshCachedPluginRecommend(
  * 择优规则：按"推荐歌单专用可用率"降序尝试（可用率高的源优先展示；
  * 无数据默认 0.5 排在最后），而不是按插件安装顺序——避免
  * "能搜索但推荐歌单拉胯"的源抢占首页推荐位。
+ *
+ * 手动指定来源（plugin.recommendSource，推荐歌单刷新按钮 → 来源三级浮窗）：
+ * 指定源优先——该源可用则直接用其数据；失败/禁用/不再具备能力时
+ * 自动回退到可用率择优（单选优先 + 择优兜底）。
  */
 export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecommendSheets | null> {
+    // 排序前确保推荐可用率统计已加载，避免启动初期所有源平权 0.5 导致择优失效
+    await ensureRecommendLoaded();
     const plugins = PluginManager.getSortedPluginsWithAbility(
         "getRecommendSheetTags",
     )
@@ -171,8 +188,28 @@ export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecomme
                 getRecommendReliabilitySync(b.instance.platform) -
                 getRecommendReliabilitySync(a.instance.platform),
         );
+
+    // 手动指定的来源优先（仅在指定源仍启用且具备能力时生效）
+    const manualHash = Config.getConfig("plugin.recommendSource");
+    if (manualHash) {
+        const manual = plugins.find(p => p.hash === manualHash);
+        if (manual) {
+            const data = await getCachedPluginRecommend(manualHash, {
+                // 跨天旧缓存不截胡：指定源已失效则继续走择优，避免旧数据长期占据首页
+                allowStaleFallback: false,
+            });
+            if (data) {
+                return data;
+            }
+            // 指定源失败 → 回退择优（下面的循环继续）
+        }
+    }
+
     for (const plugin of plugins) {
-        const data = await getCachedPluginRecommend(plugin.hash);
+        const data = await getCachedPluginRecommend(plugin.hash, {
+            // 跨天旧缓存不截胡：失败即继续尝试下一个更健康的插件
+            allowStaleFallback: false,
+        });
         if (data) {
             return data;
         }

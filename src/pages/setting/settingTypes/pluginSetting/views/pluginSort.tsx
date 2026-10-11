@@ -19,11 +19,12 @@ import {
     View,
 } from "react-native";
 
-const ITEM_HEIGHT = rpx(96);
-const marginTop = rpx(188) + (StatusBar.currentHeight ?? 0);
+const ITEM_HEIGHT = 48;
+// 拖拽基准：AppBar(56) + 排序方式行（chips 行约 56dp）+ 状态栏
+const marginTop = rpx(112) + (StatusBar.currentHeight ?? 0);
 
-/** 排序方式 */
-type SortMode = "manual" | "reliability" | "platform";
+/** 排序方式：手动 / 通用可用率 / 歌单可用率 / 按平台 */
+type SortMode = "manual" | "reliability" | "recommend" | "platform";
 
 /** 平台徽章（分组/标识用） */
 function platformBadge(plugin: Plugin): { text: string; color: string } {
@@ -61,15 +62,36 @@ export default function PluginSort() {
     /** 非手动模式的排序结果 */
     const sortedView = useMemo(() => {
         if (sortMode === "reliability") {
-            return [...plugins].sort(
-                (a, b) =>
-                    pluginReliability.getReliabilitySync(
-                        b.instance.platform,
-                    ) -
-                    pluginReliability.getReliabilitySync(
-                        a.instance.platform,
-                    ),
-            );
+            // 通用可用率 高→低；暂无数据的源排最后
+            return [...plugins].sort((a, b) => {
+                const ra = pluginReliability.hasRecordSync(a.instance.platform)
+                    ? pluginReliability.getReliabilitySync(a.instance.platform)
+                    : -1;
+                const rb = pluginReliability.hasRecordSync(b.instance.platform)
+                    ? pluginReliability.getReliabilitySync(b.instance.platform)
+                    : -1;
+                return rb - ra;
+            });
+        }
+        if (sortMode === "recommend") {
+            // 歌单可用率 高→低；暂无数据的源排最后
+            return [...plugins].sort((a, b) => {
+                const ra = pluginReliability.hasRecommendRecordSync(
+                    a.instance.platform,
+                )
+                    ? pluginReliability.getRecommendReliabilitySync(
+                          a.instance.platform,
+                      )
+                    : -1;
+                const rb = pluginReliability.hasRecommendRecordSync(
+                    b.instance.platform,
+                )
+                    ? pluginReliability.getRecommendReliabilitySync(
+                          b.instance.platform,
+                      )
+                    : -1;
+                return rb - ra;
+            });
         }
         if (sortMode === "platform") {
             const netease: Plugin[] = [];
@@ -92,13 +114,21 @@ export default function PluginSort() {
 
     function renderItem({ item }: { item: Plugin }) {
         const badge = platformBadge(item);
-        const rel = pluginReliability.getReliabilitySync(
-            item.instance.platform,
-        );
-        const relText =
-            rel === pluginReliability.RELIABILITY_DEFAULT
-                ? "暂无数据"
-                : `${Math.round(rel * 100)}%`;
+        // 行右侧可用率跟随当前排序模式：歌单模式显示歌单可用率，其余显示通用可用率
+        const hasData =
+            sortMode === "recommend"
+                ? pluginReliability.hasRecommendRecordSync(
+                      item.instance.platform,
+                  )
+                : pluginReliability.hasRecordSync(item.instance.platform);
+        const rel = hasData
+            ? sortMode === "recommend"
+                ? pluginReliability.getRecommendReliabilitySync(
+                      item.instance.platform,
+                  )
+                : pluginReliability.getReliabilitySync(item.instance.platform)
+            : null;
+        const relText = rel === null ? "暂无数据" : `${Math.round(rel * 100)}%`;
         return (
             <View style={style.sortItem}>
                 <View style={style.sortItemMain}>
@@ -128,24 +158,26 @@ export default function PluginSort() {
 
     return (
         <>
-            <AppBar>{t("pluginSetting.menu.sort")}</AppBar>
-            <HorizontalSafeAreaView style={style.sortWrapper}>
-                <>
-                    <ThemeText fontWeight="bold">{t("pluginSetting.menu.sort")}</ThemeText>
-                    {sortMode === "manual" ? (
-                        <TouchableOpacity onPress={saveOrder}>
-                            <ThemeText>{t("common.done")}</ThemeText>
+            <AppBar
+                actionComponent={
+                    sortMode === "manual" ? (
+                        <TouchableOpacity
+                            style={style.doneButton}
+                            onPress={saveOrder}>
+                            <ThemeText fontWeight="bold">
+                                {t("common.done")}
+                            </ThemeText>
                         </TouchableOpacity>
-                    ) : (
-                        <View />
-                    )}
-                </>
-            </HorizontalSafeAreaView>
+                    ) : null
+                }>
+                {t("pluginSetting.menu.sort")}
+            </AppBar>
             <HorizontalSafeAreaView style={style.modeRow}>
                 {(
                     [
                         { key: "manual", label: "拖动排序" },
-                        { key: "reliability", label: "按可用率" },
+                        { key: "reliability", label: "通用可用率" },
+                        { key: "recommend", label: "歌单可用率" },
                         { key: "platform", label: "按平台" },
                     ] as Array<{ key: SortMode; label: string }>
                 ).map(mode => {
@@ -196,25 +228,21 @@ export default function PluginSort() {
 }
 
 const style = StyleSheet.create({
-    sortWrapper: {
-        marginHorizontal: rpx(24),
-        marginTop: rpx(36),
-        justifyContent: "space-between",
-        height: rpx(64),
-        alignItems: "center",
-        flexDirection: "row",
-    },
     modeRow: {
         flexDirection: "row",
-        gap: rpx(16),
-        marginHorizontal: rpx(24),
-        marginTop: rpx(8),
+        gap: rpx(6),
+        marginHorizontal: rpx(12),
+        marginTop: rpx(24),
         marginBottom: rpx(8),
     },
     modeChip: {
-        paddingHorizontal: rpx(24),
+        paddingHorizontal: rpx(8),
         paddingVertical: rpx(8),
         borderRadius: rpx(24),
+    },
+    doneButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
     },
     sortItem: {
         height: ITEM_HEIGHT,

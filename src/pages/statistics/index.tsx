@@ -209,7 +209,7 @@ export default function Statistics() {
                         </View>
                         <View style={styles.rankInfo}>
                             <ThemeText
-                                fontSize="subTitle"
+                                fontSize="body"
                                 fontWeight="medium"
                                 numberOfLines={1}>
                                 {item.music.title ?? "未知歌曲"}
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     },
     chip: {
         paddingHorizontal: 14,
-        paddingVertical: 6,
+        paddingVertical: 10,
         borderRadius: 999,
     },
     overviewRowWrap: {
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     overviewCard: {
         flex: 1,
         minHeight: 110,
-        borderRadius: 18,
+        borderRadius: 14,
         paddingVertical: 14,
         paddingHorizontal: 12,
         justifyContent: "center",

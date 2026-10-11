@@ -49,11 +49,11 @@ export default function Header() {
 
 const style = StyleSheet.create({
     wrapper: {
-        width: rpx(750),
-        height: rpx(80),
-        paddingHorizontal: rpx(24),
-        marginTop: rpx(18),
-        marginBottom: rpx(12),
+        width: "100%",
+        height: 56,
+        paddingHorizontal: 16,
+        marginTop: 12,
+        marginBottom: 12,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",

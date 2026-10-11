@@ -94,7 +94,7 @@ export default function ApiSheetsPage(props: IApiSheetsPageProps) {
                         <Text
                             numberOfLines={1}
                             style={{
-                                width: rpx(160),
+                                width: 120,
                                 fontWeight: focused
                                     ? fontWeightConst.bolder
                                     : fontWeightConst.medium,
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     cover: {
         width: "100%",
         aspectRatio: 1,
-        borderRadius: 12,
+        borderRadius: 14,
     },
     rankBadge: {
         position: "absolute",
@@ -280,7 +280,7 @@ function SheetCard({
                         styles.starButton,
                         pressed ? { opacity: 0.7 } : null,
                     ]}
-                    hitSlop={4}
+                    hitSlop={11}
                     onPress={e => {
                         e.stopPropagation();
                         toggleStar();

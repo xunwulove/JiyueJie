@@ -14,17 +14,35 @@ import useColors from "@/hooks/useColors";
 import rpx from "@/utils/rpx";
 import Toast from "@/utils/toast";
 import { useI18N } from "@/core/i18n";
+import { showDialog } from "@/components/dialogs/useDialog";
+import Config from "@/core/appConfig";
 
 interface ICategorySheets {
     category: string;
     sheets: IMusic.IMusicSheetItemBase[];
 }
 
+/** 将某插件的推荐歌单结构平铺为 首页分类胶囊 Tab + 横滑歌单卡 */
+function toCategories(data: IPluginRecommendSheets): ICategorySheets[] {
+    return [
+        ...(data.pinned?.length
+            ? [{ category: "推荐", sheets: data.pinned }]
+            : []),
+        ...(data.groups ?? []).map(g => ({
+            category: g.title ?? "",
+            sheets: g.data,
+        })),
+    ];
+}
+
 /**
  * 首页"推荐歌单"横滑区 - 对齐 APlayer HomePage：
  * 分类圆角胶囊 Tab（选中 primary 底白字，未选 surfaceVariant 底）+ 当前分类横滑歌单卡
- * 数据：插件推荐歌单（getRecommendSheetTags，首选支持该能力的插件）
+ * 数据：插件推荐歌单（getRecommendSheetTags；手动指定源优先，失败回退可用率择优）
  * 点击歌单 → 插件歌单详情（getMusicSheetInfo，歌曲由插件自身解析播放）
+ *
+ * 标题行右端刷新按钮：点击打开"推荐歌单来源"三级浮窗（选择/恢复默认），
+ * 应用后按新来源强制刷新数据（指定源强制拉取，失败自动回退择优）。
  */
 export default function RecommendSection() {
     const navigate = useNavigate();
@@ -38,57 +56,62 @@ export default function RecommendSection() {
     // 与原版一致：记录推荐歌单来自哪个插件，跳详情时携带 pluginHash
     const [pluginHash, setPluginHash] = useState<string>();
 
+    const applyFeed = useCallback((data: IPluginRecommendSheets) => {
+        setPluginHash(data.pluginHash);
+        setFeed(toCategories(data));
+        setSelected(0);
+    }, []);
+
     const load = useCallback(async () => {
         const data: IPluginRecommendSheets | null =
             await getFirstAvailablePluginRecommend();
         if (data) {
-            setPluginHash(data.pluginHash);
-            const categories: ICategorySheets[] = [
-                ...(data.pinned?.length
-                    ? [{ category: "推荐", sheets: data.pinned }]
-                    : []),
-                ...(data.groups ?? []).map(g => ({
-                    category: g.title ?? "",
-                    sheets: g.data,
-                })),
-            ];
-            setFeed(categories);
+            applyFeed(data);
         }
         setLoaded(true);
-    }, []);
+    }, [applyFeed]);
 
     useEffect(() => {
         load();
     }, [load]);
 
-    /* 标题行右端刷新按钮：绕过每日缓存强制拉取当前插件数据 */
-    const onRefresh = useCallback(async () => {
-        if (refreshing || !pluginHash) {
+    /**
+     * 来源应用后的强制刷新：
+     * 指定了来源 → 绕过每日缓存强制拉取该源；失败提示并回退择优；
+     * 未指定（自动择优）→ 走择优路径（当天缓存直接复用）。
+     */
+    const handleSourceApplied = useCallback(async () => {
+        if (refreshing) {
             return;
         }
         setRefreshing(true);
         try {
-            const data = await refreshCachedPluginRecommend(pluginHash);
+            const manualHash = Config.getConfig("plugin.recommendSource");
+            let data: IPluginRecommendSheets | null = null;
+            if (manualHash) {
+                data = await refreshCachedPluginRecommend(manualHash);
+                if (!data) {
+                    Toast.warn(t("recommendSheet.sourceUnavailable"));
+                }
+            }
+            if (!data) {
+                data = await getFirstAvailablePluginRecommend();
+            }
             if (data) {
-                const categories: ICategorySheets[] = [
-                    ...(data.pinned?.length
-                        ? [{ category: "推荐", sheets: data.pinned }]
-                        : []),
-                    ...(data.groups ?? []).map(g => ({
-                        category: g.title ?? "",
-                        sheets: g.data,
-                    })),
-                ];
-                setFeed(categories);
-                setSelected(0);
-                Toast.success("推荐歌单已刷新");
-            } else {
-                Toast.warn("刷新失败，请稍后重试");
+                applyFeed(data);
+                Toast.success(t("recommendSheet.sourceApplied"));
             }
         } finally {
             setRefreshing(false);
         }
-    }, [refreshing, pluginHash]);
+    }, [refreshing, t, applyFeed]);
+
+    /* 标题行右端刷新按钮：打开"推荐歌单来源"三级浮窗（确认/恢复默认后自动刷新） */
+    const onRefresh = useCallback(() => {
+        showDialog("RecommendSourceDialog", {
+            onApplied: handleSourceApplied,
+        });
+    }, [handleSourceApplied]);
 
     if (!loaded || !feed.length) {
         return null; // 无插件支持时整个模块隐藏（对齐 APlayer feedLoading/empty 处理）
@@ -129,7 +152,7 @@ export default function RecommendSection() {
                     const isSelected = index === selected;
                     return (
                         <View
-                            key={`tag-${item.category}`}
+                            key={`tag-${index}-${item.category}`}
                             style={[
                                 styles.tag,
                                 {

@@ -3,6 +3,7 @@ import StatusBar from "@/components/base/statusBar";
 import ThemeText from "@/components/base/themeText";
 import Icon from "@/components/base/icon.tsx";
 import { ListDivider } from "@/components/base/divider";
+import { iconSizeConst } from "@/constants/uiConst";
 import MusicList from "@/components/musicList";
 import { localMusicSheetId, RequestStateCode } from "@/constants/commonConst";
 import LocalMusicSheet from "@/core/localMusicSheet";
@@ -123,7 +124,18 @@ export default function LocalGroup() {
                         groups.map(group => (
                             <View key={group.name}>
                                 <Pressable
-                                    onPress={() => setSelectedGroup(group)}>
+                                    onPress={() => setSelectedGroup(group)}
+                                    style={({ pressed }) =>
+                                        pressed
+                                            ? {
+                                                  backgroundColor: Color(
+                                                      colors.primary,
+                                                  )
+                                                      .alpha(0.06)
+                                                      .toString(),
+                                              }
+                                            : null
+                                    }>
                                     {/* 行：48dp 渐变图标块（专辑圆角10 / 歌手圆）+ 组名 15 Medium + "N 首" 12 + Play 18 α0.7 */}
                                     <View style={styles.row}>
                                         <LinearGradient
@@ -138,7 +150,7 @@ export default function LocalGroup() {
                                             ]}>
                                             <Icon
                                                 name={GROUP_ICONS[groupType]}
-                                                size={26}
+                                                size={iconSizeConst.normal}
                                                 color={iconColor}
                                             />
                                         </LinearGradient>
@@ -158,7 +170,7 @@ export default function LocalGroup() {
                                         </View>
                                         <Icon
                                             name="play"
-                                            size={18}
+                                            size={iconSizeConst.light}
                                             color={Color(colors.primary)
                                                 .alpha(0.7)
                                                 .toString()}

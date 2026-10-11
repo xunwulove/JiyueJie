@@ -95,8 +95,8 @@ export default function Body() {
 const style = StyleSheet.create({
     header: {
         flexDirection: "row",
-        height: rpx(88),
-        paddingHorizontal: rpx(24),
+        height: 56,
+        paddingHorizontal: 16,
         alignItems: "center",
         justifyContent: "space-between",
     },

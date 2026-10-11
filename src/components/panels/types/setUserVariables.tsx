@@ -106,8 +106,8 @@ const styles = StyleSheet.create({
     },
     input: {
         width: "50%",
-        paddingVertical: rpx(8),
-        paddingHorizontal: rpx(12),
-        borderRadius: rpx(8),
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 6,
     },
 });

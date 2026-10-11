@@ -17,7 +17,6 @@ import MusicSheet, {
 import { ROUTE_PATH, useNavigate } from "@/core/router";
 import useColors from "@/hooks/useColors";
 import Toast from "@/utils/toast";
-import rpx from "@/utils/rpx";
 import Color from "color";
 
 /**
@@ -97,6 +96,7 @@ export default function SheetManager() {
                     size={20}
                     color={colors.textSecondary ?? "rgba(0,0,0,0.6)"}
                     style={styles.rowDelete}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     onPress={onDelete}
                 />
             ) : null}

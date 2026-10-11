@@ -104,17 +104,22 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
 
     private downloadingCount = 0;
 
+    /** 被用户取消的进行中任务（media unique key）；下载完成后丢弃文件、不入库 */
+    private cancelledTasks = new Set<string>();
+
     private generateFilename(musicItem: IMusic.IMusicItem) {
         // 下载文件命名：歌名在前（默认）/ 作者在前，可配置 basic.downloadNameOrder
         const order =
             this.configService?.getConfig("basic.downloadNameOrder") ?? "title-first";
         const title = escapeCharacter(musicItem.title) || "未知歌曲";
         const artist = escapeCharacter(musicItem.artist) || "未知歌手";
-        const name =
+        const baseName =
             order === "artist-first"
                 ? `${artist} - ${title}`
                 : `${title} - ${artist}`;
-        return name.slice(0, 200);
+        // 追加平台与歌曲id，避免同名同作者不同版本互相覆盖；并保留该后缀不被截断
+        const uniqueTag = `_${escapeCharacter(musicItem.platform)}-${escapeCharacter(musicItem.id)}`;
+        return baseName.slice(0, Math.max(0, 200 - uniqueTag.length)) + uniqueTag;
     }
 
 
@@ -168,6 +173,14 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
             errorReason: reason,
         });
         this.emit(DownloaderEvent.DownloadTaskError, reason, musicItem, error);
+    }
+
+    /** 清理被用户取消的进行中任务：平衡并发计数并移除任务记录（不入库、不 emit） */
+    private cleanupCancelledTask(musicItem: IMusic.IMusicItem) {
+        const key = getMediaUniqueKey(musicItem);
+        this.cancelledTasks.delete(key);
+        this.downloadingCount--;
+        downloadTasks.delete(key);
     }
 
     /** 匹配文件后缀 */
@@ -281,7 +294,9 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                 reason: e?.message ?? e,
             });
 
-            if (e.message === DownloadFailReason.FailToFetchSource) {
+            if (this.cancelledTasks.has(getMediaUniqueKey(musicItem))) {
+                this.cleanupCancelledTask(musicItem);
+            } else if (e.message === DownloadFailReason.FailToFetchSource) {
                 this.markTaskAsError(musicItem, DownloadFailReason.FailToFetchSource, e);
             } else {
                 this.markTaskAsError(musicItem, DownloadFailReason.Unknown, e);
@@ -317,54 +332,67 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                 await mkdirR(folder);
             }
         } catch (e: any) {
-            this.emit(DownloaderEvent.DownloadTaskError, DownloadFailReason.NoWritePermission, musicItem, e);
+            if (this.cancelledTasks.has(getMediaUniqueKey(musicItem))) {
+                this.cleanupCancelledTask(musicItem);
+            } else {
+                this.markTaskAsError(musicItem, DownloadFailReason.NoWritePermission, e);
+            }
             return;
         }
 
-        // 下载
-        const { promise } = downloadFile({
-            fromUrl: url ?? "",
-            toFile: cacheDownloadPath,
-            headers: headers,
-            background: true,
-            begin: (res) => {
-                this.updateDownloadTask(musicItem, {
-                    status: DownloadStatus.Downloading,
-                    downloadedSize: 0,
-                    fileSize: res.contentLength,
-                    jobId: res.jobId,
-                });
-            },
-            progress: (res) => {
-                this.updateDownloadTask(musicItem, {
-                    status: DownloadStatus.Downloading,
-                    downloadedSize: res.bytesWritten,
-                    fileSize: res.contentLength,
-                    jobId: res.jobId,
-                });
-            },
-        });
-
+        // 下载（downloadFile 同步调用本身也纳入 try，避免异常逃出任务循环导致计数泄漏）
         try {
-            await promise;
+            const { promise: downloadPromise } = downloadFile({
+                fromUrl: url ?? "",
+                toFile: cacheDownloadPath,
+                headers: headers,
+                background: true,
+                begin: (res) => {
+                    this.updateDownloadTask(musicItem, {
+                        status: DownloadStatus.Downloading,
+                        downloadedSize: 0,
+                        fileSize: res.contentLength,
+                        jobId: res.jobId,
+                    });
+                },
+                progress: (res) => {
+                    this.updateDownloadTask(musicItem, {
+                        status: DownloadStatus.Downloading,
+                        downloadedSize: res.bytesWritten,
+                        fileSize: res.contentLength,
+                        jobId: res.jobId,
+                    });
+                },
+            });
+            await downloadPromise;
             // 下载完成，移动文件
             await copyFile(cacheDownloadPath, targetDownloadPath);
 
-            LocalMusicSheet.addMusic({
-                ...musicItem,
-                [internalSerializeKey]: {
+            if (this.cancelledTasks.has(getMediaUniqueKey(musicItem))) {
+                // 用户已取消：丢弃目标文件，不入库
+                await unlink(targetDownloadPath).catch(() => {});
+                this.cleanupCancelledTask(musicItem);
+            } else {
+                LocalMusicSheet.addMusic({
+                    ...musicItem,
+                    [internalSerializeKey]: {
+                        localPath: targetDownloadPath,
+                    },
+                });
+
+                patchMediaExtra(musicItem, {
+                    downloaded: true,
                     localPath: targetDownloadPath,
-                },
-            });
+                });
 
-            patchMediaExtra(musicItem, {
-                downloaded: true,
-                localPath: targetDownloadPath,
-            });
-
-            this.markTaskAsCompleted(musicItem);
+                this.markTaskAsCompleted(musicItem);
+            }
         } catch (e: any) {
-            this.markTaskAsError(musicItem, DownloadFailReason.Unknown, e);
+            if (this.cancelledTasks.has(getMediaUniqueKey(musicItem))) {
+                this.cleanupCancelledTask(musicItem);
+            } else {
+                this.markTaskAsError(musicItem, DownloadFailReason.Unknown, e);
+            }
         }
 
         // 清理工作
@@ -441,12 +469,19 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
         }
         if (task.status === DownloadStatus.Pending || task.status === DownloadStatus.Error) {
             downloadTasks.delete(key);
-            const downloadQueue = getDefaultStore().get(downloadQueueAtom);
-            const newDownloadQueue = downloadQueue.filter(item => !isSameMediaItem(item, musicItem));
-            getDefaultStore().set(downloadQueueAtom, newDownloadQueue);
-            return true;
+        } else if (
+            task.status === DownloadStatus.Preparing ||
+            task.status === DownloadStatus.Downloading
+        ) {
+            // 进行中任务无法立即中止：标记取消，待下载完成后丢弃文件、不入库
+            this.cancelledTasks.add(key);
+        } else {
+            return false;
         }
-        return false;
+        const downloadQueue = getDefaultStore().get(downloadQueueAtom);
+        const newDownloadQueue = downloadQueue.filter(item => !isSameMediaItem(item, musicItem));
+        getDefaultStore().set(downloadQueueAtom, newDownloadQueue);
+        return true;
     }
 
     /** 删除已下载歌曲：移除持久化记录 + 删除本地文件 */
@@ -454,12 +489,15 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
         await this.removeDownloadedRecord(musicItem);
         // 删除文件（尽力而为；路径 = 下载目录/文件名.后缀）
         try {
-            const filename = `${this.generateFilename(musicItem)}`;
+            const filename = this.generateFilename(musicItem);
             const dir = this.getDownloadPath("");
-            const dirNoScheme = dir.replace("file://", "");
+            // 两侧统一去除 scheme 前缀再比较，避免 file:///content:// 前缀导致 startsWith 匹配失败
+            const stripScheme = (p: string) => p.replace(/^(file|content):\/\//, "");
+            const dirNoScheme = stripScheme(dir);
+            const normDir = dirNoScheme.endsWith("/") ? dirNoScheme : `${dirNoScheme}/`;
             const res = await readDir(dirNoScheme).catch(() => [] as any[]);
             const target = res.find(_ =>
-                _.path.startsWith(dir) &&
+                stripScheme(_.path).startsWith(normDir) &&
                 _.name.startsWith(filename),
             );
             if (target) {

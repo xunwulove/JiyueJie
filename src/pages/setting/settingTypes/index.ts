@@ -1,7 +1,6 @@
 import deviceInfoModule from "react-native-device-info";
 import AboutSetting from "./aboutSetting";
 import BasicSetting from "./basicSetting";
-import ThemeSetting from "./themeSetting";
 
 const settingTypes: Record<
     string,
@@ -17,12 +16,8 @@ const settingTypes: Record<
         i18nKey: "sidebar.basicSettings",
         component: BasicSetting,
     },
-    theme: {
-        title: "主题设置",
-        i18nKey: "sidebar.themeSettings",
-        component: ThemeSetting,
-    },
     // 备份已迁出为独立二级页（ROUTE_PATH.BACKUP），不再作为设置类型注册
+    // 主题设置已改为三级浮窗（basicSetting → ThemeSettingDialog），不再注册二级设置页
     about: {
         title: `关于${deviceInfoModule.getApplicationName()}`,
         i18nKey: "common.about",

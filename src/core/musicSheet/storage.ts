@@ -1,5 +1,4 @@
 import getOrCreateMMKV from "@/utils/getOrCreateMMKV.ts";
-import { InteractionManager } from "react-native";
 import { SortType } from "@/constants/commonConst.ts";
 import { safeParse, safeStringify } from "@/utils/jsonUtil";
 
@@ -10,10 +9,10 @@ function getStorageData(key: string) {
 }
 
 async function setStorageData(key: string, value: any) {
-    return InteractionManager.runAfterInteractions(() => {
-        const mmkv = getOrCreateMMKV(`LocalSheet.${key}`);
-        mmkv.set("data", safeStringify(value));
-    });
+    // 同步写 MMKV：不再延迟到 runAfterInteractions，
+    // 避免动画/手势未结束时杀进程导致持久化数据丢失（MMKV 单键写入本身很快）
+    const mmkv = getOrCreateMMKV(`LocalSheet.${key}`);
+    mmkv.set("data", safeStringify(value));
 }
 
 function removeStorageData(key: string) {

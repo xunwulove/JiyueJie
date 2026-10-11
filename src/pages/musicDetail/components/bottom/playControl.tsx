@@ -35,6 +35,7 @@ export default function PlayControl() {
                 color={colors.primary}
                 name={repeatModeConst[repeatMode].icon}
                 size={modeSize}
+                hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}
                 onPress={async () => {
                     InteractionManager.runAfterInteractions(async () => {
                         await delay(20, false);
@@ -46,6 +47,7 @@ export default function PlayControl() {
                 color={colors.text}
                 name={"skip-left"}
                 size={sideSize}
+                hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                 onPress={() => {
                     TrackPlayer.skipToPrevious();
                 }}
@@ -77,6 +79,7 @@ export default function PlayControl() {
                 color={colors.text}
                 name={"skip-right"}
                 size={sideSize}
+                hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                 onPress={() => {
                     TrackPlayer.skipToNext();
                 }}
@@ -85,6 +88,7 @@ export default function PlayControl() {
                 color={colors.textSecondary}
                 name={"playlist"}
                 size={queueSize}
+                hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}
                 onPress={() => {
                     showPanel("PlayList");
                 }}

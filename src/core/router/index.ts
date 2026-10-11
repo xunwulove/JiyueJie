@@ -1,7 +1,7 @@
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useCallback } from "react";
+import { createContext, useCallback, useContext } from "react";
 import { LogBox } from "react-native";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import { tabletSubPagesAtom } from "@/core/tabletNav";
 import { isTabletScreen } from "@/utils/tablet";
 
@@ -9,14 +9,27 @@ LogBox.ignoreLogs([
     "Non-serializable values were found in the navigation state",
 ]);
 
+/**
+ * 平板覆盖层帧参数上下文：
+ * 覆盖层栈内每一页都常驻挂载渲染（subPageOverlay.tsx）。旧实现 useParams 在栈非空时
+ * 统一返回栈顶 params，导致下层帧每次重渲染拿到栈顶参数（artistDetail header 崩、setting 静默切页）。
+ * 现改为：每个覆盖层帧由 subPageOverlay 用本帧 page.params 包裹 <Component/>，
+ * useParams 优先消费本帧注入的 params；原生栈/ tab 内容页不包裹，回退 route.params。
+ */
+const TABLET_FRAME_PARAMS_UNSET = Symbol("tablet-frame-params-unset");
+const TabletFrameParamsContext = createContext<
+    Record<string, unknown> | typeof TABLET_FRAME_PARAMS_UNSET
+>(TABLET_FRAME_PARAMS_UNSET);
+
+/** 平板覆盖层帧参数 Provider（subPageOverlay 渲染每帧时包裹 <Component/>） */
+export const TabletFrameParamsProvider = TabletFrameParamsContext.Provider;
+
 /** 路由key */
 export const ROUTE_PATH = {
     /** 主页 */
     HOME: "home",
     /** 音乐播放页 */
     MUSIC_DETAIL: "music-detail",
-    /** 搜索页 */
-    SEARCH_PAGE: "search-page",
     /** 本地歌单页 */
     LOCAL_SHEET_DETAIL: "local-sheet-detail",
     /** 专辑页 */
@@ -39,8 +52,6 @@ export const ROUTE_PATH = {
     SEARCH_MUSIC_LIST: "search-music-list",
     /** 批量编辑 */
     MUSIC_LIST_EDITOR: "music-list-editor",
-    /** 选择文件夹 */
-    FILE_SELECTOR: "file-selector",
     /** 推荐歌单 */
     RECOMMEND_SHEETS: "recommend-sheets",
     /** 歌单详情 */
@@ -49,10 +60,6 @@ export const ROUTE_PATH = {
     HISTORY: "history",
     /** 统计 */
     STATISTICS: "statistics",
-    /** 自定义主题 */
-    SET_CUSTOM_THEME: "set-custom-theme",
-    /** 权限管理 */
-    PERMISSIONS: "permissions",
     /** 扫描设置（媒体来源） */
     SCAN_SETTINGS: "scan-settings",
     /** 音源管理（独立二级页，复用插件管理） */
@@ -61,8 +68,6 @@ export const ROUTE_PATH = {
     BACKUP: "backup",
     /** 音源排序（独立二级页，替代插件设置内嵌套原生栈） */
     PLUGIN_SORT: "plugin-sort",
-    /** 音源订阅（独立二级页，替代插件设置内嵌套原生栈） */
-    PLUGIN_SUBSCRIBE: "plugin-subscribe",
     /** 我的歌单（歌单管理：新建/导入/删除，独立二级页） */
     SHEET_MANAGER: "sheet-manager",
     /** 网易/QQ 接口歌单·榜单详情（推荐歌单/排行榜数据层为公开接口） */
@@ -77,7 +82,6 @@ type RouterParamsBase = Record<RoutePaths, any>;
 interface RouterParams extends RouterParamsBase {
     home: undefined;
     "music-detail": undefined;
-    "search-page": undefined;
     "local-sheet-detail": {
         id: string;
     };
@@ -105,19 +109,6 @@ interface RouterParams extends RouterParamsBase {
         musicSheet?: Partial<IMusic.IMusicSheetItem>;
         musicList: IMusic.IMusicItem[] | null;
     };
-    "file-selector": {
-        fileType?: "folder" | "file" | "file-and-folder"; // 10: folder 11: file and folder,
-        multi?: boolean; // 是否多选
-        actionText?: string; // 底部行动点的文本
-        actionIcon?: string; // 底部行动点的图标
-        onAction?: (
-            selectedFiles: {
-                path: string;
-                type: "file" | "folder";
-            }[],
-        ) => Promise<boolean>; // true会自动关闭，false会停在当前页面
-        matchExtension?: (path: string) => boolean;
-    };
     "top-list-detail": {
         pluginHash: string;
         topList: IMusic.IMusicSheetItemBase;
@@ -134,8 +125,6 @@ interface RouterParams extends RouterParamsBase {
     backup: undefined;
     /** 音源排序（独立二级页，替代插件设置内嵌套原生栈） */
     "plugin-sort": undefined;
-    /** 音源订阅（独立二级页，替代插件设置内嵌套原生栈） */
-    "plugin-subscribe": undefined;
     /** 我的歌单（歌单管理） */
     "sheet-manager": undefined;
     /** 网易/QQ 接口歌单·榜单详情 */
@@ -148,13 +137,13 @@ interface RouterParams extends RouterParamsBase {
 export function useParams<T extends RoutePaths>(): RouterParams[T] {
     const route = useRoute<any>();
 
-    // 平板二级页覆盖层激活时：参数取自覆盖层栈顶（覆盖层组件不在 React Navigation 栈内）
-    const subPages = useAtomValue(tabletSubPagesAtom);
-    const top = subPages[subPages.length - 1];
-    if (top) {
-        return top.params as RouterParams[T];
+    // 覆盖层帧内：优先消费本帧 Provider 注入的 params（每帧只拿自己的参数，避免栈顶污染下层帧）
+    const frameParams = useContext(TabletFrameParamsContext);
+    if (frameParams !== TABLET_FRAME_PARAMS_UNSET) {
+        return frameParams as RouterParams[T];
     }
 
+    // 原生栈 / tab 内容页：取 React Navigation 当前路由参数
     const routeParams = route?.params as RouterParams[T];
     return routeParams;
 }

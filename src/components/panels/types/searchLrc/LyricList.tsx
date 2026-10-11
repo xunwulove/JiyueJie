@@ -29,7 +29,7 @@ interface ILyricListProps {
     data: ISearchLyricResult;
 }
 
-const ITEM_HEIGHT = rpx(120);
+const ITEM_HEIGHT = 64;
 function LyricListImpl(props: ILyricListProps) {
     const data = props.data;
     const searchState = data?.state ?? RequestStateCode.IDLE;

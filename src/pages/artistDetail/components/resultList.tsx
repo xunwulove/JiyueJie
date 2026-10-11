@@ -9,7 +9,7 @@ import React, { useEffect, useRef, useState } from "react";
 import useQueryArtist from "../hooks/useQuery";
 import { IQueryResult, scrollToTopAtom } from "../store/atoms";
 
-const ITEM_HEIGHT = rpx(120);
+const ITEM_HEIGHT = 64;
 
 interface IResultListProps<T = IArtist.ArtistMediaType> {
     tab: T;
@@ -41,7 +41,7 @@ export default function ResultList(props: IResultListProps) {
                 const currentY = e.nativeEvent.contentOffset.y;
                 if (
                     !scrollToTopState &&
-                    currentY < ITEM_HEIGHT * 8 - rpx(350)
+                    currentY < ITEM_HEIGHT * 8 - 280
                 ) {
                     currentY < lastScrollY.current && setScrollToTopState(true);
                 } else {

@@ -370,8 +370,8 @@ const style = StyleSheet.create({
         marginTop: rpx(8),
     },
     groupHeader: {
-        paddingHorizontal: rpx(24),
-        height: rpx(56),
+        paddingHorizontal: 16,
+        height: 36,
         flexDirection: "row",
         alignItems: "center",
         marginTop: rpx(8),
@@ -382,7 +382,7 @@ const style = StyleSheet.create({
     },
     card: {
         marginHorizontal: rpx(24),
-        borderRadius: rpx(14),
+        borderRadius: 14,
         overflow: "hidden",
     },
 });

@@ -61,7 +61,8 @@ async function checkPathAndRemove(filePath?: string) {
     }
     filePath = addFileScheme(filePath);
     if (await exists(filePath)) {
-        unlink(filePath);
+        // 等待删除完成并吞掉删除失败，避免 unhandled rejection
+        await unlink(filePath).catch(() => {});
     }
 }
 

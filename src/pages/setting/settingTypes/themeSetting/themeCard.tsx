@@ -64,26 +64,26 @@ export default function ThemeCard(props: IThemeCardProps) {
 
 const styles = StyleSheet.create({
     borderContainer: {
-        width: rpx(160),
-        height: rpx(160),
-        borderRadius: rpx(22),
-        marginRight: rpx(24),
+        width: rpx(112),
+        height: rpx(112),
+        borderRadius: rpx(18),
+        marginRight: rpx(16),
         justifyContent: "center",
         alignItems: "center",
     },
     container: {
-        width: rpx(136),
-        height: rpx(136),
-        borderRadius: rpx(12),
+        width: rpx(96),
+        height: rpx(96),
+        borderRadius: rpx(10),
     },
     title: {
         textAlign: "center",
-        marginTop: rpx(12),
-        width: rpx(160),
+        marginTop: rpx(8),
+        width: rpx(112),
     },
     image: {
         width: "100%",
         height: "100%",
-        borderRadius: rpx(12),
+        borderRadius: rpx(10),
     },
 });

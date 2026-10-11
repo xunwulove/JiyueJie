@@ -74,6 +74,6 @@ const styles = StyleSheet.create({
     },
     button: {
         marginHorizontal: rpx(24),
-        paddingHorizontal: rpx(200),
+        paddingHorizontal: 96,
     },
 });

@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
-import rpx from "@/utils/rpx";
+import rpx, { vh } from "@/utils/rpx";
 import ThemeText from "@/components/base/themeText";
 
 import { setCloseAfterPlayEnd, setScheduleClose, useCloseAfterPlayEnd, useScheduleCloseCountDown } from "@/utils/scheduleClose";
@@ -46,7 +46,7 @@ export default function TimingClose() {
         <PanelBase
             keyboardAvoidBehavior="none"
             positionMethod='top'
-            height={rpx(450)}
+            height={vh(56)}
             renderBody={() => (
                 <>
                     <CountDownHeader />
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     },
     bodyContainer: {
         width: "100%",
-        height: rpx(160),
+        height: 80,
         padding: rpx(24),
         gap: rpx(16),
         flexDirection: "row",
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     bottomLine: {
         width: "100%",
         marginTop: rpx(36),
-        height: rpx(64),
+        height: 48,
         paddingHorizontal: rpx(24),
         flexDirection: "row",
         justifyContent: "space-between",
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         paddingHorizontal: rpx(16),
-        paddingVertical: rpx(8),
+        paddingVertical: 12,
         backgroundColor: "#ff666699",
         borderRadius: rpx(8),
     },

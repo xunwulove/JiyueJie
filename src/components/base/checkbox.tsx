@@ -11,7 +11,7 @@ interface ICheckboxProps {
     style?: StyleProp<ViewProps>;
 }
 
-const slop = rpx(24);
+const slop = 14;
 
 export default function Checkbox(props: ICheckboxProps) {
     const { checked, onPress, style } = props;
@@ -32,7 +32,7 @@ export default function Checkbox(props: ICheckboxProps) {
                 style,
             ]}>
             {checked ? (
-                <Icon name="check" color={colors.appBarText} size={rpx(34)} />
+                <Icon name="check" color={colors.appBarText} size={18} />
             ) : null}
         </View>
     );
@@ -55,10 +55,10 @@ export default function Checkbox(props: ICheckboxProps) {
 
 const styles = StyleSheet.create({
     container: {
-        width: rpx(36),
-        height: rpx(36),
-        borderRadius: rpx(2),
-        borderWidth: rpx(1),
+        width: 22,
+        height: 22,
+        borderRadius: 2,
+        borderWidth: 1,
         alignItems: "center",
         justifyContent: "center",
     },

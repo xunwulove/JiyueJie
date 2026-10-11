@@ -36,6 +36,7 @@ export default function Chip(props: IChipProps) {
                 onPress={onClose}
                 name="x-mark"
                 sizeType="small"
+                hitSlop={6}
                 style={styles.icon}
             />
         </Pressable>
@@ -44,9 +45,9 @@ export default function Chip(props: IChipProps) {
 
 const styles = StyleSheet.create({
     container: {
-        height: rpx(56),
-        paddingHorizontal: rpx(18),
-        borderRadius: rpx(28),
+        height: 40,
+        paddingHorizontal: 14,
+        borderRadius: 18,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",

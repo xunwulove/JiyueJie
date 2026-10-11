@@ -22,6 +22,10 @@ export function getQualityOrder(
     sort: "asc" | "desc",
 ) {
     const idx = qualityKeys.indexOf(qualityKey);
+    if (idx < 0) {
+        // 未知音质：退化为默认顺序，避免 left/right 切片产生重复音质
+        return qualityKeys.slice();
+    }
     const left = qualityKeys.slice(0, idx);
     const right = qualityKeys.slice(idx + 1);
     if (sort === "asc") {

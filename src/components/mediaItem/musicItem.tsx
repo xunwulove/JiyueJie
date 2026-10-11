@@ -117,7 +117,7 @@ export default function MusicItem(props: IMusicItemProps) {
 
 const styles = StyleSheet.create({
     leftCover: {
-        marginRight: 12,
+        marginRight: 16,
     },
     icon: {
         marginRight: 4,

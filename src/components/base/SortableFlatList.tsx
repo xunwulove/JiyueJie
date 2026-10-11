@@ -344,32 +344,34 @@ function _SortableFlatListItem(props: ISortableFlatListItemProps) {
         activeRef,
     } = props;
 
-    // 省一点性能，height是顺着传下来的，放ref就好了
-    const styleRef = useRef(
-        StyleSheet.create({
-            viewWrapper: {
-                height: itemHeight,
-                width: "100%",
-                flexDirection: "row",
-                justifyContent: itemJustifyContent ?? "flex-end",
-                zIndex: defaultZIndex,
-            },
-            btn: {
-                height: itemHeight,
-                justifyContent: "center",
-                alignItems: "center",
-                position: "absolute",
-                top: 0,
-                right: 0,
-                width: rpx(100),
-                textAlignVertical: "center",
-            },
-        }),
+    // height/justifyContent 变化时重建样式（useMemo 响应 prop 变化）
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                viewWrapper: {
+                    height: itemHeight,
+                    width: "100%",
+                    flexDirection: "row",
+                    justifyContent: itemJustifyContent ?? "flex-end",
+                    zIndex: defaultZIndex,
+                },
+                btn: {
+                    height: itemHeight,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    width: 48,
+                    textAlignVertical: "center",
+                },
+            }),
+        [itemHeight, itemJustifyContent],
     );
     const textColor = useTextColor();
 
     return (
-        <View style={styleRef.current.viewWrapper}>
+        <View style={styles.viewWrapper}>
             {renderItem({ item, index })}
             <Pressable
                 onTouchStart={() => {
@@ -382,7 +384,7 @@ function _SortableFlatListItem(props: ISortableFlatListItemProps) {
                     setScrollEnabled(false);
                     setActiveItem(item);
                 }}
-                style={styleRef.current.btn}>
+                style={styles.btn}>
                 <Icon
                     name="bars-3"
                     size={iconSizeConst.normal}
@@ -410,27 +412,29 @@ const FakeFlatListItem = forwardRef(function (
     const { itemHeight, renderItem, item, backgroundColor, itemJustifyContent } =
         props;
 
-    const styleRef = useRef(
-        StyleSheet.create({
-            viewWrapper: {
-                height: itemHeight,
-                width: "100%",
-                flexDirection: "row",
-                justifyContent: itemJustifyContent ?? "flex-end",
-                zIndex: defaultZIndex,
-            },
-            btn: {
-                height: itemHeight,
-                paddingHorizontal: rpx(28),
-                justifyContent: "center",
-                alignItems: "center",
-                position: "absolute",
-                top: 0,
-                right: 0,
-                width: rpx(100),
-                textAlignVertical: "center",
-            },
-        }),
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                viewWrapper: {
+                    height: itemHeight,
+                    width: "100%",
+                    flexDirection: "row",
+                    justifyContent: itemJustifyContent ?? "flex-end",
+                    zIndex: defaultZIndex,
+                },
+                btn: {
+                    height: itemHeight,
+                    paddingHorizontal: 14,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    width: 48,
+                    textAlignVertical: "center",
+                },
+            }),
+        [itemHeight, itemJustifyContent],
     );
     const textColor = useTextColor();
 
@@ -438,12 +442,12 @@ const FakeFlatListItem = forwardRef(function (
         <View
             ref={ref}
             style={[
-                styleRef.current.viewWrapper,
+                styles.viewWrapper,
                 style.activeItemDefault,
                 backgroundColor ? { backgroundColor } : {},
             ]}>
             {item ? renderItem({ item, index: -1 }) : null}
-            <Pressable style={styleRef.current.btn}>
+            <Pressable style={styles.btn}>
                 <Icon
                     name="bars-3"
                     size={iconSizeConst.normal}

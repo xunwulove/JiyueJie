@@ -28,6 +28,7 @@ import Color from "color";
 import LinearGradient from "react-native-linear-gradient";
 import { getRecommendReliabilitySync } from "@/core/pluginReliability";
 import Toast from "@/utils/toast";
+import Config from "@/core/appConfig";
 
 /**
  * 推荐歌单二级页（插件版）
@@ -37,18 +38,30 @@ import Toast from "@/utils/toast";
  *
  * 择优：Tab 按"推荐歌单专用可用率"降序排列（无数据 0.5 排后），
  * 默认停靠可用率最高的源；当前 Tab 加载失败/空壳 → 自动切换下一个源。
+ * 手动指定来源（plugin.recommendSource，与首页刷新按钮同键）时该源置顶。
  */
 export default function RecommendSheets() {
     const { t } = useI18N();
+    const manualHash = Config.getConfig("plugin.recommendSource");
     const routes = PluginManager.getSortedPluginsWithAbility(
         "getRecommendSheetTags",
     )
         .slice()
-        .sort(
-            (a, b) =>
+        .sort((a, b) => {
+            // 手动指定源置顶（该源优先展示；失败时仍走 handleAutoSwitch 自动切换）
+            if (manualHash) {
+                if (a.hash === manualHash) {
+                    return -1;
+                }
+                if (b.hash === manualHash) {
+                    return 1;
+                }
+            }
+            return (
                 getRecommendReliabilitySync(b.instance.platform) -
-                getRecommendReliabilitySync(a.instance.platform),
-        )
+                getRecommendReliabilitySync(a.instance.platform)
+            );
+        })
         .map(_ => ({
             key: _.hash,
             title: _.name,
@@ -108,7 +121,7 @@ export default function RecommendSheets() {
                             <Text
                                 numberOfLines={1}
                                 style={{
-                                    width: rpx(160),
+                                    width: 120,
                                     fontWeight: focused
                                         ? fontWeightConst.bolder
                                         : fontWeightConst.medium,
@@ -321,7 +334,7 @@ const styles = StyleSheet.create({
     gridCover: {
         width: "100%",
         aspectRatio: 1,
-        borderRadius: 12,
+        borderRadius: 14,
     },
     gridTitle: {
         marginTop: 6,

@@ -7,6 +7,7 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 import { routes } from "@/core/router/routes";
+import { TabletFrameParamsProvider } from "@/core/router";
 import {
     popTabletSubPage,
     tabletSubPagesAtom,
@@ -58,7 +59,10 @@ export default function SubPageOverlay() {
                     <FullOverlay
                         key={page.key}
                         backgroundColor={colors.background}>
-                        <Component />
+                        {/* 本帧参数注入：帧内 useParams 只消费本帧 params，不被栈顶污染 */}
+                        <TabletFrameParamsProvider value={page.params}>
+                            <Component />
+                        </TabletFrameParamsProvider>
                     </FullOverlay>
                 );
             })}

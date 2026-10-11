@@ -118,6 +118,11 @@ export interface ILanguageData {
 
     // 推荐歌单相关
     "recommendSheet.title": string; // 推荐歌单
+    "recommendSheet.sourceSetting": string; // 推荐歌单来源
+    "recommendSheet.autoSelect": string; // 自动择优
+    "recommendSheet.sourceApplied": string; // 推荐歌单已更新
+    "recommendSheet.sourceUnavailable": string; // 该音源推荐歌单不可用，已回退自动择优
+    "common.restoreDefault": string; // 恢复默认
 
     // 搜索音乐列表相关
     "searchMusicList.searchPlaceHolder": string; // 搜索音乐
@@ -519,13 +524,6 @@ export interface ILanguageData {
     "panel.setFontSize.standard": string; // 标准
     "panel.setFontSize.large": string; // 大
     "panel.setFontSize.extraLarge": string; // 超大
-
-    // 面板相关 - 歌词偏移设置
-    "panel.setLyricOffset.title": string; // 设置歌词进度
-    "panel.setLyricOffset.normal": string; // 正常
-    "panel.setLyricOffset.delay": string; // 延后
-    "panel.setLyricOffset.advance": string; // 提前
-    "panel.setLyricOffset.reset": string; // 重置
 
     // 面板相关 - 简单输入
     "panel.simpleInput.inputLabel": string; // 输入框

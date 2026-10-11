@@ -14,7 +14,6 @@ export const checkUpdateAndShowResult = (
         if (updateInfo?.needUpdate) {
             const { data } = updateInfo;
             const skipVersion = PersistStatus.get("app.skipVersion");
-            console.log(skipVersion, data);
             if (
                 checkSkip &&
                 skipVersion &&
@@ -39,6 +38,14 @@ export const checkUpdateAndShowResult = (
 export default function (callOnMount = true) {
     useEffect(() => {
         if (callOnMount) {
+            // 自动检查路径做每日节流：距上次自动检查不足 24h 则跳过，
+            // 避免每次冷启动都发网络请求（手动入口不受节流影响）
+            const lastCheckTime =
+                PersistStatus.get("app.lastUpdateCheckTime") ?? 0;
+            if (Date.now() - lastCheckTime < 24 * 60 * 60 * 1000) {
+                return;
+            }
+            PersistStatus.set("app.lastUpdateCheckTime", Date.now());
             checkUpdateAndShowResult(false, true);
         }
     }, []);

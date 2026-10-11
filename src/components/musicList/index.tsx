@@ -115,6 +115,7 @@ export default function MusicList(props: IMusicListProps) {
                 }
                 extraData={highlightMusicItem}
                 data={musicList ?? []}
+                keyExtractor={(item) => `${item.platform}-${item.id}`}
                 estimatedItemSize={ITEM_HEIGHT}
                 onScrollBeginDrag={handleScrollBegin}
                 onScrollEndDrag={handleScrollEnd}
@@ -175,9 +176,9 @@ const styles = StyleSheet.create({
         zIndex: 1000,
     },
     badgeButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#000",

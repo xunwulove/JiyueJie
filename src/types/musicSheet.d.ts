@@ -9,6 +9,8 @@ declare namespace IMusic {
         artist?: string;
         /** 歌单id */
         id: string;
+        /** 榜单id（仅 QQ 榜单写入，用于区分"榜单走接口 / 歌单走插件"分支） */
+        topid?: number;
         /** 描述 */
         description?: string;
         /** 作品总数 */

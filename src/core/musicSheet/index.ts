@@ -234,6 +234,10 @@ class MusicSheetClazz implements IInjectable {
         sheets: IMusic.IMusicSheetItem[],
         resumeMode: ResumeMode,
     ) {
+        // 损坏备份（sheets 非数组/undefined）直接返回，避免后续 sheets.length 抛 TypeError
+        if (!Array.isArray(sheets)) {
+            return;
+        }
         if (resumeMode === ResumeMode.Append) {
             // 逆序恢复，最新创建的在最上方
             for (let i = sheets.length - 1; i >= 0; --i) {

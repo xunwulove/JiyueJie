@@ -146,8 +146,8 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     charBlock: {
-        width: 44,
-        height: 44,
+        width: 48,
+        height: 48,
         borderRadius: 8,
         alignItems: "center",
         justifyContent: "center",

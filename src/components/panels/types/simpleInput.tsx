@@ -107,11 +107,11 @@ const style = StyleSheet.create({
         justifyContent: "space-between",
     },
     input: {
-        margin: rpx(24),
-        borderRadius: rpx(12),
+        margin: 12,
+        borderRadius: 6,
         fontSize: fontSizeConst.content,
         lineHeight: fontSizeConst.content * 1.5,
-        padding: rpx(12),
+        padding: 12,
     },
     hints: {
         marginTop: rpx(24),

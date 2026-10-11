@@ -1,6 +1,6 @@
 import React, { Fragment } from "react";
 import { Pressable, StyleSheet } from "react-native";
-import rpx from "@/utils/rpx";
+import rpx, { vh } from "@/utils/rpx";
 import ThemeText from "@/components/base/themeText";
 
 import { qualityKeys, qualityText } from "@/utils/qualities";
@@ -32,7 +32,7 @@ export default function MusicQuality(props: IMusicQualityProps) {
 
     return (
         <PanelBase
-            height={rpx(520)}
+            height={vh(65)}
             renderBody={() => (
                 <>
                     <PanelHeader
@@ -94,7 +94,7 @@ const style = StyleSheet.create({
         paddingHorizontal: 16,
     },
     item: {
-        height: rpx(96),
+        height: 48,
         justifyContent: "center",
     },
 });

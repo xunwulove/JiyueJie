@@ -53,9 +53,9 @@ export default function TabletPanel() {
     const { lyrics, loading } = useLyricState();
     const currentLrcItem = useCurrentLyricItem();
     const currentLrc = currentLrcItem?.lrc;
-    /* 多行歌词：当前行上下各 4 行（弱化显示） */
+    /* 多行歌词：当前行上下各 3 行（共 7 行，弱化显示） */
     const curIndex = currentLrcItem?.index ?? -1;
-    const sideCount = 4;
+    const sideCount = 3;
     const upLines: { text: string; key: string }[] = [];
     for (let i = sideCount; i >= 1; i--) {
         const idx = curIndex - i;

@@ -256,6 +256,10 @@ class LyricManager implements IInjectable {
             });
 
             const currentLyric = ignoreProgress ? (this.lyricParser.getLyricItems()?.[0] ?? null) : this.lyricParser.getPosition((await this.trackPlayer.getProgress()).position);
+            // 切歌复核：await getProgress 期间可能已切歌，避免旧歌歌词写入新状态
+            if (!this.trackPlayer.isCurrentMusic(currentMusicItem)) {
+                return;
+            }
             getDefaultStore().set(currentLyricItemAtom, currentLyric || null);
 
             if (this.appConfig.getConfig("lyric.showStatusBarLyric")) {
@@ -292,12 +296,19 @@ class LyricManager implements IInjectable {
         let minDistanceMusicItem;
         let targetPlugin: Plugin | null = null;
 
+        const startTime = Date.now();
+
         for (let plugin of plugins) {
             // 如果插件不是当前音乐的插件，或者当前音乐不是正在播放的音乐，则跳过
             if (
                 !this.trackPlayer.isCurrentMusic(musicItem)
             ) {
                 return null;
+            }
+
+            // 总超时 8s：多插件串行累计过久会让 loading 一直转，对齐 getSimilarMusic 的熔断风格
+            if (Date.now() - startTime > 8000) {
+                break;
             }
 
             if (plugin.name === musicItem.platform) {

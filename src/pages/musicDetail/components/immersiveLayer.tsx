@@ -55,17 +55,28 @@ export default function ImmersiveLayer() {
     const effect = useAppConfig("basic.immersiveEffect") ?? true;
 
     const [visible, setVisible] = useState(false);
+    // exiting：退出淡出动画期间仍保留渲染树（淡出需附着目标），动画完成后才真正卸载
+    const [exiting, setExiting] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const flowAnim = useRef(new Animated.Value(0)).current;
+    // 流动光效循环动画句柄：退出/卸载时必须 stop，否则 native-driver 动画泄漏
+    const flowLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
     const musicItem = useCurrentMusic();
     const { lyrics } = useLyricState();
     const currentLrcItem = useCurrentLyricItem();
-    // 仅播放中计时：暂停/停止时不启动（对齐 QQ音乐"播放15秒后进入沉浸歌词"）
+    // 仅播放中计时：暂停/停止/缓冲/加载均不计时（对齐 QQ音乐"播放15秒后进入沉浸歌词"）。
+    // 注意：不可用「负向 isPaused」判定——Android 上 RNTP 暂停后 state 常见为 Ready 而非 Paused，
+    // 负向判定会漏判导致暂停时计时器不清除、15s 后仍进入沉浸层。
     const musicState = useMusicState();
-    const isPaused = musicState === MusicState.Paused;
+    const isPlaying = musicState === MusicState.Playing;
+    // 实时播放态 ref：计时器回调闭包内读取（避免闭包持有启动时的旧值）
+    const isPlayingRef = useRef(isPlaying);
+    useEffect(() => {
+        isPlayingRef.current = isPlaying;
+    }, [isPlaying]);
     const orientation = useOrientation();
     const insets = useSafeAreaInsets();
     // 当前北京时间（右上角时间显示，每分钟变化）
@@ -81,7 +92,7 @@ export default function ImmersiveLayer() {
         `${colors.primary}00`,
     ];
 
-    /* 重置计时：任意触摸后重新计算无操作时长；仅播放中计时，暂停/停止时不启动 */
+    /* 重置计时：任意触摸后重新计算无操作时长；仅播放中计时（暂停/停止/缓冲不启动） */
     const reset = useCallback(() => {
         if (timerRef.current) {
             clearTimeout(timerRef.current);
@@ -90,8 +101,8 @@ export default function ImmersiveLayer() {
         if (!enable) {
             return;
         }
-        // 暂停/停止时不计时（对齐 QQ音乐"播放15秒后进入"语义）；播放恢复后由挂载 effect 重新计时
-        if (isPaused) {
+        // 仅播放中计时（正向判定）：暂停/停止/缓冲/加载不计时；恢复播放后由 prevPlayingRef effect 重启计时
+        if (!isPlaying) {
             return;
         }
         timerRef.current = setTimeout(() => {
@@ -100,9 +111,14 @@ export default function ImmersiveLayer() {
                 reset();
                 return;
             }
+            // 触发时二次校验：计时期间已暂停/停止则不进入，重新等待播放
+            if (!isPlayingRef.current) {
+                reset();
+                return;
+            }
             setVisible(true);
         }, (delay ?? 15) * 1000);
-    }, [enable, delay, isPaused]);
+    }, [enable, delay, isPlaying]);
 
     useEffect(() => {
         immersiveTouch.reset = reset;
@@ -117,46 +133,83 @@ export default function ImmersiveLayer() {
         };
     }, [reset]);
 
+    /* P2-03：播放由非播放态恢复（paused/buffering → playing）时显式重启无操作计时。
+       此前恢复播放仅依赖 reset 身份变化触发挂载 effect 重建的隐式链路；
+       若退出沉浸层时处于非播放态，reset 会提前 return 不计时，恢复后可能漏重启。 */
+    const prevPlayingRef = useRef(isPlaying);
+    useEffect(() => {
+        if (!prevPlayingRef.current && isPlaying) {
+            reset();
+        }
+        prevPlayingRef.current = isPlaying;
+    }, [isPlaying, reset]);
+
+    /* 退出沉浸层：先进入 exiting 保留渲染树播放淡出（淡出需附着目标），动画完成后再真正卸载并重启计时 */
+    const exitingRef = useRef(false);
+    const hide = useCallback(() => {
+        if (exitingRef.current) {
+            return;
+        }
+        exitingRef.current = true;
+        setExiting(true);
+        Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 250,
+            useNativeDriver: true,
+        }).start(() => {
+            exitingRef.current = false;
+            setVisible(false);
+            setExiting(false);
+            // 触摸被沉浸层自身拦截，下层 MusicDetail 的 onPressIn 收不到 reset；
+            // 退出后手动重启无操作计时，保证之后仍能自动进入
+            reset();
+        });
+    }, [fadeAnim, reset]);
+
+    /* BackHandler 经 hideRef 始终调用最新 hide，避免闭包持旧 hide；
+       show effect 不依赖 hide，reset/isPlaying 变化不会重跑淡入造成闪烁 */
+    const hideRef = useRef(hide);
+    useEffect(() => {
+        hideRef.current = hide;
+    }, [hide]);
+
     /* 显示：淡入 + 启动光效循环 + 返回键退出沉浸层 */
     useEffect(() => {
-        if (visible) {
-            fadeAnim.setValue(0);
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 400,
-                useNativeDriver: true,
-            }).start();
-            if (effect) {
-                flowAnim.setValue(0);
-                Animated.loop(
-                    Animated.timing(flowAnim, {
-                        toValue: 1,
-                        duration: 9000,
-                        easing: Easing.linear,
-                        useNativeDriver: true,
-                    }),
-                ).start();
-            }
-            const sub = BackHandler.addEventListener(
-                "hardwareBackPress",
-                () => {
-                    hide();
-                    return true;
-                },
-            );
-            return () => {
-                sub.remove();
-            };
+        if (!visible) {
+            return;
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visible, effect]);
-
-    const hide = useCallback(() => {
-        setVisible(false);
-        // 触摸被沉浸层自身拦截，下层 MusicDetail 的 onPressIn 收不到 reset；
-        // 退出后手动重启无操作计时，保证之后仍能自动进入
-        reset();
-    }, [reset]);
+        fadeAnim.setValue(0);
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+        }).start();
+        if (effect) {
+            flowAnim.setValue(0);
+            flowLoopRef.current = Animated.loop(
+                Animated.timing(flowAnim, {
+                    toValue: 1,
+                    duration: 9000,
+                    easing: Easing.linear,
+                    useNativeDriver: true,
+                }),
+            );
+            flowLoopRef.current.start();
+        }
+        const sub = BackHandler.addEventListener(
+            "hardwareBackPress",
+            () => {
+                hideRef.current();
+                return true;
+            },
+        );
+        return () => {
+            sub.remove();
+            flowLoopRef.current?.stop();
+            flowLoopRef.current = null;
+            flowAnim.stopAnimation();
+        };
+    }, [visible, effect, fadeAnim, flowAnim]);
 
     /* 歌词切换平滑动画：新歌词从下方滑入 + 淡入（避免硬切换）
        【重要】hooks 必须在组件顶层调用（return null 之前），
@@ -188,18 +241,9 @@ export default function ImmersiveLayer() {
         return () => clearInterval(timer);
     }, [visible]);
 
-    /* 退出：淡出后卸载 */
-    useEffect(() => {
-        if (!visible) {
-            Animated.timing(fadeAnim, {
-                toValue: 0,
-                duration: 250,
-                useNativeDriver: true,
-            }).start();
-        }
-    }, [visible, fadeAnim]);
-
-    if (!visible) {
+    /* 真正卸载时机：visible=false 且不在退出淡出动画中（exiting 期间保留渲染树供淡出附着）。
+       必须位于全部 hooks 之后（hooks 顺序恒定，不可条件调用）。 */
+    if (!visible && !exiting) {
         return null;
     }
 

@@ -110,7 +110,7 @@ export default function (props: IProps) {
 const style = StyleSheet.create({
     /** playall */
     topWrapper: {
-        height: rpx(84),
+        height: 56,
         paddingHorizontal: rpx(24),
         flexDirection: "row",
         alignItems: "center",

@@ -50,26 +50,29 @@ async function resume(
     const { plugins, musicSheets } = obj ?? {};
     /** 恢复插件 */
     const validPlugins = PluginManager.getEnabledPlugins();
-    const resumePlugins = plugins?.map(_ => {
-        // 校验是否安装过: 同源且本地版本更高就忽略掉
-        if (
-            validPlugins.find(
-                plugin =>
-                    plugin.instance.srcUrl === _.srcUrl &&
-                    compare(
-                        plugin.instance.version ?? "0.0.0",
-                        _.version ?? "0.0.1",
-                        ">=",
-                    ),
-            )
-        ) {
-            return;
-        }
-        return PluginManager.installPluginFromUrl(_.srcUrl);
-    });
+    const resumePlugins = Array.isArray(plugins)
+        ? plugins?.map(_ => {
+            // 校验是否安装过: 同源且本地版本更高就忽略掉
+            if (
+                validPlugins.find(
+                    plugin =>
+                        plugin.instance.srcUrl === _.srcUrl &&
+                        compare(
+                            plugin.instance.version ?? "0.0.0",
+                            _.version ?? "0.0.1",
+                            ">=",
+                        ),
+                )
+            ) {
+                return;
+            }
+            return PluginManager.installPluginFromUrl(_.srcUrl);
+        })
+        : [];
 
-    /** 恢复歌单 */
-    const resumeMusicSheets = MusicSheet.resumeSheets(musicSheets, resumeMode);
+    /** 恢复歌单（损坏备份中 musicSheets 非数组时按空处理） */
+    const validMusicSheets = Array.isArray(musicSheets) ? musicSheets : [];
+    const resumeMusicSheets = MusicSheet.resumeSheets(validMusicSheets, resumeMode);
 
     return Promise.all([...(resumePlugins ?? []), resumeMusicSheets]);
 }

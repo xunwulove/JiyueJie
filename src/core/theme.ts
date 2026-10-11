@@ -4,6 +4,7 @@ import { DarkTheme as _DarkTheme, DefaultTheme as _DefaultTheme } from "@react-n
 import { GlobalState } from "@/utils/stateMapper";
 import { CustomizedColors } from "@/hooks/useColors";
 import Color from "color";
+import { Appearance } from "react-native";
 
 export const lightTheme = {
     id: "p-light",
@@ -81,7 +82,14 @@ const themeStore = new GlobalState(lightTheme);
 const backgroundStore = new GlobalState<IBackgroundInfo | null>(null);
 
 function setup() {
-    const currentTheme = Config.getConfig("theme.selectedTheme") ?? "p-light";
+    let currentTheme = Config.getConfig("theme.selectedTheme") ?? "p-light";
+
+    // 跟随系统时：按系统当前配色确定初始主题，
+    // 避免冷启动首帧用错误主题渲染后再切换（主题闪烁）
+    if (Config.getConfig("theme.followSystem")) {
+        currentTheme =
+            Appearance.getColorScheme() === "dark" ? "p-dark" : "p-light";
+    }
 
     if (currentTheme === "p-dark") {
         themeStore.setValue(darkTheme);
@@ -170,7 +178,6 @@ function setColors(colors: Partial<CustomizedColors>) {
                 ...colors,
             },
         };
-        Config.setConfig("theme.customColors", newTheme.colors);
         Config.setConfig("theme.colors", newTheme.colors);
         themeStore.setValue(newTheme);
     }

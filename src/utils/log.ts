@@ -1,8 +1,6 @@
 import { fileAsyncTransport, logger } from "react-native-logs";
 import RNFS from "react-native-fs";
 import pathConst from "@/constants/pathConst";
-import Config from "../core/appConfig.ts";
-import { addLog } from "@/lib/react-native-vdebug/src/log";
 
 const config = {
     transport: fileAsyncTransport,
@@ -14,53 +12,33 @@ const config = {
     dateFormat: "local",
 };
 
-const traceConfig = {
-    transport: fileAsyncTransport,
-    transportOptions: {
-        FS: RNFS,
-        filePath: pathConst.logPath,
-        fileName: "trace-log.log",
-    },
-    dateFormat: "local",
-};
-
 const log = logger.createLogger(config);
-const traceLogger = logger.createLogger(traceConfig);
 
+/** 操作路径记录：仅开发模式控制台输出（生产零开销） */
 export function trace(
     desc: string,
     message?: any,
-    level: "info" | "error" = "info",
+    _level?: "info" | "error",
 ) {
     if (__DEV__) {
         console.log(desc, message);
     }
-    // 特殊情况记录操作路径
-    if (Config.getConfig("debug.traceLog")) {
-        traceLogger[level]({
-            desc,
-            message,
-        });
-    }
 }
 
+/** 错误日志：始终写入错误日志文件（供排障），不依赖任何设置开关 */
 export function errorLog(desc: string, message: any) {
-    if (Config.getConfig("debug.errorLog")) {
-        log.error({
-            desc,
-            message,
-        });
-        trace(desc, message, "error");
-    }
+    log.error({
+        desc,
+        message,
+    });
 }
 
+/**
+ * 开发调试面板（VDebug）已整体移除；保留空实现以兼容既有调用点。
+ */
 export function devLog(
-    method: "log" | "error" | "warn" | "info",
-    ...args: any[]
-) {
-    if (Config.getConfig("debug.devLog")) {
-        addLog(method, args);
-    }
-}
+    _method: "log" | "error" | "warn" | "info",
+    ..._args: any[]
+) {}
 
 export { log };

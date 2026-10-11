@@ -4,7 +4,7 @@ import { getStorage, removeStorage } from "@/utils/storage";
 import getOrCreateMMKV from "@/utils/getOrCreateMMKV.ts";
 
 import type { AppConfigPropertyKey, IAppConfig, IAppConfigProperties } from "@/types/core/config";
-import { safeStringify } from "@/utils/jsonUtil";
+import { safeParse, safeStringify } from "@/utils/jsonUtil";
 
 const configStore = getOrCreateMMKV("App.config");
 
@@ -12,7 +12,11 @@ class AppConfig implements IAppConfig {
     // 迁移函数
     private async migrateConfig(): Promise<void> {
 
-        const schemaVersion = !configStore.contains("$schema") ? 0 : parseInt(configStore.getString("$schema") || "0", 10);
+        const parsedSchema = !configStore.contains("$schema")
+            ? 0
+            : parseInt(configStore.getString("$schema") || "0", 10);
+        // 非数字的损坏值（NaN）视为 0，触发全量迁移，避免迁移被静默跳过
+        const schemaVersion = Number.isNaN(parsedSchema) ? 0 : parsedSchema;
 
         if (schemaVersion < 1) {
             // 获取旧配置
@@ -46,7 +50,6 @@ class AppConfig implements IAppConfig {
                 ["setting.basic.notInterrupt", "basic.notInterrupt"],
                 ["setting.basic.tempRemoteDuck", "basic.tempRemoteDuck"],
                 ["setting.basic.autoStopWhenError", "basic.autoStopWhenError"],
-                ["setting.basic.pluginCacheControl", "basic.pluginCacheControl"],
                 ["setting.basic.maxCacheSize", "basic.maxCacheSize"],
                 ["setting.basic.defaultPlayQuality", "basic.defaultPlayQuality"],
                 ["setting.basic.playQualityOrder", "basic.playQualityOrder"],
@@ -60,9 +63,6 @@ class AppConfig implements IAppConfig {
                 ],
                 ["setting.basic.musicDetailDefault", "basic.musicDetailDefault"],
                 ["setting.basic.musicDetailAwake", "basic.musicDetailAwake"],
-                ["setting.basic.debug.errorLog", "debug.errorLog"],
-                ["setting.basic.debug.traceLog", "debug.traceLog"],
-                ["setting.basic.debug.devLog", "debug.devLog"],
                 ["setting.basic.maxHistoryLen", "basic.maxHistoryLen"],
                 ["setting.basic.autoUpdatePlugin", "basic.autoUpdatePlugin"],
                 [
@@ -96,7 +96,6 @@ class AppConfig implements IAppConfig {
                 ["setting.lyric.backgroundColor", "lyric.backgroundColor"],
                 ["setting.lyric.widthPercent", "lyric.widthPercent"],
                 ["setting.lyric.fontSize", "lyric.fontSize"],
-                ["setting.lyric.detailFontSize", "lyric.detailFontSize"],
                 ["setting.lyric.autoSearchLyric", "lyric.autoSearchLyric"],
 
                 // Theme
@@ -104,7 +103,6 @@ class AppConfig implements IAppConfig {
                 ["setting.theme.backgroundOpacity", "theme.backgroundOpacity"],
                 ["setting.theme.backgroundBlur", "theme.backgroundBlur"],
                 ["setting.theme.colors", "theme.colors"],
-                ["setting.theme.customColors", "theme.customColors"],
                 ["setting.theme.followSystem", "theme.followSystem"],
                 ["setting.theme.selectedTheme", "theme.selectedTheme"],
 
@@ -133,7 +131,11 @@ class AppConfig implements IAppConfig {
             mapping.forEach(([oldPath, newKey]) => {
                 const value = getPathValue(oldConfig, oldPath);
                 if (value !== undefined) {
-                    configStore.set(newKey, safeStringify(value));
+                    const str = safeStringify(value);
+                    // 序列化失败返回空串时跳过写入，避免空串导致 getConfig 解析崩溃
+                    if (str !== "") {
+                        configStore.set(newKey, str);
+                    }
                 }
             });
 
@@ -169,7 +171,25 @@ class AppConfig implements IAppConfig {
             configStore.set("$schema", "2");
         }
 
-
+        // 数值型字段兜底：旧版本配置可能存为字符串（如 "500"），
+        // 下游 `?? 默认值` 会直接拿到字符串，统一 Number() 转换（已修复待真机验证）
+        const numericKeys: AppConfigPropertyKey[] = [
+            "basic.maxDownload",
+            "basic.maxCacheSize",
+            "basic.maxHistoryLen",
+        ];
+        numericKeys.forEach(key => {
+            const raw = configStore.getString(key);
+            if (raw !== undefined && raw !== "") {
+                const parsed = safeParse(raw);
+                if (typeof parsed === "string") {
+                    const num = Number(parsed);
+                    if (!Number.isNaN(num)) {
+                        configStore.set(key, safeStringify(num));
+                    }
+                }
+            }
+        });
     }
 
     async setup(): Promise<void> {
@@ -183,7 +203,12 @@ class AppConfig implements IAppConfig {
         if (value === undefined) {
             configStore.delete(key);
         } else {
-            configStore.set(key, safeStringify(value));
+            const str = safeStringify(value);
+            // 序列化失败返回空串时跳过写入（保留旧值），避免空串导致 getConfig 解析崩溃
+            if (str === "") {
+                return;
+            }
+            configStore.set(key, str);
         }
     }
 
@@ -191,10 +216,12 @@ class AppConfig implements IAppConfig {
         key: K,
     ): IAppConfigProperties[K] | undefined {
         const value = configStore.getString(key);
-        if (value === undefined) {
+        // 空串/undefined 直接返回 undefined，不进入解析
+        if (!value) {
             return undefined;
         }
-        return JSON.parse(value);
+        // 损坏数据 safeParse 返回 null，转 undefined，绝不抛异常
+        return safeParse<IAppConfigProperties[K]>(value) ?? undefined;
     }
 }
 

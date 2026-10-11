@@ -24,6 +24,8 @@ import LyricSettingDialog from "./lyricSettingDialog";
 import SortDialog from "./sortDialog";
 import ImmersiveSettingDialog from "./immersiveSettingDialog";
 import VolumeSettingDialog from "./volumeSettingDialog";
+import LyricColorDialog from "./lyricColorDialog";
+import RecommendSourceDialog from "./recommendSourceDialog";
 
 const dialogs = {
     SimpleDialog,
@@ -52,6 +54,8 @@ const dialogs = {
     SortDialog,
     ImmersiveSettingDialog,
     VolumeSettingDialog,
+    LyricColorDialog,
+    RecommendSourceDialog,
 };
 
 export default dialogs;

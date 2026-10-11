@@ -15,7 +15,6 @@ export interface IAppConfigProperties {
     "basic.tempRemoteDuck": "pause" | "lowerVolume";
     "basic.tempRemoteDuckVolume": 0.3 | 0.5 | 0.8;
     "basic.autoStopWhenError": boolean;
-    "basic.pluginCacheControl": string;
     "basic.maxCacheSize": number;
     "basic.defaultPlayQuality": IMusic.IQualityKey;
     "basic.playQualityOrder": "asc" | "desc";
@@ -58,7 +57,6 @@ export interface IAppConfigProperties {
     "lyric.backgroundColor": string;
     "lyric.widthPercent": number;
     "lyric.fontSize": number;
-    "lyric.detailFontSize": number;
     "lyric.autoSearchLyric": boolean;
 
     // Theme
@@ -66,7 +64,6 @@ export interface IAppConfigProperties {
     "theme.backgroundOpacity": number;
     "theme.backgroundBlur": number;
     "theme.colors": CustomizedColors;
-    "theme.customColors"?: CustomizedColors;
     "theme.followSystem": boolean;
     "theme.selectedTheme": string;
 
@@ -75,16 +72,13 @@ export interface IAppConfigProperties {
 
     // Plugin
     "plugin.subscribeUrl": string;
+    /** 手动指定的推荐歌单来源（插件 hash；未配置 = 自动择优） */
+    "plugin.recommendSource"?: string;
 
     // WebDAV
     "webdav.url": string;
     "webdav.username": string;
     "webdav.password": string;
-
-    // Debug（保持嵌套结构）
-    "debug.errorLog": boolean;
-    "debug.traceLog": boolean;
-    "debug.devLog": boolean;
 }
 
 export type AppConfigPropertyKey = keyof IAppConfigProperties;

@@ -82,6 +82,8 @@ export async function getTopLists(): Promise<IMusic.IMusicSheetItemBase[]> {
         .filter((it: any) => it?.id)
         .map((it: any) => ({
             id: String(it.id),
+            // 榜单详情走 QQ 官方接口：写入 topid 作为"榜单"标记（cache.ts 据此区分接口/插件分支）
+            topid: it.id,
             title: it.name ?? "未知榜单",
             coverImg:
                 it.picUrl ??

@@ -28,7 +28,7 @@ export default function Mode() {
                     styles.sectionWrapper,
                     { backgroundColor: colors.card },
                 ]}>
-                <ListItem withHorizontalPadding>
+                <ListItem withHorizontalPadding heightType="small">
                     <ListItem.Content>
                         <View style={styles.itemRow}>
                             <ThemeText>{t("themeSettings.followSystemTheme")}</ThemeText>
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     sectionWrapper: {
         marginTop: rpx(24),
         marginHorizontal: rpx(24),
-        borderRadius: rpx(14),
+        borderRadius: 14,
         overflow: "hidden",
     },
     itemRow: {

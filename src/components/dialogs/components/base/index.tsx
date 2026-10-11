@@ -24,7 +24,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Color from "color";
 
 /** 平板内容区顶部 tab 栏高度（与 TabBar horizontal 一致，对齐 APlayer 56dp） */
-const TAB_BAR_HEIGHT = rpx(56);
+const TAB_BAR_HEIGHT = 56;
 
 interface IDialogProps {
     onDismiss?: () => void;

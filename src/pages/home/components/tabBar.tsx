@@ -85,7 +85,7 @@ export default function TabBar(props: ITabBarProps) {
                         onPress={() => onSelect(tab.key)}>
                         <Icon
                             name={tab.icon}
-                            size={rpx(44)}
+                            size={24}
                             color={selected ? colors.primary : colors.textSecondary}
                         />
                         <ThemeText
@@ -320,7 +320,7 @@ function SearchBar({
 
 const styles = StyleSheet.create({
     hContainer: {
-        height: rpx(56), // 一级页顶栏高度（平板响应式，独立规范）
+        height: 56, // 一级页顶栏高度（对齐 APlayer 56dp，固定值）
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: rpx(16),
@@ -371,8 +371,8 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: rpx(64),
         borderRadius: rpx(64),
-        height: rpx(56),
-        maxHeight: rpx(56),
+        height: 40,
+        maxHeight: 40,
         alignItems: "center",
     },
     magnify: {

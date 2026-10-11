@@ -1,6 +1,5 @@
 import React, { memo, useEffect, useState } from "react";
 import { Keyboard, StyleSheet, View } from "react-native";
-import rpx from "@/utils/rpx";
 import { CircularProgressBase } from "react-native-circular-progress-indicator";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,8 +21,8 @@ function CircularPlayBtn() {
 
     return (
         <CircularProgressBase
-            activeStrokeWidth={rpx(4)}
-            inActiveStrokeWidth={rpx(2)}
+            activeStrokeWidth={3}
+            inActiveStrokeWidth={2}
             inActiveStrokeOpacity={0.2}
             value={
                 progress?.duration
@@ -31,7 +30,7 @@ function CircularPlayBtn() {
                     : 0
             }
             duration={100}
-            radius={rpx(36)}
+            radius={24}
             activeStrokeColor={colors.primary}
             inActiveStrokeColor={colors.textSecondary}>
             <IconButton
@@ -90,8 +89,8 @@ function MusicBar() {
                         style.wrapper,
                         {
                             backgroundColor: colors.musicBar,
-                            paddingRight: safeAreaInsets.right + rpx(24),
-                            marginBottom: safeAreaInsets.bottom + rpx(12),
+                            paddingRight: safeAreaInsets.right + 12,
+                            marginBottom: safeAreaInsets.bottom + 6,
                             shadowColor: colors.shadow,
                         },
                     ]}
@@ -108,7 +107,8 @@ function MusicBar() {
                             accessible
                             accessibilityLabel="播放列表"
                             name="playlist"
-                            size={rpx(56)}
+                            size={40}
+                            hitSlop={{ top: 8, bottom: 8 }}
                             onPress={() => {
                                 showPanel("PlayList");
                             }}
@@ -127,24 +127,24 @@ export default memo(MusicBar, () => true);
 const style = StyleSheet.create({
     wrapper: {
         width: "100%",
-        height: rpx(132),
+        height: 72,
         flexDirection: "row",
         alignItems: "center",
-        paddingRight: rpx(24),
-        borderRadius: rpx(24),
-        marginHorizontal: rpx(12),
+        paddingRight: 12,
+        borderRadius: 12,
+        marginHorizontal: 6,
         shadowOpacity: 0.08,
-        shadowRadius: rpx(16),
+        shadowRadius: 8,
         shadowOffset: { width: 0, height: 4 },
         elevation: 6,
     },
     actionGroup: {
-        width: rpx(200),
+        width: 100,
         justifyContent: "flex-end",
         flexDirection: "row",
         alignItems: "center",
     },
     actionIcon: {
-        marginLeft: rpx(36),
+        marginLeft: 18,
     },
 });

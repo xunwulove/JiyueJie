@@ -1,4 +1,5 @@
 import { getCurrentDialog, showDialog } from "@/components/dialogs/useDialog";
+import { showToast } from "@/components/base/toast";
 import {
     internalFakeSoundKey,
     sortIndexSymbol,
@@ -67,6 +68,8 @@ class TrackPlayer extends EventEmitter<{
     private currentIndex = -1;
     // 音乐播放器服务是否启动
     private serviceInited = false;
+    // 播放器未初始化的重试计数（仅允许一次，避免无限递归）
+    private playerInitRetries = 0;
     // 播放队列索引map
     private playListIndexMap = createMediaIndexMap([] as IMusic.IMusicItem[]);
 
@@ -178,19 +181,16 @@ class TrackPlayer extends EventEmitter<{
                     track.headers = newSource?.headers || track.headers;
 
                     if (isSameMediaItem(this.currentMusic, track)) {
-                        await this.setTrackSource(track as Track, false);
+                        // 开启自动续播时 track.isInit 为 false → autoPlay 为 true；
+                        // 关闭时置 isInit=true → 不自动播放（与 L158-160 的本意一致）
+                        await this.setTrackSource(track as Track, !track.isInit);
                         if (progress) {
-                            // 异步
+                            // 异步（此时队列已就绪，seekTo 在此处正确执行）
                             this.seekTo(progress);
                         }
                     }
                 });
             this.setCurrentMusic(track);
-
-            if (progress) {
-                // 异步
-                this.seekTo(progress);
-            }
         }
 
         if (!this.serviceInited) {
@@ -241,14 +241,15 @@ class TrackPlayer extends EventEmitter<{
                     if (
                         currentTrack?.url !== TrackPlayer.fakeAudioUrl && currentTrack?.url !== TrackPlayer.proposedAudioUrl &&
                         (await ReactNativeTrackPlayer.getActiveTrackIndex()) === 0 &&
-                        e.message &&
-                        e.message !== "android-io-file-not-found"
+                        e.message
                     ) {
                         trace("播放出错", {
                             message: e.message,
                             code: e.code,
                         });
 
+                        // 已下载文件被删除（android-io-file-not-found）不再静默卡死，
+                        // 统一走 handlePlayFail（自动下一首/提示）
                         this.handlePlayFail();
                     }
                 },
@@ -424,6 +425,10 @@ class TrackPlayer extends EventEmitter<{
             if (musicItem && musicItem.apiSource) {
                 const matched = await matchMusic(musicItem);
                 if (matched) {
+                    // 匹配可达数秒：期间用户可能已切歌，匹配结果不得劫持新播放队列
+                    if (!this.isCurrentMusic(musicItem)) {
+                        return;
+                    }
                     // 用匹配结果原位替换队列中的接口歌曲（保持队列结构与连播顺序，
                     // 否则 matched 被 add 到队尾会导致 currentIndex 错位、下一首越界）
                     this.replaceInPlayList(musicItem, matched);
@@ -625,6 +630,8 @@ class TrackPlayer extends EventEmitter<{
             trace("获取音源成功", track);
             // 9. 设置音源
             await this.setTrackSource(track as Track);
+            // 播放链路成功，重置"未初始化"重试计数
+            this.playerInitRetries = 0;
 
             // 10. 获取补充信息
             let info: Partial<IMusic.IMusicItem> | null = null;
@@ -654,8 +661,15 @@ class TrackPlayer extends EventEmitter<{
                 message ===
                 "The player is not initialized. Call setupPlayer first."
             ) {
+                // setupPlayer 持续失败时叠加重试会无限递归：仅允许重试一次
+                if (this.playerInitRetries >= 1) {
+                    this.playerInitRetries = 0;
+                    await this.handlePlayFail();
+                    return;
+                }
+                this.playerInitRetries += 1;
                 await ReactNativeTrackPlayer.setupPlayer();
-                this.play(musicItem, forcePlay);
+                return this.play(musicItem, forcePlay);
             } else if (message === PlayFailReason.FORBID_CELLUAR_NETWORK_PLAY) {
                 if (getCurrentDialog()?.name !== "SimpleDialog") {
                     showDialog("SimpleDialog", {
@@ -799,10 +813,10 @@ class TrackPlayer extends EventEmitter<{
         return ReactNativeTrackPlayer.seekTo(progress);
     }
 
-    getProgress = ReactNativeTrackPlayer.getProgress;
-    getRate = ReactNativeTrackPlayer.getRate;
-    setRate = ReactNativeTrackPlayer.setRate;
-    reset = ReactNativeTrackPlayer.reset;
+    getProgress = ReactNativeTrackPlayer.getProgress.bind(ReactNativeTrackPlayer);
+    getRate = ReactNativeTrackPlayer.getRate.bind(ReactNativeTrackPlayer);
+    setRate = ReactNativeTrackPlayer.setRate.bind(ReactNativeTrackPlayer);
+    reset = ReactNativeTrackPlayer.reset.bind(ReactNativeTrackPlayer);
 
 
     /**************** 辅助函数 -- 设置内部状态 ****************/
@@ -993,6 +1007,12 @@ class TrackPlayer extends EventEmitter<{
         if (!this.configService.getConfig("basic.autoStopWhenError")) {
             await delay(500);
             await this.skipToNext();
+        } else {
+            // 自动停止模式：播放器停在错误态且不再跳下一首，至少提示用户，避免完全静默
+            showToast({
+                type: "warn",
+                message: "播放失败",
+            });
         }
     }
 

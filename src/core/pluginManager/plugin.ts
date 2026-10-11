@@ -740,24 +740,32 @@ class PluginMethodsWrapper implements IPlugin.IPluginInstanceMethods {
         page: number,
     ): Promise<IPlugin.ITopListInfoResult> {
         await this.ensurePluginIsMounted();
-        const result = await this.plugin.instance?.getTopListDetail?.(
-            topListItem,
-            page,
-        );
-        if (!result) {
-            throw new Error();
-        }
-        if (result.musicList) {
-            result.musicList.forEach(_ =>
-                resetMediaItem(_, this.plugin.name),
+        try {
+            const result = await this.plugin.instance?.getTopListDetail?.(
+                topListItem,
+                page,
             );
-        } else {
-            result.musicList = [];
+            if (!result) {
+                throw new Error();
+            }
+            if (result.musicList) {
+                result.musicList.forEach(_ =>
+                    resetMediaItem(_, this.plugin.name),
+                );
+            } else {
+                result.musicList = [];
+            }
+            if (result.isEnd !== false) {
+                result.isEnd = true;
+            }
+            return result;
+        } catch (e: any) {
+            devLog("error", "获取榜单详情失败", e, e?.message);
+            return {
+                isEnd: true,
+                musicList: [],
+            };
         }
-        if (result.isEnd !== false) {
-            result.isEnd = true;
-        }
-        return result;
     }
 
     /** 获取推荐歌单的tag */
@@ -816,21 +824,29 @@ class PluginMethodsWrapper implements IPlugin.IPluginInstanceMethods {
         page?: number
     ): Promise<ICommon.PaginationResponse<IMedia.IComment>> {
         await this.ensurePluginIsMounted();
-        const result = await this.plugin.instance?.getMusicComments?.(
-            musicItem,
-            page ?? 1
-        );
-        if (!result) {
-            throw new Error();
-        }
-        if (result.isEnd !== false) {
-            result.isEnd = true;
-        }
-        if (!result.data) {
-            result.data = [];
-        }
+        try {
+            const result = await this.plugin.instance?.getMusicComments?.(
+                musicItem,
+                page ?? 1
+            );
+            if (!result) {
+                throw new Error();
+            }
+            if (result.isEnd !== false) {
+                result.isEnd = true;
+            }
+            if (!result.data) {
+                result.data = [];
+            }
 
-        return result;
+            return result;
+        } catch (e: any) {
+            devLog("error", "获取歌曲评论失败", e, e?.message);
+            return {
+                isEnd: true,
+                data: [],
+            };
+        }
     }
 }
 

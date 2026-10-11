@@ -90,7 +90,7 @@ const style = StyleSheet.create({
     },
     body: {
         flex: 1,
-        paddingHorizontal: rpx(24),
+        paddingHorizontal: 16,
     },
     item: {
         height: rpx(96),

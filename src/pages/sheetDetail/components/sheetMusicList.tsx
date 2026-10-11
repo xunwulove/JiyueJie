@@ -143,8 +143,8 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingVertical: 8,
-        paddingHorizontal: 8,
-        borderRadius: 10,
+        paddingHorizontal: 0,
+        borderRadius: 0,
     },
     indexBlock: {
         width: 48,

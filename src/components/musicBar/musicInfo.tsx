@@ -1,12 +1,14 @@
 import React, { memo, useLayoutEffect, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import rpx from "@/utils/rpx";
+import { useSetAtom } from "jotai";
 import FastImage from "../base/fastImage";
 import { ImgAsset } from "@/constants/assetsConst";
 import Color from "color";
 import ThemeText from "../base/themeText";
 import useColors from "@/hooks/useColors";
+import useIsTablet from "@/hooks/useIsTablet";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
+import { fullPlayingAtom } from "@/core/tabletNav";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import TrackPlayer, { usePlayList } from "@/core/trackPlayer";
 import Animated, {
@@ -44,7 +46,7 @@ function _BarMusicItem(props: IBarMusicItemProps) {
             style={[
                 styles.container,
                 {
-                    paddingLeft: rpx(24) + safeAreaInsets.left,
+                    paddingLeft: 12 + safeAreaInsets.left,
                 },
                 animatedStyles,
             ]}>
@@ -95,10 +97,10 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     artworkImg: {
-        width: rpx(96),
-        height: rpx(96),
-        borderRadius: rpx(48),
-        marginRight: rpx(24),
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        marginRight: 12,
     },
 });
 
@@ -118,6 +120,8 @@ function skipMusicItem(direction: number) {
 export default function MusicInfo(props: IMusicInfoProps) {
     const { musicItem } = props;
     const navigate = useNavigate();
+    const setFullPlaying = useSetAtom(fullPlayingAtom);
+    const isTablet = useIsTablet();
     const playLists = usePlayList();
     const siblingMusicItems = useMemo(() => {
         if (!musicItem) {
@@ -139,7 +143,12 @@ export default function MusicInfo(props: IMusicInfoProps) {
 
     const tapGesture = Gesture.Tap()
         .onStart(() => {
-            navigate(ROUTE_PATH.MUSIC_DETAIL);
+            // 平板：进入全屏播放层（与 tabletPanel 单击一致），不走覆盖层栈叠一层 music-detail
+            if (isTablet) {
+                setFullPlaying(true);
+            } else {
+                navigate(ROUTE_PATH.MUSIC_DETAIL);
+            }
         })
         .runOnJS(true);
 

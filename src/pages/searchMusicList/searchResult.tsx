@@ -9,7 +9,7 @@ interface ISearchResultProps {
     musicSheet?: IMusic.IMusicSheetItem;
 }
 
-const ITEM_HEIGHT = rpx(120);
+const ITEM_HEIGHT = 64;
 
 export default function SearchResult(props: ISearchResultProps) {
     const { result, musicSheet } = props;

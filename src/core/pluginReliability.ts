@@ -39,7 +39,7 @@ export function isReliabilitySortEnabled(): boolean {
     return Config.getConfig("basic.sortPluginByReliability") ?? true;
 }
 
-async function ensureLoaded(): Promise<void> {
+export async function ensureLoaded(): Promise<void> {
     if (loaded) {
         return;
     }
@@ -83,6 +83,15 @@ export function getReliabilitySync(platform: string | undefined): number {
     return calcReliability(reliabilityMap[platform]);
 }
 
+/** 是否有通用统计记录（同步；无记录返回 false，用于"暂无数据排最后"） */
+export function hasRecordSync(platform: string | undefined): boolean {
+    if (!platform) {
+        return false;
+    }
+    const r = reliabilityMap[platform];
+    return !!r && r.success + r.fail > 0;
+}
+
 function calcReliability(r?: IReliabilityRecord): number {
     if (!r || r.success + r.fail <= 0) {
         return RELIABILITY_DEFAULT;
@@ -113,7 +122,7 @@ export async function recordResult(
 
 /* ============ 推荐歌单专用可用率（独立统计） ============ */
 
-async function ensureRecommendLoaded(): Promise<void> {
+export async function ensureRecommendLoaded(): Promise<void> {
     if (recommendLoaded) {
         return;
     }
@@ -143,6 +152,15 @@ export function getRecommendReliabilitySync(
         return RECOMMEND_DEFAULT;
     }
     return calcRecommend(recommendMap[platform]);
+}
+
+/** 是否有推荐歌单统计记录（同步；无记录返回 false，用于"暂无数据排最后"） */
+export function hasRecommendRecordSync(platform: string | undefined): boolean {
+    if (!platform) {
+        return false;
+    }
+    const r = recommendMap[platform];
+    return !!r && r.ok + r.fail > 0;
 }
 
 /** 异步取推荐歌单可用率 */
@@ -214,6 +232,7 @@ const pluginReliability = {
     getReliability,
     getReliabilityRecord,
     getReliabilitySync,
+    hasRecordSync,
     isReliabilitySortEnabled,
     RELIABILITY_DEFAULT,
     // 推荐歌单专用可用率
@@ -221,8 +240,14 @@ const pluginReliability = {
     recordRecommendResult,
     getRecommendReliability,
     getRecommendReliabilitySync,
+    hasRecommendRecordSync,
     RECOMMEND_DEFAULT,
     resetRecommendReliability,
 };
 
 export default pluginReliability;
+
+// 模块加载即后台预加载统计数据（setup() 内 ensureLoaded 幂等，重复调用无副作用）：
+// 避免启动初期同步排序（getReliabilitySync 等）在 setup() 完成前平权返回默认 0.5。
+void ensureLoaded();
+void ensureRecommendLoaded();

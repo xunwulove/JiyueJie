@@ -34,10 +34,11 @@ const style = StyleSheet.create({
     container: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: rpx(16),
-        paddingVertical: rpx(8),
+        paddingHorizontal: 16,
+        // 固定 dp：总高 20+2×14=48dp，触控达标（原 rpx(8) 总高仅 36dp）
+        paddingVertical: 14,
     },
     text: {
-        marginLeft: rpx(8),
+        marginLeft: 8,
     },
 });

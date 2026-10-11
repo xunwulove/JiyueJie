@@ -21,12 +21,12 @@ export default function (props: IButtonProps) {
             style={[
                 withHorizontalPadding
                     ? {
-                        paddingHorizontal: rpx(24),
+                        paddingHorizontal: 16,
                     }
                     : null,
                 props.style,
             ]}
-            hitSlop={hitSlop ?? (withHorizontalPadding ? 0 : rpx(28))}
+            hitSlop={hitSlop ?? (withHorizontalPadding ? 0 : 14)}
             onPress={onPress}
             accessible
             accessibilityLabel={children}>

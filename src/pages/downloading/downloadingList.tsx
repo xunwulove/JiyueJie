@@ -108,7 +108,7 @@ function DownloadingListItem(props: { musicItem: IMusic.IMusicItem }) {
                 {status === DownloadStatus.Error ||
                 status === DownloadStatus.Pending ? (
                     <Pressable
-                        hitSlop={8}
+                        hitSlop={12}
                         onPress={() =>
                             downloader.remove(musicItem)
                         }>
@@ -200,7 +200,7 @@ function DownloadedListItem(props: { musicItem: IMusic.IMusicItem }) {
                     </ThemeText>
                 </View>
                 <Pressable
-                    hitSlop={8}
+                    hitSlop={12}
                     onPress={() => {
                         // 删除确认：仅删记录（保留文件）或连同文件删除
                         showDialog("MenuDialog", {
@@ -281,6 +281,7 @@ export default function DownloadingList() {
                 style={styles.list}
                 contentContainerStyle={styles.listContent}
                 data={data}
+                estimatedItemSize={80}
                 keyExtractor={_ => `${_.kind}${_.item.platform}.${_.item.id}`}
                 ItemSeparatorComponent={() => (
                     <View style={styles.separator} />

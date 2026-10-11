@@ -35,7 +35,7 @@ const timingConfig = {
 };
 
 /** 平板内容区顶部 tab 栏高度（与 TabBar horizontal 一致，对齐 APlayer 56dp） */
-const TAB_BAR_HEIGHT = rpx(56);
+const TAB_BAR_HEIGHT = 56;
 
 interface IPanelBaseProps {
     keyboardAvoidBehavior?: "height" | "padding" | "position" | "none";
@@ -85,6 +85,9 @@ export default function (props: IPanelBaseProps) {
             "hardwareBackPress",
             () => {
                 snapPoint.value = withTiming(0, timingConfig);
+                // 硬件返回键主动收起：丢弃 showPanel→hidePanel 排队的链式换层回调，
+                // 避免 250ms 收起动画窗口内按返回，动画结束后排队 callback 仍把新面板弹出
+                hideCallbackRef.current = [];
                 return true;
             },
         );
@@ -263,8 +266,8 @@ const style = StyleSheet.create({
         position: "absolute",
         width: rpx(750),
         right: 0,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
+        borderTopLeftRadius: 14,
+        borderTopRightRadius: 14,
         zIndex: 15010,
     },
     kbContainer: {

@@ -21,7 +21,9 @@ import LinearGradient from "react-native-linear-gradient";
  * 全部使用 dp 固定尺寸（与列表行、卡片体系一致），手机/平板统一布局，不再随 rpx 放大
  */
 export default function AboutSetting() {
-    const checkAndShowResult = useCheckUpdate();
+    // 不在挂载时自动检查更新（避免每次进入关于页都发网络请求），
+    // 由下方「检查更新」按钮手动触发
+    const checkAndShowResult = useCheckUpdate(false);
     const colors = useColors();
     const appName = deviceInfoModule.getApplicationName();
     const appVersion = deviceInfoModule.getVersion();

@@ -109,7 +109,7 @@ function ResultSubPanel(props: IResultSubPanelProps) {
                         <Text
                             numberOfLines={1}
                             style={{
-                                width: rpx(140),
+                                width: 70,
                                 fontWeight: focused
                                     ? fontWeightConst.bolder
                                     : fontWeightConst.medium,

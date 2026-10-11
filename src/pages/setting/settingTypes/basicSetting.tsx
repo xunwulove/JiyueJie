@@ -406,13 +406,13 @@ export default function BasicSetting() {
         ],
     };
 
-    // ===== 更多（入口组：仅保留主题与关于；备份/音源/权限等已迁出为独立二级页，不留入口） =====
+    // ===== 更多（入口组：仅保留主题/权限/关于；备份/音源管理等已迁出为独立二级页，不留入口） =====
     const moreGroup = {
         title: t("basicSettings.other"),
         items: [
             {
                 title: t("sidebar.themeSettings"),
-                right: <Icon name="skip-right" size={rpx(24)} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
+                right: <Icon name="skip-right" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
                 onPress() {
                     // B3：主题设置改为三级浮窗（不再叠二级设置覆盖层；自定义取色已去除）
                     showDialog("ThemeSettingDialog");
@@ -420,14 +420,14 @@ export default function BasicSetting() {
             },
             {
                 title: t("permissionSetting.title"),
-                right: <Icon name="skip-right" size={rpx(24)} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
+                right: <Icon name="skip-right" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
                 onPress() {
                     showDialog("PermissionSettingDialog");
                 },
             },
             {
                 title: t("common.about"),
-                right: <Icon name="skip-right" size={rpx(24)} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
+                right: <Icon name="skip-right" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
                 onPress() {
                     navigate(ROUTE_PATH.SETTING, { type: "about" });
                 },
@@ -524,8 +524,8 @@ const styles = StyleSheet.create({
         marginTop: rpx(8),
     },
     groupHeader: {
-        paddingHorizontal: rpx(24),
-        height: rpx(56),
+        paddingHorizontal: 16,
+        height: 36,
         flexDirection: "row",
         alignItems: "center",
         marginTop: rpx(8),
@@ -536,12 +536,12 @@ const styles = StyleSheet.create({
     },
     card: {
         marginHorizontal: rpx(24),
-        borderRadius: rpx(14),
+        borderRadius: 14,
         overflow: "hidden",
     },
 });
 
-export function LyricSetting() {
+function LyricSetting() {
     const showStatusBarLyric = useAppConfig("lyric.showStatusBarLyric");
     const topPercent = useAppConfig("lyric.topPercent");
     const leftPercent = useAppConfig("lyric.leftPercent");
@@ -581,12 +581,14 @@ export function LyricSetting() {
                         );
                         Config.setConfig("lyric.showStatusBarLyric", true);
                     } else {
-                        LyricUtil.requestSystemAlertPermission().finally(() => {
-                            Toast.warn(t("toast.noFloatWindowPermission"));
-                        });
+                        LyricUtil.requestSystemAlertPermission()
+                            .catch(() => {})
+                            .finally(() => {
+                                Toast.warn(t("toast.noFloatWindowPermission"));
+                            });
                     }
                 } else {
-                    LyricUtil.hideStatusBarLyric();
+                    LyricUtil.hideStatusBarLyric().catch(() => {});
                     Config.setConfig("lyric.showStatusBarLyric", false);
                 }
             } catch { }
@@ -609,7 +611,7 @@ export function LyricSetting() {
         },
         newVal => {
             if (showStatusBarLyric) {
-                LyricUtil.setStatusBarLyricAlign(newVal as any);
+                LyricUtil.setStatusBarLyricAlign(newVal as any).catch(() => {});
             }
         },
     );
@@ -636,7 +638,7 @@ export function LyricSetting() {
                     maximumValue={1}
                     onValueChange={val => {
                         if (showStatusBarLyric) {
-                            LyricUtil.setStatusBarLyricLeft(val);
+                            LyricUtil.setStatusBarLyricLeft(val).catch(() => {});
                         }
                     }}
                     onSlidingComplete={val => {
@@ -657,7 +659,7 @@ export function LyricSetting() {
                     maximumValue={1}
                     onValueChange={val => {
                         if (showStatusBarLyric) {
-                            LyricUtil.setStatusBarLyricTop(val);
+                            LyricUtil.setStatusBarLyricTop(val).catch(() => {});
                         }
                     }}
                     onSlidingComplete={val => {
@@ -678,7 +680,7 @@ export function LyricSetting() {
                     maximumValue={1}
                     onValueChange={val => {
                         if (showStatusBarLyric) {
-                            LyricUtil.setStatusBarLyricWidth(val);
+                            LyricUtil.setStatusBarLyricWidth(val).catch(() => {});
                         }
                     }}
                     onSlidingComplete={val => {
@@ -693,13 +695,15 @@ export function LyricSetting() {
                     minimumTrackTintColor={colors.primary}
                     maximumTrackTintColor={colors.text ?? "#999999"}
                     thumbTintColor={colors.primary}
-                    minimumValue={Math.round(rpx(18))}
+                    minimumValue={14}
                     step={0.5}
-                    maximumValue={Math.round(rpx(56))}
-                    value={fontSize ?? Math.round(rpx(24))}
+                    maximumValue={48}
+                    value={fontSize ?? 20}
                     onValueChange={val => {
                         if (showStatusBarLyric) {
-                            LyricUtil.setStatusBarLyricFontSize(val);
+                            LyricUtil.setStatusBarLyricFontSize(val).catch(
+                                () => {},
+                            );
                         }
                     }}
                     onSlidingComplete={val => {
@@ -720,14 +724,17 @@ export function LyricSetting() {
                 withHorizontalPadding
                 heightType="small"
                 onPress={() => {
-                    showPanel("ColorPicker", {
-                        closePanelWhenSelected: true,
-                        defaultColor: color ?? "transparent",
+                    showDialog("LyricColorDialog", {
+                        title: t("basicSettings.lyric.textColor"),
+                        defaultColor: color ?? "#FFE9D2FF",
                         onSelected(color) {
+                            const colorStr = color.hexa();
+                            Config.setConfig("lyric.color", colorStr);
                             if (showStatusBarLyric) {
-                                const colorStr = color.hexa();
-                                LyricUtil.setStatusBarColors(colorStr, null);
-                                Config.setConfig("lyric.color", colorStr);
+                                LyricUtil.setStatusBarColors(
+                                    colorStr,
+                                    null,
+                                ).catch(() => {});
                             }
                         },
                     });
@@ -740,18 +747,20 @@ export function LyricSetting() {
                 withHorizontalPadding
                 heightType="small"
                 onPress={() => {
-                    showPanel("ColorPicker", {
-                        closePanelWhenSelected: true,
-                        defaultColor:
-                            backgroundColor ?? "transparent",
+                    showDialog("LyricColorDialog", {
+                        title: t("basicSettings.lyric.backgroundColor"),
+                        defaultColor: backgroundColor ?? "#84888153",
                         onSelected(color) {
+                            const colorStr = color.hexa();
+                            Config.setConfig(
+                                "lyric.backgroundColor",
+                                colorStr,
+                            );
                             if (showStatusBarLyric) {
-                                const colorStr = color.hexa();
-                                LyricUtil.setStatusBarColors(null, colorStr);
-                                Config.setConfig(
-                                    "lyric.backgroundColor",
+                                LyricUtil.setStatusBarColors(
+                                    null,
                                     colorStr,
-                                );
+                                ).catch(() => {});
                             }
                         },
                     });

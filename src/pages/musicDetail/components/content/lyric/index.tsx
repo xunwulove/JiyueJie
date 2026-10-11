@@ -21,7 +21,7 @@ import { getMediaExtraProperty } from "@/utils/mediaExtra";
 import lyricManager, { useCurrentLyricItem, useLyricState } from "@/core/lyricManager";
 import { useI18N } from "@/core/i18n";
 
-const ITEM_HEIGHT = rpx(92);
+const ITEM_HEIGHT = 46;
 
 interface IItemHeights {
     blankHeight?: number;
@@ -33,10 +33,10 @@ interface IProps {
 }
 
 const fontSizeMap = {
-    0: rpx(24),
-    1: rpx(30),
-    2: rpx(36),
-    3: rpx(42),
+    0: 20,
+    1: 25,
+    2: 30,
+    3: 36,
 } as Record<number, number>;
 
 export default function Lyric(props: IProps) {
@@ -313,7 +313,7 @@ export default function Lyric(props: IProps) {
                                         text={text}
                                         fontSize={
                                             currentLrcItem?.index === index
-                                                ? fontSizeStyle.fontSize + 10
+                                                ? fontSizeStyle.fontSize + 9
                                                 : fontSizeStyle.fontSize
                                         }
                                         onLayout={handleLyricItemLayout}

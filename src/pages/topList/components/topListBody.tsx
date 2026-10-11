@@ -46,7 +46,7 @@ export default function TopListBody() {
                         <Text
                             numberOfLines={1}
                             style={{
-                                width: rpx(160),
+                                width: 120,
                                 fontWeight: focused
                                     ? fontWeightConst.bolder
                                     : fontWeightConst.medium,

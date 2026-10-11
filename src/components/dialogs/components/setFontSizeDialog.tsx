@@ -43,7 +43,7 @@ export default function SetFontSizeDialog(props: IProps) {
                         minimumValue={0}
                         maximumValue={3}
                     />
-                    <ThemeText style={styles.label}>
+                    <ThemeText style={[styles.label, styles.label0]}>
                         {i18n.t("panel.setFontSize.small")}
                     </ThemeText>
                     <ThemeText style={[styles.label, styles.label1]}>
@@ -72,29 +72,20 @@ export default function SetFontSizeDialog(props: IProps) {
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: rpx(24),
+        paddingHorizontal: 24,
         width: "100%",
-        marginTop: rpx(16),
-        height: rpx(200),
+        marginTop: 16,
     },
     sliderContainer: {
-        height: rpx(80),
+        height: 40,
     },
     label: {
-        position: "absolute",
-        top: rpx(88),
-        width: rpx(72),
+        flex: 1,
         textAlign: "center",
-        left: rpx(24),
         opacity: 0.5,
     },
-    label1: {
-        left: rpx(234),
-    },
-    label2: {
-        left: rpx(442),
-    },
-    label3: {
-        left: rpx(646),
-    },
+    label0: {},
+    label1: {},
+    label2: {},
+    label3: {},
 });

@@ -77,7 +77,7 @@ export default function TopListDetail() {
                 <HorizontalSafeAreaView style={globalStyle.flex1}>
                     <FlashList
                         data={musicList}
-                        estimatedItemSize={60}
+                        estimatedItemSize={64}
                         contentContainerStyle={styles.listContent}
                         renderItem={({ item, index }) => (
                             <View>
@@ -187,9 +187,9 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 16,
+        paddingHorizontal: 8,
         paddingVertical: 8,
-        borderRadius: 10,
+        borderRadius: 0,
     },
     index: {
         width: 32,

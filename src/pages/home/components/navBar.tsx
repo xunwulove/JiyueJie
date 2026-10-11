@@ -40,7 +40,7 @@ export default function NavBar({ onSearchPress }: { onSearchPress?: () => void }
                 <Icon
                     accessible={false}
                     name="magnifying-glass"
-                    size={rpx(32)}
+                    size={20}
                     color="rgba(255,255,255,0.9)"
                 />
                 <ThemeText
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         width: "100%",
-        height: rpx(88),
+        height: 56,
     },
     searchBar: {
         marginHorizontal: rpx(24),
@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
         alignItems: "center",
         flex: 1,
         height: "72%",
-        maxHeight: rpx(64),
-        borderRadius: rpx(36),
+        maxHeight: 40,
+        borderRadius: 20,
         paddingHorizontal: rpx(20),
     },
     text: {

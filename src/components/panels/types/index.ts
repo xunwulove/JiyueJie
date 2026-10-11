@@ -1,12 +1,10 @@
 import AppBarMore from "./appBarMore";
 import AssociateLrc from "./associateLrc";
-import ColorPicker from "./colorPicker";
 import MusicItemOptions from "./musicItemOptions";
 import MusicQuality from "./musicQuality";
 import PlayList from "./playList";
 import SearchLrc from "./searchLrc";
 import SetFontSize from "./setFontSize";
-import SetLyricOffset from "./setLyricOffset";
 import SetUserVariables from "./setUserVariables";
 import SheetTags from "./sheetTags";
 import SimpleInput from "./simpleInput";
@@ -36,14 +34,10 @@ export default {
     SearchLrc,
     /** 简单的选择 */
     SimpleSelect,
-    /** 颜色选择器 */
-    ColorPicker,
     /** 设置插件用户变量 */
     SetUserVariables,
     /** 设置字体 */
     SetFontSize,
-    /** 设置歌词偏移 */
-    SetLyricOffset,
     /** 图片阅读器 */
     ImageViewer,
     MusicItemLyricOptions,

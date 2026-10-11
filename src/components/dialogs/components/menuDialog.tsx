@@ -53,7 +53,6 @@ export default function MenuDialog(props: IMenuDialogProps) {
                                 heightType="small">
                                 {item.icon ? (
                                     <ListItem.ListItemIcon
-                                        width={rpx(48)}
                                         icon={item.icon}
                                         iconSize={iconSizeConst.light}
                                     />
@@ -77,7 +76,6 @@ export default function MenuDialog(props: IMenuDialogProps) {
                                 }}>
                                 {item.icon ? (
                                     <ListItem.ListItemIcon
-                                        width={rpx(48)}
                                         icon={item.icon}
                                         iconSize={iconSizeConst.light}
                                     />

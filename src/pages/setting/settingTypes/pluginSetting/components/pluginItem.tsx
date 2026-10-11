@@ -150,22 +150,20 @@ function _PluginItem(props: IPluginItemProps) {
                             });
                         }} /> : null
                     }
-                    {/* 可用率标签 */}
-                    <View
-                        style={[
-                            styles.reliabilityTag,
-                            { backgroundColor: reliabilityColor },
-                        ]}>
-                        <Text
-                            numberOfLines={1}
-                            style={styles.reliabilityText}>
-                            {reliability === null
-                                ? t("pluginSetting.pluginItem.noReliabilityData")
-                                : t("pluginSetting.pluginItem.reliability", {
-                                      rate: Math.round(reliability * 100),
-                                  })}
-                        </Text>
-                    </View>
+                    {/* 可用率标签（仅在有统计数据时显示，只展示百分比） */}
+                    {reliability !== null ? (
+                        <View
+                            style={[
+                                styles.reliabilityTag,
+                                { backgroundColor: reliabilityColor },
+                            ]}>
+                            <Text
+                                numberOfLines={1}
+                                style={styles.reliabilityText}>
+                                {Math.round(reliability * 100)}%
+                            </Text>
+                        </View>
+                    ) : null}
                 </View>
                 <ThemeSwitch
                     value={enabled}
@@ -263,10 +261,10 @@ export default PluginItem;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        borderRadius: rpx(28),
+        borderRadius: 14,
         marginHorizontal: rpx(24),
-        paddingVertical: rpx(18),
-        marginTop: rpx(36),
+        paddingVertical: 12,
+        marginTop: rpx(20),
     },
     header: {
         paddingHorizontal: rpx(16),
@@ -282,8 +280,8 @@ const styles = StyleSheet.create({
     },
     reliabilityTag: {
         borderRadius: rpx(8),
-        paddingHorizontal: rpx(4),
-        paddingVertical: rpx(2),
+        paddingHorizontal: 6,
+        paddingVertical: 2,
         marginLeft: rpx(4),
     },
     reliabilityText: {
@@ -298,12 +296,12 @@ const styles = StyleSheet.create({
     },
     description: {
         marginHorizontal: rpx(16),
-        marginVertical: rpx(24),
+        marginVertical: 12,
         flexDirection: "row",
     },
     alternativePluginDescription: {
         marginHorizontal: rpx(16),
-        marginBottom: rpx(24),
+        marginBottom: 12,
         flexDirection: "row",
     },
     contents: {

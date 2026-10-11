@@ -9,7 +9,7 @@
  *   - 打分：作者+歌名精确 → 仅歌名精确 → 歌名互相包含
  *   - 命中 → 用匹配到的歌曲（插件平台，可解析）播放
  *   - 全失败 → 回退原歌解析（若对应平台插件可解析原 id 则成功，否则播放器自动下一首）
- *   - 匹配结果持久化缓存（MMKV）：成功 7 天 / 失败 24h，防重复搜索限流（2026-10-09 加固）
+ *   - 匹配结果持久化缓存（MMKV）：成功 7 天 / 失败 15 分钟，防重复搜索限流（2026-10-09 加固）
  *   - 失败熔断（2026-10-09 加固）：单源 5 分钟内失败 ≥5 次 → 熔断 10 分钟切换备选源，
  *     全部源熔断 → 返回 null 走原 id 解析，避免对已被风控的源循环加重
  *   - 队列预热（2026-10-09 加固）：prewarmApiSongs 对播放列表内接口歌曲按节奏预匹配
@@ -40,8 +40,8 @@ export function isApiSource(
 const cacheStore = getOrCreateMMKV("PlayMatcherCache");
 /** 成功缓存有效期（7 天） */
 const SUCCESS_TTL = 7 * 24 * 60 * 60 * 1000;
-/** 失败缓存有效期（24h）：失败后一天内不再重搜同一首 */
-const FAIL_TTL = 24 * 60 * 60 * 1000;
+/** 失败缓存有效期（15 分钟）：网络抖动不应把一首歌"封禁"太久，留出重试窗口 */
+const FAIL_TTL = 15 * 60 * 1000;
 
 interface IMatchCacheEntry {
     item: IMusic.IMusicItem | null;
@@ -65,9 +65,13 @@ function writeCache(key: string, entry: IMatchCacheEntry): void {
 }
 
 function matchCacheKey(musicItem: IMusic.IMusicItem): string {
+    // 同名不同版本需区分：按时长分桶（分钟）避免互相串缓存
+    const durationBucket = musicItem.duration
+        ? Math.floor(musicItem.duration / 60)
+        : "";
     return `${musicItem.platform ?? ""}|${musicItem.title ?? ""}|${
         musicItem.artist ?? ""
-    }`;
+    }|${durationBucket}`;
 }
 
 /* ============ 失败熔断（运行时，单源维度） ============ */

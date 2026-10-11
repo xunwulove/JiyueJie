@@ -8,6 +8,7 @@ import ThemeSwitch from "@/components/base/switch";
 import { useI18N } from "@/core/i18n";
 import LyricUtil from "@/native/lyricUtil";
 import NativeUtils from "@/native/utils";
+import Toast from "@/utils/toast";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 
@@ -28,20 +29,32 @@ export default function PermissionSettingDialog() {
     const { t } = useI18N();
 
     async function checkPermission(type?: IPermissionTypes) {
-        let newPermission = {
-            ...permissions,
-        };
+        // 函数式更新读取最新 state，避免 useEffect([]) 首帧闭包
+        // 在兜底 setTimeout 里把另一项权限闪回 false
         if (!type || type === "floatingWindow") {
-            const hasPermission =
-                await LyricUtil.checkSystemAlertPermission();
-            newPermission.floatingWindow = hasPermission;
+            try {
+                const hasPermission =
+                    await LyricUtil.checkSystemAlertPermission();
+                setPermissions(prev => ({
+                    ...prev,
+                    floatingWindow: hasPermission,
+                }));
+            } catch {
+                // 查询失败保持原状态，避免闪回 false
+            }
         }
         if (!type || type === "fileStorage") {
-            const hasPermission =
-                await NativeUtils.checkStoragePermission();
-            newPermission.fileStorage = hasPermission;
+            try {
+                const hasPermission =
+                    await NativeUtils.checkStoragePermission();
+                setPermissions(prev => ({
+                    ...prev,
+                    fileStorage: hasPermission,
+                }));
+            } catch {
+                // 同上
+            }
         }
-        setPermissions(newPermission);
     }
 
     useEffect(() => {
@@ -67,11 +80,15 @@ export default function PermissionSettingDialog() {
     // 申请悬浮窗权限：系统会跳转设置页，返回前台由 AppState 监听重查；
     // 此处再兜底一次，保证立即返回时开关状态也刷新
     const requestFloatingWindow = () => {
-        LyricUtil.requestSystemAlertPermission().finally(() => {
-            setTimeout(() => {
-                checkPermission("floatingWindow");
-            }, 500);
-        });
+        LyricUtil.requestSystemAlertPermission()
+            .catch(() => {
+                Toast.warn(t("toast.noFloatWindowPermission"));
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    checkPermission("floatingWindow");
+                }, 500);
+            });
     };
 
     // 申请存储权限：系统对话框在应用内弹出（Android 13+），
@@ -143,7 +160,7 @@ export default function PermissionSettingDialog() {
 
 const styles = StyleSheet.create({
     description: {
-        paddingHorizontal: rpx(24),
-        paddingVertical: rpx(16),
+        paddingHorizontal: 0,
+        paddingVertical: 8,
     },
 });

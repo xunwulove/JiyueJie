@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
 
     scrollView: {
         maxHeight: vh(40),
-        paddingHorizontal: rpx(26),
+        paddingHorizontal: 13,
     },
     checkBox: {
         marginHorizontal: rpx(24),

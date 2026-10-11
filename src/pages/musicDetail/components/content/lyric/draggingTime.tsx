@@ -22,9 +22,9 @@ export default function DraggingTime(props: { time: number }) {
 
 const style = StyleSheet.create({
     draggingTimeText: {
-        paddingHorizontal: rpx(8),
-        paddingVertical: rpx(6),
-        borderRadius: rpx(12),
+        paddingHorizontal: 8,
+        paddingVertical: 6,
+        borderRadius: 8,
         backgroundColor: "rgba(255,255,255,0.1)",
         fontSize: fontSizeConst.description,
     },

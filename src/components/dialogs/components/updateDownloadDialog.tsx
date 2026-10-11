@@ -264,23 +264,23 @@ const styles = StyleSheet.create({
     progressRow: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: rpx(8),
+        paddingHorizontal: 8,
         marginTop: rpx(8),
     },
     progressTrack: {
         flex: 1,
-        height: rpx(14),
-        borderRadius: rpx(7),
+        height: 8,
+        borderRadius: 4,
         backgroundColor: "#99999933",
         overflow: "hidden",
     },
     progressFill: {
         height: "100%",
-        borderRadius: rpx(7),
+        borderRadius: 4,
     },
     percentText: {
-        marginLeft: rpx(16),
-        width: rpx(72),
+        marginLeft: 12,
+        width: 36,
         textAlign: "right",
     },
     metaText: {

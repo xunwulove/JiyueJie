@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function useDelayFalsy<T extends any = any>(
     init?: T,
@@ -6,6 +6,15 @@ export default function useDelayFalsy<T extends any = any>(
 ) {
     const [_state, _setState] = useState<T | undefined>(init);
     const timer = useRef<any>();
+
+    // 卸载时清理未触发的定时器
+    useEffect(() => {
+        return () => {
+            if (timer.current) {
+                clearTimeout(timer.current);
+            }
+        };
+    }, []);
 
     function setState(st: T) {
         if (st === undefined || st === null || st === false) {

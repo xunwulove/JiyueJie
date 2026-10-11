@@ -125,7 +125,7 @@ export default function LyricOperations(props: ILyricOperationsProps) {
 const styles = StyleSheet.create({
     container: {
         // 收紧功能区高度与底部间距，让歌词区更大
-        height: rpx(56),
+        height: 48,
         marginBottom: rpx(4),
         width: "100%",
         flexDirection: "row",

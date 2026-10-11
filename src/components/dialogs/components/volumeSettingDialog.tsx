@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import rpx from "@/utils/rpx";
+import { iconSizeConst } from "@/constants/uiConst";
 import ThemeText from "@/components/base/themeText";
 import Icon from "@/components/base/icon.tsx";
 
@@ -45,7 +46,7 @@ export default function VolumeSettingDialog() {
                 <View style={styles.container}>
                     <Icon
                         name="speaker-wave"
-                        size={24}
+                        size={iconSizeConst.normal}
                         color={colors.textSecondary}
                     />
                     {volume === null ? (
@@ -91,8 +92,8 @@ const styles = StyleSheet.create({
     },
     sliderContainer: {
         flex: 1,
-        height: rpx(64),
-        marginHorizontal: rpx(24),
+        height: 40,
+        marginHorizontal: 12,
     },
     loadingText: {
         flex: 1,
