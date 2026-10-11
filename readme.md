@@ -1,10 +1,12 @@
 # MusicFree
 
 > ## 极悦界（本项目 fork 说明）
-> 本项目为 **MusicFree（maotoumao）的本地 fork「极悦界」**（个人自用，不分发）：保留 MusicFree 内核（插件化音源引擎、WebView/QuickJS 双引擎），UI 全面迁移对齐盐音（APlayer）风格，并新增软件内下载更新（gitee 更新链路）、WebDAV 备份、推荐歌单/排行榜（网易/QQ 接口兜底）、扫描设置、品牌视觉（启动页/图标，见 `brand-assets/`）等能力。
-> - 项目决策与规范：`PROJECT_DECISIONS.md`
+> 本项目为 **MusicFree（maotoumao）的本地 fork「极悦界」**（个人自用，不分发）：保留 MusicFree 内核（插件化音源引擎、WebView/QuickJS 双引擎），UI 全面迁移对齐盐音（APlayer）风格（平板左播放区 30%/右内容区 70%、一/二/三级页面层级规范、卡片渐变/字体档位体系），并新增软件内下载更新（gitee 更新链路）、WebDAV 备份、推荐歌单/排行榜（网易/QQ 接口兜底 + 插件两级结构）、扫描设置、卡拉OK歌词染色、白天背景微渐变 + 封面氛围取色、品牌视觉（启动页/图标，见 `brand-assets/`）等能力。
+> - 项目决策与规范：`PROJECT_DECISIONS.md`（改代码前必读）
 > - UI 对齐检查记录：`UI_ALIGNMENT_CHECK.md`
-> - 版本：0.6.2.1（versionCode 400012）；更新源：`gitee.com/xunwulove/jiyuejie-updates`（latest tag 固定链路，发版流程见 PROJECT_DECISIONS.md）
+> - 二次开发指南（面向后续接管的 AI/人）：`二次开发指南.md`
+> - 极悦界版本记录：`changelog.md`（顶部段）
+> - 版本：0.6.2.9（versionCode 400020）；更新源：`gitee.com/xunwulove/jiyuejie-updates`（latest tag 固定链路，发版流程见 PROJECT_DECISIONS.md）
 > 以下为上游原版说明（引擎与插件体系通用）：
 
 **中文** | [English](./readme-en.md)

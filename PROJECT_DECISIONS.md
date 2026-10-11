@@ -164,5 +164,53 @@
 
 **GitHub 上传**：既定意图=源码+包上传 GitHub（`xunwulove`），但现有 token `ghp_…` 实测只读（push/建仓 403）；需用户提供**有写权限的 token** 才能自动推送，或手动上传。gitee 更新链路不受影响。
 
+---
+
+## 版本线更新与近期决策（2026-10-10 ~ 10-11）
+
+**版本现状**：0.6.2.9（versionCode 400020），`package.json` version 为唯一版本源；发版链路不变（gitee latest tag 固定附件）。0.6.2.4（fork 基线）→ 0.6.2.5 → 0.6.2.6 → 0.6.2.7 → 0.6.2.8 → 0.6.2.9，各版本变更见 `changelog.md` 顶部极悦界段。
+
+### 推荐歌单体系（两级结构 + 独立可用率）
+
+1. **两级结构对齐官方协议**：`getRecommendSheetTags`（标签无封面）→ `getRecommendSheetsByTag(tag,page)`（真实歌单带 artwork）；歌单详情播放走插件 `getMediaSource`（与官方同构，放弃自建 playMatcher 全局匹配）。每日推荐链路 = 随机标签 → 缓存拉真实歌单 → 随机歌单带 `pluginHash` 进歌单详情。
+2. **缓存**：键 `Plugin.RecommendCache`（每日）/ `Plugin.RecommendTagCache`（`${pluginHash}:${tagId}`，每日）/ `Plugin.TopListCache`；`getCachedRecommendSheetsByTag` 加 8s `Promise.race` 超时；首页推荐区首屏不阻塞（applyFeed 先 setLoaded + selectedTagRef 防覆盖）。**每日缓存 = 防封禁策略**（网易/QQ 元数据接口每日一次）。
+3. **独立可用率**（用户明确要求"独立统计"）：键 `plugin-recommend-reliability`，**不与通用可用率混入**；推荐歌单择优按此独立率排序优先。"设为推荐源"功能曾加又按用户要求**删除并彻底移除**；推荐歌单来源选择改为三级浮窗（含"恢复默认"按钮，底部选项行=取消/确认/恢复默认）。
+4. **封面兜底**：歌单详情头部无封面时取首曲封面（header.tsx artwork→coverImg→musicList[0]）。
+
+### 沉浸歌词层计时规则（0.6.2.8 修复定稿）
+
+- **仅播放中**计时：播放 15s 且无操作 → 自动进入沉浸层；**暂停不计时**（不能用负向 isPaused 判定，Android RNTP 暂停后 state 为 Ready，需正向判定 playing）；有操作（点击/滑动）→ 计时重置；切歌后重新计时。
+- 退出：点击/手势回全屏页；沉浸页仅全屏页可进入（左侧播放区与全屏页共用同一层）。
+
+### 三处歌词统一（卡拉OK + 滚动 + 渐隐，2026-10-11）
+
+- 全屏/沉浸/左侧播放区三处歌词区统一 FlatList 平滑滚动 + `fadingEdgeLength` 边缘渐隐（平板 160/手机 120，左侧 120），首尾 blank=±(区域高−行高)/2，`onScrollToIndexFailed` 120ms 兜底。
+- **卡拉OK进度染色**（用户选 B：三处都做 + 去加粗 + "按推荐来"配色）：`src/components/base/karaokeText.tsx`（useProgress(200)；逐字切已唱段/未唱段；支持多行）。配色：全屏=primary 已唱 / 普通歌词色 α0.6 未唱；沉浸=白 0.98 / 半透明白 0.5；左侧=primary / textSecondary。
+- 沉浸页歌词区下端与右封面下端**精确齐平**：仅保留 `lyricWrapTablet paddingBottom:64`（勿在 leftPane 重复加，双重 64 会导致歌词区上移）。
+
+### 白天背景方案 A+B（2026-10-11，用户选定）
+
+- **A 全局浅品牌色微渐变**：白天背景 `LinearGradient [#F2F5FC → #F8F9FA]`（pageBackgroundTop 新字段，`pageBackground.tsx`）；深色保持单色 `#0F172A` 不受影响；零性能成本。
+- **B 播放封面氛围取色**：`useAlbumTintColor`（复用 `react-native-image-colors`，Android dominant/average/vibrant，同封面缓存）；背景顶部叠加 `封面主色 α0.05 → 0` 极浅渐变，仅白天；取色失败/无封面回退 A。切歌低频取色，不影响性能。
+- 深色模式不启用 A/B（保持纯深色）。
+
+### 尺寸固定 dp 体系（延续 43 条清单，2026-10-11 补完）
+
+- 组件尺寸一律固定 dp（fontSizeConst/iconSizeConst 档位、卡片圆角 14、列表行 big64/normal56/small48/smallest36）；rpx 仅保留"按屏比例的元素"（弹窗宽 60%/86%、网格 gap、沉浸层光带等背景特效）。
+- 本轮补完历史残留：全屏歌词页 9 处（拖拽浮层 76/84/152 等）+ 歌单详情头部 6 处（封面 176×176 圆角 20 等）rpx → 固定 dp，rpx import 已清理。**遗留提醒**：immersiveLayer 光带/光斑按 SCREEN_W 比例属背景特效，合理保留。
+
+### 设置页缓存惰性统计（0.6.2.5）
+
+- 官方原版进设置页即 `useEffect` 全量遍历 music/lyric/image 三缓存目录 → 卡顿根因；极悦界改为**惰性统计**：进页显示 "--"，点击缓存行才统计对应**单个**目录，清缓存后只刷新该目录（`useCacheSize` + queried 状态）。这是相对官方的性能改进。
+
+### 歌单/音乐库交互对齐（0.6.2.5 ~ 0.6.2.6）
+
+- 我的页返回手势 → 首页；音乐库返回手势 → 首页（手机）；设置页返回 → 上一层级。
+- 音乐库排序行移至四卡片下方（固定表头，不随列表滚动）。
+- 下载文件命名设置（歌名/作者在前）。
+- 设置页分组标题统一 primary；标题行高度各层级各自统一（一级/二级/三级各自保持规范，不是全部一样高）。
+- 全屏页功能区顺序（用户定稿）：**字号 / 速度表 / 定时关闭 / 爱心 / 下载**；歌词偏移等移入三点菜单。
+
+
 
 
