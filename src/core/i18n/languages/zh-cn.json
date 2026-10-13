@@ -447,5 +447,15 @@
     "panel.sheetTags.title": "歌单类别",
     "repeatMode.SHUFFLE": "随机播放",
     "repeatMode.QUEUE": "列表循环",
-    "repeatMode.SINGLE": "单曲循环"
+    "repeatMode.SINGLE": "单曲循环",
+    "soundEffect.title": "音效设置",
+    "soundEffect.androidOnly": "仅 Android 设备支持音效",
+    "soundEffect.sectionEq": "均衡器",
+    "soundEffect.sectionFx": "音效",
+    "soundEffect.eqEnable": "启用均衡器",
+    "soundEffect.preset": "预设",
+    "soundEffect.eqWaitPlay": "播放一首歌曲后显示频段调节",
+    "soundEffect.bass": "低音增强",
+    "soundEffect.virtualizer": "环绕声",
+    "soundEffect.hint": "音效实时作用于当前播放，需播放过歌曲后生效；换歌不重置设置。"
 }

@@ -447,5 +447,15 @@
     "panel.sheetTags.title": "歌單類別",
     "repeatMode.SHUFFLE": "隨機播放",
     "repeatMode.QUEUE": "清單循環",
-    "repeatMode.SINGLE": "單曲循環"
+    "repeatMode.SINGLE": "單曲循環",
+    "soundEffect.title": "音效設定",
+    "soundEffect.androidOnly": "僅 Android 裝置支援音效",
+    "soundEffect.sectionEq": "等化器",
+    "soundEffect.sectionFx": "音效",
+    "soundEffect.eqEnable": "啟用等化器",
+    "soundEffect.preset": "預設",
+    "soundEffect.eqWaitPlay": "播放一首歌曲後顯示頻段調節",
+    "soundEffect.bass": "低音增強",
+    "soundEffect.virtualizer": "環繞聲",
+    "soundEffect.hint": "音效即時作用於目前播放，需播放過歌曲後生效；換歌不重設設定。"
 }

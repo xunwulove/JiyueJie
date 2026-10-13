@@ -21,6 +21,7 @@ import Backup from "@/pages/backup";
 import PluginSort from "@/pages/setting/settingTypes/pluginSetting/views/pluginSort";
 import SheetManager from "@/pages/sheetManager";
 import ApiSheetDetail from "@/pages/apiSheetDetail";
+import SoundEffectSetting from "@/pages/setting/settingTypes/soundEffectSetting";
 import { ROUTE_PATH } from "@/core/router/index.ts";
 
 type ValueOf<T> = T[keyof T];
@@ -124,5 +125,9 @@ export const routes: Array<IRoutes> = [
     {
         path: ROUTE_PATH.API_SHEET_DETAIL,
         component: ApiSheetDetail,
+    },
+    {
+        path: ROUTE_PATH.SOUND_EFFECT,
+        component: SoundEffectSetting,
     },
 ];

@@ -423,6 +423,13 @@ export default function BasicSetting() {
         title: t("basicSettings.other"),
         items: [
             {
+                title: t("soundEffect.title"),
+                right: <Icon name="skip-right" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
+                onPress() {
+                    navigate(ROUTE_PATH.SOUND_EFFECT);
+                },
+            },
+            {
                 title: t("sidebar.themeSettings"),
                 right: <Icon name="skip-right" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
                 onPress() {

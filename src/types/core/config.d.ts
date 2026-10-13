@@ -81,6 +81,17 @@ export interface IAppConfigProperties {
     "webdav.url": string;
     "webdav.username": string;
     "webdav.password": string;
+
+    // 音效（均衡器/低音增强/环绕声，绑定 ExoPlayer audioSessionId）
+    "sound.eqEnabled": boolean;
+    /** 均衡器预设 index；-1 = 手动（按 eqBands 逐段） */
+    "sound.eqPreset": number;
+    /** 手动模式各频段增益（millibel，长度 = 设备频段数，默认全 0） */
+    "sound.eqBands": number[];
+    /** 低音增强强度 0..1000（0 = 关） */
+    "sound.bassBoost": number;
+    /** 环绕声强度 0..1000（0 = 关） */
+    "sound.virtualizer": number;
 }
 
 export type AppConfigPropertyKey = keyof IAppConfigProperties;

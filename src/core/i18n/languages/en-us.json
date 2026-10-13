@@ -447,5 +447,15 @@
     "panel.sheetTags.title": "Playlist Categories",
     "repeatMode.SHUFFLE": "Shuffle",
     "repeatMode.QUEUE": "Repeat Queue",
-    "repeatMode.SINGLE": "Repeat Single"
+    "repeatMode.SINGLE": "Repeat one",
+    "soundEffect.title": "Sound Effects",
+    "soundEffect.androidOnly": "Sound effects are only supported on Android",
+    "soundEffect.sectionEq": "Equalizer",
+    "soundEffect.sectionFx": "Effects",
+    "soundEffect.eqEnable": "Enable Equalizer",
+    "soundEffect.preset": "Preset",
+    "soundEffect.eqWaitPlay": "Play a song to show band controls",
+    "soundEffect.bass": "Bass Boost",
+    "soundEffect.virtualizer": "Surround",
+    "soundEffect.hint": "Effects apply to the current playback in real time and need a song to be played once; settings persist across track changes."
 }

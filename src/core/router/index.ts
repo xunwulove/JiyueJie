@@ -72,6 +72,8 @@ export const ROUTE_PATH = {
     SHEET_MANAGER: "sheet-manager",
     /** 网易/QQ 接口歌单·榜单详情（推荐歌单/排行榜数据层为公开接口） */
     API_SHEET_DETAIL: "api-sheet-detail",
+    /** 音效设置（均衡器/低音增强/环绕声，独立二级页） */
+    SOUND_EFFECT: "sound-effect",
 } as const;
 
 type ValueOf<T> = T[keyof T];

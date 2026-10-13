@@ -34,6 +34,7 @@ import ReactNativeTrackPlayer, {
 import LocalMusicSheet from "../localMusicSheet";
 import { matchMusic, prewarmApiSongs, platformMatches } from "../playMatcher";
 import pluginReliability from "../pluginReliability";
+import { ensureSoundEffectAttached } from "@/core/soundEffect";
 
 import { TrackPlayerEvents } from "@/core.defination/trackPlayer";
 import type { IAppConfig } from "@/types/core/config";
@@ -202,6 +203,8 @@ class TrackPlayer extends EventEmitter<{
             ReactNativeTrackPlayer.addEventListener(
                 Event.PlaybackActiveTrackChanged,
                 async evt => {
+                    // 均衡器兜底绑定（播放器就绪且有 session 时执行一次；不阻塞播放）
+                    ensureSoundEffectAttached().catch(() => undefined);
                     if (
                         evt.index === 1 &&
                         evt.lastIndex === 0 &&

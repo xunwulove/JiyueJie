@@ -547,6 +547,18 @@ export interface ILanguageData {
     "repeatMode.SHUFFLE": string; // 随机播放
     "repeatMode.QUEUE": string; // 列表循环
     "repeatMode.SINGLE": string; // 单曲循环
+
+    // 音效设置（均衡器/低音增强/环绕声）
+    "soundEffect.title": string; // 音效设置
+    "soundEffect.androidOnly": string; // 仅 Android 支持
+    "soundEffect.sectionEq": string; // 均衡器
+    "soundEffect.sectionFx": string; // 音效
+    "soundEffect.eqEnable": string; // 启用均衡器
+    "soundEffect.preset": string; // 预设
+    "soundEffect.eqWaitPlay": string; // 播放后显示频段
+    "soundEffect.bass": string; // 低音增强
+    "soundEffect.virtualizer": string; // 环绕声
+    "soundEffect.hint": string; // 说明
 }
 
 // 语言接口定义
