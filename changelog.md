@@ -2,7 +2,7 @@
 
 > 本段为 fork「极悦界」的版本记录；下方为上游 MusicFree 原版 changelog（未改动）。
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
-> 发版链路：gitee `xunwulove/jiyuejie-updates` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_DECISIONS.md。
+> 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_DECISIONS.md。
 
 `2026.10.11 0.6.2.9+（未发版改动）`
 1. 【功能】三处歌词区（全屏/沉浸/左侧播放区）卡拉OK进度染色（逐字已唱段/未唱段双色）+ 歌词边缘渐隐滚动（FlatList fadingEdgeLength）

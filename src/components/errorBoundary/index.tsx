@@ -225,10 +225,10 @@ function ErrorFallback({ error, errorInfo }: ErrorFallbackProps) {
                             </ThemeText>
                             <LinkText 
                                 fontSize="content"
-                                linkTo="https://github.com/maotoumao/MusicFree/issues"
+                                linkTo="https://github.com/xunwulove/JiyueJie/issues"
                                 style={styles.link}
                             >
-                                https://github.com/maotoumao/MusicFree/issues
+                                https://github.com/xunwulove/JiyueJie/issues
                             </LinkText>
                             <ThemeText 
                                 fontSize="description" 

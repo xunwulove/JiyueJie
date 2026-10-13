@@ -72,7 +72,7 @@ export interface IAppConfigProperties {
 
     // Plugin
     "plugin.subscribeUrl": string;
-    /** 手动指定的推荐歌单来源（插件 hash；未配置 = 自动择优） */
+    /** 手动指定的推荐歌单来源（"random" = 随机使用音源；插件 hash = 锁定该源；未配置 = 自动择优） */
     "plugin.recommendSource"?: string;
 
     // WebDAV

@@ -26,10 +26,11 @@ import PluginManager from "@/core/pluginManager";
 import Toast from "@/utils/toast";
 import { isTabletScreen } from "@/utils/tablet";
 import Config from "@/core/appConfig";
+import { DEFAULT_PLUGIN_SUBSCRIPTION_URL } from "@/constants/defaultPluginSubscription";
 
 /**
  * 首次启动引导页（Onboarding）
- * - 触发：bootstrap 完成后，`app.onboardingDone` 未设置 → 展示（BrandSplash 淡出后接管）
+ * - 触发：bootstrap 完成后，`app.onboardingDone` 未设置 → 立即展示（无自绘启动页，直接接管）
  * - 结构：3 屏左右滑动（欢迎 → 权限 → 音源就绪），底部进度点 + 主按钮，左上角常驻"跳过"
  * - 权限：文件访问（存储）+ 通知（Android 13+），返回前台自动重查状态（复用权限弹窗逻辑）
  * - 完成：写 `app.onboardingDone = true`；"扫描本地音乐"默认开 → 引导结束自动扫描
@@ -58,19 +59,20 @@ export default function Onboarding() {
     // 第 3 屏：进入软件自动播放（默认跟随设置页配置：启动自动续播上次歌曲）
     const [autoPlay, setAutoPlay] = useState(
         () => Config.getConfig("basic.autoPlayWhenAppStart") ?? false,
+    );
+    // 第 3 屏：自动拉取默认订阅源（默认开，与设置页 basic.autoUpdatePlugin 同一配置）
+    const [autoFetchPlugin, setAutoFetchPlugin] = useState(
+        () => Config.getConfig("basic.autoUpdatePlugin") !== false,
     );    const [checkingStorage, setCheckingStorage] = useState(false);
 
-    /* 显隐：bootstrap Done 后，等 BrandSplash 展示完（1500ms 最小展示 + 350ms 淡出）再接管 */
+    /* 显隐：bootstrap Done 后立即接管（无自绘启动页，不做多余停留，尽量减少启动时间） */
     useEffect(() => {
         if (bootstrapState.state !== "Done") {
             return;
         }
-        const timer = setTimeout(() => {
-            if (!PersistStatus.get("app.onboardingDone")) {
-                setVisible(true);
-            }
-        }, 2000);
-        return () => clearTimeout(timer);
+        if (!PersistStatus.get("app.onboardingDone")) {
+            setVisible(true);
+        }
     }, [bootstrapState.state]);
 
     /* 权限状态检测 */
@@ -145,6 +147,43 @@ export default function Onboarding() {
         PersistStatus.set("app.skipBootstrapStorageDialog", true);
         // 写入"进入软件自动播放"偏好（与设置页 basic.autoPlayWhenAppStart 同一配置）
         Config.setConfig("basic.autoPlayWhenAppStart", autoPlay);
+        // 自动拉取默认订阅源：开启 → 写配置并立即拉取一次；关闭 → 显式关闭启动自动更新
+        Config.setConfig("basic.autoUpdatePlugin", autoFetchPlugin);
+        if (autoFetchPlugin) {
+            // 标记本次已拉取（避免 bootstrap 的每日一次逻辑重复拉）
+            PersistStatus.set("app.pluginUpdateTime", Date.now());
+            (async () => {
+                try {
+                    let subscribeUrl = Config.getConfig("plugin.subscribeUrl");
+                    if (!subscribeUrl) {
+                        subscribeUrl = JSON.stringify([
+                            { url: DEFAULT_PLUGIN_SUBSCRIPTION_URL },
+                        ]);
+                        Config.setConfig("plugin.subscribeUrl", subscribeUrl);
+                    }
+                    const urlItems = JSON.parse(subscribeUrl);
+                    if (Array.isArray(urlItems)) {
+                        for (let i = 0; i < urlItems.length; ++i) {
+                            const url = urlItems[i]?.url;
+                            if (url) {
+                                await PluginManager.installPluginFromUrl(
+                                    url,
+                                ).catch(() => {});
+                            }
+                        }
+                    }
+                    const plugins = PluginManager.getEnabledPlugins();
+                    for (let i = 0; i < plugins.length; ++i) {
+                        const srcUrl = plugins[i].instance.srcUrl;
+                        if (srcUrl) {
+                            await PluginManager.installPluginFromUrl(
+                                srcUrl,
+                            ).catch(() => {});
+                        }
+                    }
+                } catch {}
+            })();
+        }
         setVisible(false);
         if (scanOnboarding) {
             const folders = defaultScanFolders();
@@ -221,11 +260,7 @@ export default function Onboarding() {
                     }}>
                     {/* ===== 第 1 屏：欢迎 ===== */}
                     <View style={[styles.page, { width }]}>
-                        <View
-                            style={[
-                                styles.pageInner,
-                                isTablet && styles.pageInnerTablet,
-                            ]}>
+                        <View style={styles.pageInner}>
                         <View style={styles.brandBlock}>
                             <View style={styles.brandIconWrap}>
                                 <Icon
@@ -340,21 +375,29 @@ export default function Onboarding() {
 
                     {/* ===== 第 2 屏：权限 ===== */}
                     <View style={[styles.page, { width }]}>
+                        <View style={styles.pageInner}>
                         <View
                             style={[
-                                styles.pageInner,
-                                isTablet && styles.pageInnerTablet,
+                                styles.sectionHead,
+                                isTablet && styles.sectionHeadCenter,
                             ]}>
-                        <View style={styles.sectionHead}>
                             <ThemeText
                                 fontSize="large"
-                                fontWeight="bold">
+                                fontWeight="bold"
+                                style={
+                                    isTablet
+                                        ? styles.sectionTitleCenter
+                                        : undefined
+                                }>
                                 授予必要权限
                             </ThemeText>
                             <ThemeText
                                 fontSize="description"
                                 fontColor="textSecondary"
-                                style={styles.sectionSub}>
+                                style={[
+                                    styles.sectionSub,
+                                    isTablet && styles.sectionSubCenter,
+                                ]}>
                                 只申请最核心的两项，其余权限用到时再引导
                             </ThemeText>
                         </View>
@@ -423,15 +466,13 @@ export default function Onboarding() {
                                 )}
                             </View>
 
-                            {/* 通知（Android 13+） */}
-                            {Platform.OS === "android" &&
-                            Platform.Version >= 33 ? (
-                                <View
-                                    style={[
-                                        styles.permissionCard,
-                                        isTablet &&
-                                            styles.permissionCardTablet,
-                                    ]}>
+                            {/* 通知（Android 13+ 需申请；低版本无需权限，默认显示"已开启"，两项权限始终可见） */}
+                            <View
+                                style={[
+                                    styles.permissionCard,
+                                    isTablet &&
+                                        styles.permissionCardTablet,
+                                ]}>
                                     <View
                                         style={[
                                             styles.permissionIcon,
@@ -484,39 +525,78 @@ export default function Onboarding() {
                                         </Pressable>
                                     )}
                                 </View>
-                            ) : null}
-
-                            <ThemeText
-                                fontSize="caption"
-                                fontColor="textSecondary"
-                                style={styles.permissionTip}>
-                                未开启也不影响使用，之后可在「我的 → 设置 → 权限管理」补开
-                            </ThemeText>
                         </View>
+
+                        {/* 提示文字独立成行（不在卡片 flexWrap 行内，避免换行错位） */}
+                        <ThemeText
+                            fontSize="caption"
+                            fontColor="textSecondary"
+                            style={styles.permissionTip}>
+                            未开启也不影响使用，之后可在「我的 → 设置 → 权限管理」补开
+                        </ThemeText>
                         </View>
                     </View>
 
                     {/* ===== 第 3 屏：音源就绪 + 快速上手 ===== */}
                     <View style={[styles.page, { width }]}>
+                        <View style={styles.pageInner}>
                         <View
                             style={[
-                                styles.pageInner,
-                                isTablet && styles.pageInnerTablet,
+                                styles.sectionHead,
+                                isTablet && styles.sectionHeadCenter,
                             ]}>
-                        <View style={styles.sectionHead}>
                             <ThemeText
                                 fontSize="large"
-                                fontWeight="bold">
+                                fontWeight="bold"
+                                style={
+                                    isTablet
+                                        ? styles.sectionTitleCenter
+                                        : undefined
+                                }>
                                 一切就绪
                             </ThemeText>
                             <ThemeText
                                 fontSize="description"
                                 fontColor="textSecondary"
-                                style={styles.sectionSub}>
+                                style={[
+                                    styles.sectionSub,
+                                    isTablet && styles.sectionSubCenter,
+                                ]}>
                                 打开即用的最后一步
                             </ThemeText>
                         </View>
                         <View style={styles.permissionList}>
+                            {/* 自动更新音源开关（第 1 行，与设置页 basic.autoUpdatePlugin 同一配置） */}
+                            <View style={styles.permissionCard}>
+                                <View
+                                    style={[
+                                        styles.permissionIcon,
+                                        { backgroundColor: Color(primary)
+                                            .alpha(0.12)
+                                            .toString() },
+                                    ]}>
+                                    <Icon
+                                        name="arrow-path"
+                                        size={24}
+                                        color={primary}
+                                    />
+                                </View>
+                                <View style={styles.permissionText}>
+                                    <ThemeText fontWeight="bold">
+                                        自动更新音源
+                                    </ThemeText>
+                                    <ThemeText
+                                        fontSize="description"
+                                        fontColor="textSecondary">
+                                        引导完成后自动安装内置音源并保持每日更新
+                                    </ThemeText>
+                                </View>
+                                <ThemeSwitch
+                                    value={autoFetchPlugin}
+                                    onValueChange={setAutoFetchPlugin}
+                                />
+                            </View>
+
                             {/* 音源就绪卡片 */}
                             <View style={styles.permissionCard}>
                                 <View
@@ -696,15 +776,24 @@ const styles = StyleSheet.create({
         paddingHorizontal: 28,
         justifyContent: "space-between",
     },
-    /* 内容区限宽容器：平板 maxWidth 620 居中（卡片不再铺满全屏）；手机占满 */
+    /* 内容区限宽容器：统一 maxWidth 620 居中（宽屏/横屏也居中，不再偏左）；
+       手机竖屏宽 <620 时 maxWidth 自然不触发，保持全宽不变 */
     pageInner: {
         flex: 1,
         justifyContent: "space-between",
-    },
-    pageInnerTablet: {
         maxWidth: 620,
         width: "100%",
         alignSelf: "center",
+    },
+    /* 平板：第二/三屏标题区与第一屏品牌区视觉统一（居中） */
+    sectionHeadCenter: {
+        alignItems: "center",
+    },
+    sectionTitleCenter: {
+        textAlign: "center",
+    },
+    sectionSubCenter: {
+        textAlign: "center",
     },
     /* 第 1 屏：平板三列特征卡（图标在上，一眼看出是卡片不是按钮） */
     featuresRow: {

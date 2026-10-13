@@ -56,6 +56,11 @@ export default function RecommendSourceDialog(props: IRecommendSourceDialogProps
                 title: t("recommendSheet.autoSelect"),
                 reliability: null,
             },
+            {
+                key: "random",
+                title: "随机使用音源",
+                reliability: null,
+            },
             ...plugins.map(p => ({
                 key: p.hash,
                 title: p.name,
@@ -66,7 +71,7 @@ export default function RecommendSourceDialog(props: IRecommendSourceDialogProps
         ];
     }, [t]);
 
-    /** 应用并关闭：auto=清除指定（回自动择优），hash=锁定该源；随后通知调用方强制刷新 */
+    /** 应用并关闭：auto=清除指定（回自动择优），random=随机使用音源，hash=锁定该源；随后通知调用方强制刷新 */
     const apply = (next: string) => {
         Config.setConfig(
             "plugin.recommendSource",

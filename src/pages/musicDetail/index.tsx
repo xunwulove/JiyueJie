@@ -2,7 +2,13 @@ import StatusBar from "@/components/base/statusBar";
 import globalStyle from "@/constants/globalStyle";
 import useOrientation from "@/hooks/useOrientation";
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+    Pressable,
+    StyleSheet,
+    Text,
+    useWindowDimensions,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Background from "./components/background";
 import Bottom from "./components/bottom";
@@ -22,10 +28,15 @@ import useColors from "@/hooks/useColors";
  * 顶栏"正在播放"16sp；标题区（平板 32sp 歌名/18sp 歌手在左区，手机 19sp/13sp 在顶栏下）；
  * 平板左信息控制(6) + 右大封面(4)，4:6 分栏
  * 根容器任意触摸重置"沉浸歌词"无操作计时；沉浸层显示时覆盖全屏，触摸即退出
+ *
+ * 弹性：窗口高 < 600dp（手机横屏 ~390dp / 分屏矮窗）时标题区/控制行走紧凑档，
+ * 避免固定 dp 堆叠溢出；平板 800dp+ 视觉不受影响
  */
 export default function MusicDetail() {
     const orientation = useOrientation();
     const isTablet = orientation === "horizontal";
+    const { height: winH } = useWindowDimensions();
+    const compact = winH < 600;
     const musicItem = useCurrentMusic();
     const colors = useColors();
 
@@ -41,15 +52,22 @@ export default function MusicDetail() {
         };
     }, []);
 
-    /* 标题区：歌名 + 歌手（对齐 APlayer：平板 32sp/18sp，手机 19sp/13sp） */
+    /* 标题区：歌名 + 歌手（对齐 APlayer：平板 32sp/18sp，手机 19sp/13sp；矮横屏紧凑档 24sp/15sp） */
     const titleBlock = (
-        <View style={styles.titleBlock}>
+        <View
+            style={[
+                styles.titleBlock,
+                compact && styles.titleBlockCompact,
+            ]}>
             <Text
                 numberOfLines={2}
                 ellipsizeMode="tail"
                 style={[
                     styles.songTitle,
-                    isTablet ? styles.songTitleTablet : styles.songTitlePhone,
+                    isTablet
+                        ? styles.songTitleTablet
+                        : styles.songTitlePhone,
+                    compact && styles.songTitleCompact,
                     { color: colors.text },
                 ]}>
                 {musicItem?.title ?? "--"}
@@ -60,6 +78,7 @@ export default function MusicDetail() {
                 style={[
                     styles.songArtist,
                     isTablet ? styles.songArtistTablet : styles.songArtistPhone,
+                    compact && styles.songArtistCompact,
                     { color: colors.textSecondary },
                 ]}>
                 {musicItem?.artist}
@@ -128,6 +147,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 48,
         alignItems: "center", // 歌名+作者顶端居中（对齐沉浸层顶部标题）
     },
+    /* 矮屏（横屏高 <600dp）紧凑档：收紧标题区高度预算 */
+    titleBlockCompact: {
+        paddingHorizontal: 32,
+    },
     songTitle: {
         fontWeight: "700",
         includeFontPadding: false,
@@ -135,9 +158,16 @@ const styles = StyleSheet.create({
     },
     songTitleTablet: {
         fontSize: 32,
+        lineHeight: 44,
     },
     songTitlePhone: {
         fontSize: 19,
+        lineHeight: 27,
+    },
+    /* 矮屏紧凑：24sp，行高 34 收紧 */
+    songTitleCompact: {
+        fontSize: 24,
+        lineHeight: 34,
     },
     songArtist: {
         marginTop: 8,
@@ -146,9 +176,17 @@ const styles = StyleSheet.create({
     },
     songArtistTablet: {
         fontSize: 18,
+        lineHeight: 26,
     },
     songArtistPhone: {
         fontSize: 13,
         marginTop: 3,
+        lineHeight: 19,
+    },
+    /* 矮屏紧凑：15sp，行高 22 收紧 */
+    songArtistCompact: {
+        fontSize: 15,
+        marginTop: 5,
+        lineHeight: 22,
     },
 });

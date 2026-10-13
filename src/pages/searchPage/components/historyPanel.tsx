@@ -261,11 +261,12 @@ const style = StyleSheet.create({
     hotGrid: {
         flexDirection: "row",
         flexWrap: "wrap",
-        marginHorizontal: -5,
+        justifyContent: "space-between",
+        /* 不用负 margin + 子项百分比 margin：wrap 下换行计算易出歧义（宽屏单列）。
+           改为 space-between 分布，两列各 48.5%，任意宽度稳定两列 */
     },
     hotItem: {
         width: "48.5%",
-        marginHorizontal: "0.75%",
         marginBottom: 10,
         borderRadius: 12,
         paddingHorizontal: 12,

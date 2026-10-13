@@ -1,6 +1,12 @@
 import repeatModeConst from "@/constants/repeatModeConst";
 import React from "react";
-import { InteractionManager, Pressable, StyleSheet, View } from "react-native";
+import {
+    InteractionManager,
+    Pressable,
+    StyleSheet,
+    useWindowDimensions,
+    View,
+} from "react-native";
 
 import Icon from "@/components/base/icon.tsx";
 import { showPanel } from "@/components/panels/usePanel";
@@ -14,6 +20,7 @@ import { musicIsPaused } from "@/utils/trackUtils";
  * 全屏播放控制行 - 对齐 APlayer PlayingPage：
  * 平板：模式 32dp primary / 上一首 44dp / 播放 80dp 圆(40dp 图标) / 下一首 44dp / 队列 32dp
  * 手机：模式 26dp / 上一首 34dp / 播放 56dp 圆(30dp 图标) / 下一首 34dp / 队列 26dp
+ * 矮横屏（窗口高 <600dp）：走手机档尺寸，防止固定大按钮在矮屏堆叠溢出
  */
 export default function PlayControl() {
     const repeatMode = useRepeatMode();
@@ -22,12 +29,14 @@ export default function PlayControl() {
 
     const orientation = useOrientation();
     const isTablet = orientation === "horizontal";
+    const { height: winH } = useWindowDimensions();
+    const compact = winH < 600;
 
-    const modeSize = isTablet ? 32 : 26;
-    const sideSize = isTablet ? 44 : 34;
-    const playBtnSize = isTablet ? 80 : 56;
-    const playIconSize = isTablet ? 40 : 30;
-    const queueSize = isTablet ? 32 : 26;
+    const modeSize = isTablet && !compact ? 32 : 26;
+    const sideSize = isTablet && !compact ? 44 : 34;
+    const playBtnSize = isTablet && !compact ? 80 : 56;
+    const playIconSize = isTablet && !compact ? 40 : 30;
+    const queueSize = isTablet && !compact ? 32 : 26;
 
     return (
         <View style={style.wrapper}>

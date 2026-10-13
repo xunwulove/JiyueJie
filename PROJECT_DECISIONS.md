@@ -27,7 +27,7 @@
 
 **规范**（已实施并验证链路）：
 1. **版本号**：跟随上游 MusicFree 0.6.x 线小步递增。当前 **0.6.2.1**（versionCode 400012）。`package.json` 的 `version` 是唯一版本源（`android/app/build.gradle` 的 versionName 读取它）；versionCode 在 build.gradle 手动递增。compare-versions 支持多段版本号（`0.6.2.1 > 0.6.2` 成立，可触发更新检测）。
-2. **更新源（gitee）**：仓库 `xunwulove/jiyuejie-updates`，**固定 tag `latest` 的 release 附件直链**（文件名固定：`version.json` / `app-arm64-v8a-release.apk` / `app-universal-release.apk`，链接因此不随版本变）；仓库根 `raw/master/version.json` 仅作兜底（gitee raw 有反爬）。`src/utils/checkUpdate.ts` 的 updateList 已固定，**发版零代码改动**。
+2. **更新源（gitee）**：仓库 `xunwulove/jiyuejie`，**固定 tag `latest` 的 release 附件直链**（文件名固定：`version.json` / `app-arm64-v8a-release.apk` / `app-universal-release.apk`，链接因此不随版本变）；仓库 `updates/version.json` 仅作兜底（gitee raw 有反爬）。`src/utils/checkUpdate.ts` 的 updateList 已固定，**发版零代码改动**。
 3. **发版流程**（每次发版照做）：
    - `cd android; .\gradlew.bat assembleRelease`（产物含 ABI 拆分 + universal，共 5 个 APK）；
    - 升 `package.json` version 与 build.gradle versionCode；
@@ -91,6 +91,17 @@
 - 启动自动更新 `bootstrap.ts extraMakeup`：首次（未配置订阅）写入默认订阅并拉取一次，与已装插件更新共用 24h 防抖（`app.pluginUpdateTime`），失败静默。
 
 **注意**：`basic.autoUpdatePlugin`（默认开）决定启动是否拉取；拉取 = installPluginFromUrl(plugins.json) 逐个安装清单内插件。后续换源/加源只需 **git push 覆盖 gitee 的 plugins.json**（URL 不变）+ 软件内"更新订阅"（或等下次启动 24h 窗口）。
+
+**更新（2026-10-13，音源订阅收口到软件更新仓库 + 仓库改名）**：
+- 用户要求"gitee 软件更新仓库里也要放音源（原仓库不用了）"。已把 `plugins.json`（**100 个音源**，极悦界音源整合版）上传到 **`jiyuejie` 仓库 master 根目录**（gitee contents API 新建，已验证匿名 raw 200 + 100 条完整）。
+- **2026-10-13 仓库改名**：`jiyuejie-updates` → **`jiyuejie`**（gitee PATCH 需同时带 `name` + `path` 两字段才会改 URL 路径，只带 name 只改显示名）。改名后所有链接全面切换（验证新旧路径均可达，旧路径 gitee 自动重定向兼容旧设备）：
+  - `DEFAULT_PLUGIN_SUBSCRIPTION_URL` → `https://gitee.com/xunwulove/jiyuejie/raw/master/sources/plugins.json`；备用 CDN → `https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.json`（音源移入 `sources/` 目录）；
+  - `checkUpdate.ts` updateList → `https://gitee.com/xunwulove/jiyuejie/releases/download/latest/version.json`（主）+ `.../jiyuejie/raw/master/updates/version.json`（兜底，version.json 归入 `updates/` 目录）；
+  - 仓库内 `version.json` download 链接、关于页仓库链接、readme/changelog/二次开发指南/PROJECT_DECISIONS 全部同步；
+  - 旧仓库 `jishijie-release` 内容（`probe_plugin.js` + `package.json`）已迁移到新仓库补齐，README 已整合。
+- 原音源仓库 **`jishijie-release` 废弃**（描述已标注迁移，未删除）；软件更新（version.json + APK）与音源订阅（plugins.json）统一托管于 `jiyuejie` 一个仓库。
+- 软件内仓库信息同步更新：关于页"更新与音源"卡片显示 gitee 仓库链接；崩溃反馈页 GitHub Issues 链接改为 `https://github.com/xunwulove/JiyueJie/issues`。
+- gitee API 更新仓库描述（PATCH /repos/{owner}/{repo}）：**可用**，但必须带 `name` 字段（缺了返回 400 "name is missing"），且中文描述不能用 PowerShell 调 curl 传（ANSI 编码损坏 → 404/400），需用 Python 以 UTF-8 编码发送（已验证成功）。
 
 ---
 

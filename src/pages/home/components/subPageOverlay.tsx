@@ -13,22 +13,19 @@ import {
     tabletSubPagesAtom,
 } from "@/core/tabletNav";
 import rpx, { vw } from "@/utils/rpx";
-import useColors from "@/hooks/useColors";
-import Theme from "@/core/theme";
-import LinearGradient from "react-native-linear-gradient";
+import PageBackground from "@/components/base/pageBackground";
 
 /**
  * 平板二级页面：
  * - 一级页面（tab 内容）点击 → 二级页面：右内容区内从右滑入的全宽覆盖层（不盖 tab、不盖左播放区）
  * - 二级页面内再点击 → 三级浮窗：由 Dialog 系统实现（showDialog，内容区中心缩放浮窗）
  * - 栈式导航：Android 返回键逐级 pop
- * - 背景：二级页自带与全局 PageBackground 一致的渐变（顶部白→底部浅蓝），
- *   不透明遮住一级内容；不再用透明背景（否则一级页内容会透过二级页重叠显示）
+ * - 背景：直接复用全局 PageBackground（含封面取色氛围层/自定义背景图），
+ *   与一级页面背景 100% 一致——不再自绘近似渐变（自绘缺氛围层导致滑入时明显分层）
  */
 export default function SubPageOverlay() {
     const subPages = useAtomValue(tabletSubPagesAtom);
     const setSubPages = useSetAtom(tabletSubPagesAtom);
-    const colors = useColors();
 
     // Android 返回键：逐级关闭
     useEffect(() => {
@@ -72,13 +69,9 @@ export default function SubPageOverlay() {
     );
 }
 
-/** 二级页面：右内容区全宽，从右滑入；背景 = 与全局一致的渐变（遮住一级内容） */
+/** 二级页面：右内容区全宽，从右滑入；背景 = 复用全局 PageBackground（与一级完全一致） */
 function FullOverlay({ children }: { children: React.ReactNode }) {
     const progress = useSharedValue(0);
-    const theme = Theme.useTheme();
-    const colors = useColors();
-    const isLight = !theme.dark;
-    const top = (colors as any).pageBackgroundTop;
     // 注意：vw() 是普通 JS 函数，不能在 worklet 内调用（reanimated UI 线程无此函数），先算成常量
     const slideDistance = vw(100) * 0.7;
     useEffect(() => {
@@ -99,29 +92,8 @@ function FullOverlay({ children }: { children: React.ReactNode }) {
                 animatedStyle,
                 { zIndex: 1000 },
             ]}>
-            {/* 渐变背景与 PageBackground 同款：白天 顶部白→底部浅蓝；深色单色 */}
-            {isLight && top ? (
-                <LinearGradient
-                    colors={[
-                        colors?.pageBackground ?? colors.background,
-                        top,
-                    ]}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                />
-            ) : (
-                <View
-                    style={[
-                        StyleSheet.absoluteFill,
-                        {
-                            backgroundColor:
-                                colors?.pageBackground ??
-                                colors.background,
-                        },
-                    ]}
-                />
-            )}
+            {/* 背景：与一级页面完全一致的 PageBackground（渐变+封面氛围层+背景图），消除滑入分层 */}
+            <PageBackground />
             {children}
         </Animated.View>
     );

@@ -24,6 +24,23 @@ import { IParsedLrcItem } from "@/utils/lrcParser";
 import repeatModeConst from "@/constants/repeatModeConst";
 import timeformat from "@/utils/timeformat";
 import KaraokeText from "@/components/base/karaokeText";
+import {
+    TP_ARTIST_H,
+    TP_BOTTOM_H,
+    TP_COVER_MAX,
+    TP_COVER_MB,
+    TP_COVER_MIN,
+    TP_COVER_RADIUS,
+    TP_HEADER_H,
+    TP_HEADER_MB,
+    TP_LYRIC_MARGIN_TOP,
+    TP_LYRIC_MAX_ROWS,
+    TP_LYRIC_ROW_H,
+    TP_PAD_H,
+    TP_TITLE_H,
+    TP_TITLE_MB,
+    calcLyricRows,
+} from "./tabletPanelBudget";
 
 /** 时段问候（对齐旧项目：播放页顶部仅问候，无时间；天气后续再做占位） */
 function getGreeting(): string {
@@ -56,10 +73,41 @@ export default function TabletPanel() {
     const currentLrcItem = useCurrentLyricItem();
     const curIndex = currentLrcItem?.index ?? -1;
 
+    /* 面板实际尺寸（onLayout 实测，驱动封面弹性计算） */
+    const [panelSize, setPanelSize] = useState<{
+        w: number;
+        h: number;
+    }>({ w: 0, h: 0 });
+
+    /* 封面弹性尺寸（方案 B）：歌词区先按固定行高×自适应行数(3~7)预算，
+       剩余高度给封面——大屏稳定 7 行歌词，边界小屏自动减行不溢出 */
+    const coverSize = useMemo(() => {
+        const { w, h } = panelSize;
+        if (w <= 0 || h <= 0) {
+            return TP_COVER_MAX;
+        }
+        const panelInnerW = w - TP_PAD_H * 2;
+        const playContentH = h - TP_HEADER_H - TP_HEADER_MB - TP_BOTTOM_H;
+        const lyricRows = calcLyricRows(playContentH);
+        const lyricAreaH = lyricRows * TP_LYRIC_ROW_H;
+        const coverBudget =
+            playContentH -
+            TP_TITLE_H -
+            TP_TITLE_MB -
+            TP_ARTIST_H -
+            lyricAreaH -
+            TP_COVER_MB -
+            TP_LYRIC_MARGIN_TOP;
+        return Math.max(
+            TP_COVER_MIN,
+            Math.min(panelInnerW, coverBudget, TP_COVER_MAX),
+        );
+    }, [panelSize]);
+
     /* 歌词滚动（对齐全屏播放页）：当前行始终垂直居中，随播放平滑滚动 */
     const lyricListRef = useRef<FlatList<IParsedLrcItem> | null>(null);
     const [lyricAreaH, setLyricAreaH] = useState<number>();
-    const lyricItemH = 38;
+    const lyricItemH = TP_LYRIC_ROW_H;
     const lyricBlankH = useMemo(
         () =>
             lyricAreaH
@@ -89,7 +137,17 @@ export default function TabletPanel() {
                     // 与内容区整屏统一；不再用 surface 不透明底色盖住渐变
                     backgroundColor: "transparent",
                 },
-            ]}>
+            ]}
+            onLayout={e => {
+                const { width, height } = e.nativeEvent.layout;
+                if (
+                    width > 0 &&
+                    height > 0 &&
+                    (width !== panelSize.w || height !== panelSize.h)
+                ) {
+                    setPanelSize({ w: width, h: height });
+                }
+            }}>
             {/* 顶部：品牌图标 + 时段问候（与内容区 4 tab 同层；问候水平居中） */}
             <View style={styles.header}>
                 <FastImage
@@ -110,7 +168,13 @@ export default function TabletPanel() {
                 onPress={() => setFullPlaying(true)}>
                 {musicItem ? (
                     <FastImage
-                        style={styles.cover}
+                        style={[
+                            styles.cover,
+                            {
+                                width: coverSize,
+                                height: coverSize,
+                            },
+                        ]}
                         source={musicItem.artwork}
                         placeholderSource={ImgAsset.albumDefault}
                     />
@@ -121,6 +185,8 @@ export default function TabletPanel() {
                             styles.cover,
                             styles.emptyCover,
                             {
+                                width: coverSize,
+                                height: coverSize,
                                 backgroundColor:
                                     colors.surfaceVariant ??
                                     colors.card,
@@ -134,18 +200,22 @@ export default function TabletPanel() {
                         </ThemeText>
                     </View>
                 )}
-                {/* 歌名 20sp Bold（无歌显示 "--"，对齐 APlayer） */}
+                {/* 歌名 20sp Bold（无歌显示 "--"，对齐 APlayer）；行高固定使高度预算精确 */}
                 <ThemeText
                     fontWeight="bold"
                     numberOfLines={1}
-                    style={styles.title}>
+                    style={[
+                        styles.title,
+                        { lineHeight: TP_TITLE_H },
+                    ]}>
                     {musicItem?.title ?? "--"}
                 </ThemeText>
-                {/* 歌手 15sp */}
+                {/* 歌手 15sp，行高固定 */}
                 <ThemeText
                     fontSize="body"
                     fontColor="textSecondary"
-                    numberOfLines={1}>
+                    numberOfLines={1}
+                    style={{ lineHeight: TP_ARTIST_H }}>
                     {musicItem?.artist ?? "未知歌手"}
                 </ThemeText>
                 {/* 歌词弹性区：FlatList 滚动（对齐全屏播放页）——当前行始终居中，随播放平滑滚动 */}
@@ -341,10 +411,10 @@ const styles = StyleSheet.create({
     /* 顶部品牌行：与内容区 tab 栏同高同顶，字号 content 同层 */
     header: {
         width: "100%",
-        height: 56,
+        height: TP_HEADER_H,
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 16,
+        marginBottom: TP_HEADER_MB,
         position: "relative",
     },
     logo: {
@@ -368,21 +438,20 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     cover: {
-        width: 200, // 对齐 APlayer 封面 200dp
-        height: 200,
-        borderRadius: 24, // 对齐 APlayer 圆角 24dp
-        marginBottom: 16,
+        // 宽高由 coverSize 动态提供（高屏 200dp / 矮屏按预算缩小）
+        borderRadius: TP_COVER_RADIUS, // 对齐 APlayer 圆角 24dp
+        marginBottom: TP_COVER_MB,
     },
     title: {
         width: "100%",
-        marginBottom: 4,
+        marginBottom: TP_TITLE_MB,
         textAlign: "center", // 歌名水平居中
         fontSize: 20, // 对齐 APlayer 歌名 20sp
     },
     lyricPlaceholder: {
         flex: 1,
         width: "100%",
-        marginTop: 8,
+        marginTop: TP_LYRIC_MARGIN_TOP,
         alignItems: "center",
         justifyContent: "center", // 歌词区占满歌手与底部控制之间，歌词垂直居中
     },

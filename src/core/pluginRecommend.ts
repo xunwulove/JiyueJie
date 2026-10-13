@@ -205,6 +205,27 @@ export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecomme
         }
     }
 
+    // 随机使用音源：优先从"当日已有缓存"的源里随机（零请求命中，实现换源）；
+    // 无当日缓存时全量随机新拉；随机到的源失败 → 回退下面的可用率择优兜底
+    if (manualHash === "random") {
+        const now = new Date();
+        const cachedPool = plugins.filter(p => {
+            const c = readCache(p.hash);
+            return c && sameDay(c.fetchedAt, now);
+        });
+        const pool = cachedPool.length ? cachedPool : plugins;
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        for (const plugin of shuffled) {
+            const data = await getCachedPluginRecommend(plugin.hash, {
+                allowStaleFallback: false,
+            });
+            if (data) {
+                return data;
+            }
+        }
+        // 随机全失败 → 落入下方择优循环兜底
+    }
+
     for (const plugin of plugins) {
         const data = await getCachedPluginRecommend(plugin.hash, {
             // 跨天旧缓存不截胡：失败即继续尝试下一个更健康的插件

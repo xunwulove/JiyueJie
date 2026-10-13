@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { ImgAsset } from "@/constants/assetsConst";
 import FastImage from "@/components/base/fastImage";
 import useOrientation from "@/hooks/useOrientation";
@@ -18,6 +18,12 @@ export default function AlbumCover(props: IProps) {
     const musicItem = useCurrentMusic();
     const orientation = useOrientation();
 
+    /* 右侧大封面区实际尺寸（onLayout 实测），驱动横屏封面弹性计算 */
+    const [paneSize, setPaneSize] = useState<{
+        w: number;
+        h: number;
+    }>({ w: 0, h: 0 });
+
     const artworkStyle = useMemo(() => {
         if (orientation === "vertical") {
             return {
@@ -30,6 +36,17 @@ export default function AlbumCover(props: IProps) {
     }, [orientation]);
 
     const isHorizontal = orientation === "horizontal";
+
+    /* 横屏封面：正方形，尺寸 = min(区宽×88%, 区高×92%)——高度预算兜底，
+       矮窗（如手机横屏）下自动缩小，不再因 aspectRatio 固定高度溢出 */
+    const horizontalCover = useMemo(() => {
+        const { w, h } = paneSize;
+        if (w <= 0 || h <= 0) {
+            return null;
+        }
+        const size = Math.min(w * 0.88, h * 0.92);
+        return { width: size, height: size };
+    }, [paneSize]);
 
     const longPress = Gesture.LongPress()
         .onStart(() => {
@@ -52,9 +69,24 @@ export default function AlbumCover(props: IProps) {
     return (
         <>
             <GestureDetector gesture={combineGesture}>
-                <View style={globalStyle.fullCenter}>
+                <View
+                    style={globalStyle.fullCenter}
+                    onLayout={e => {
+                        const { width, height } = e.nativeEvent.layout;
+                        if (
+                            width > 0 &&
+                            height > 0 &&
+                            (width !== paneSize.w || height !== paneSize.h)
+                        ) {
+                            setPaneSize({ w: width, h: height });
+                        }
+                    }}>
                     {isHorizontal ? (
-                        <View style={styles.horizontalWrapper}>
+                        <View
+                            style={[
+                                styles.horizontalWrapper,
+                                horizontalCover ?? null,
+                            ]}>
                             <FastImage
                                 style={styles.fullImage}
                                 source={musicItem?.artwork}
@@ -80,8 +112,8 @@ const styles = StyleSheet.create({
         height: "100%",
     },
     horizontalWrapper: {
-        width: "88%",
-        aspectRatio: 1,
+        // 宽高由 horizontalCover 动态提供（min(区宽×88%, 区高×92%)，矮窗自动缩小）
+        // 不用 aspectRatio:1 —— Yoga 双向钳制（maxHeight/高度预算）时会变形为矩形
         borderRadius: 28, // 对齐 APlayer 平板封面圆角 28dp
         overflow: "hidden",
     },

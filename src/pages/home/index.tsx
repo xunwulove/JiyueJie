@@ -77,8 +77,9 @@ function Home() {
     const navigation = useNavigation<any>();
 
     // 共享轴转场：二级页从右滑入时，一级内容同向左移被"推走"（tab 栏与左播放区固定不动）。
-    // 位移量 = 内容区宽（70% 屏宽）的 40%，与 FullOverlay 进入动画同时长（240ms），视觉接力推进
-    const shiftDistance = vw(100) * 0.7 * 0.4;
+    // 位移量 = 12% 屏宽：视觉可见但绝不越过左播放区右缘（30% 屏宽），
+    // 遵守"左播放区严禁任何界面内容遮挡"的硬约束（原 28% 会越界进播放区，已修正）
+    const shiftDistance = vw(100) * 0.12;
     const contentShift = useSharedValue(0);
     useEffect(() => {
         contentShift.value = withTiming(
@@ -145,8 +146,14 @@ function Home() {
                                 switchTab(SaltTab.HOME)
                             }
                         />
-                        <View style={globalStyle.flex1}>
-                            {/* 共享轴：一级内容随二级页滑入同向左移；tab 栏在其上方保持固定 */}
+                        <View
+                            style={[
+                                globalStyle.flex1,
+                                { overflow: "hidden" },
+                            ]}>
+                            {/* 共享轴：一级内容随二级页滑入同向左移；tab 栏在其上方保持固定。
+                                overflow:hidden 裁剪左移越出内容区边界的部分——
+                                一级页面绝不侵占左播放区（硬约束），右侧空隙由二级页滑入填充 */}
                             <Animated.View
                                 style={[
                                     globalStyle.flex1,

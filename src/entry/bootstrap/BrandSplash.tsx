@@ -1,72 +1,73 @@
 import React, { useEffect, useState } from "react";
-import { Animated, StyleSheet, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
+import { Animated, Dimensions, StyleSheet, View } from "react-native";
 import { useAtomValue } from "jotai";
 import bootstrapAtom from "./bootstrap.atom";
 import { ImgAsset } from "@/constants/assetsConst";
 
 /**
- * RN 自绘启动页（BrandSplash）
- * 原生窗口背景（windowBackground=splashscreen_brand_window）已先显示品牌整图（渐变+图标+行楷"极悦界"），
- * 此组件用同一张整图 + 同一渐变无缝接管（对齐网易云/QQ音乐实测：品牌图放窗口背景，App 首帧同图承接）：
- *  - 渐变与窗口背景/主界面完全一致（底部 #EAF0FA 浅蓝 → 顶部 #F8F9FA 白，从下到上）
- *  - 整图 contain 全图适配（与原生 windowBackground 的 fitCenter 同效果，切换无大小跳变）
- *  - bootstrap 完成后至少展示 MIN_DISPLAY_MS 再淡出（行楷字标可感知，对齐网易云自绘启动页）
+ * RN 自绘启动页（BrandSplash）——路线 2：代码层弹性适配（对齐网易云/QQ 实测做法）
+ * 显示：浅蓝纯色底（#F1F4FA，与窗口背景同色无缝）+ 品牌图标 + 行楷"极悦界"文字
+ * 适配：图标/文字尺寸运行时按屏幕短边弹性计算（大屏大、小屏小，永不裁切）：
+ *   - 图标 = clamp(短边×0.42, 160, 280) dp
+ *   - 文字 = clamp(短边×0.32, 120, 220) dp 宽
+ * 动画：图标从稍大 spring 收缩到目标（衔接窗口背景 fitCenter 大图标），文字淡入
+ * 停留：bootstrap 完成立即淡出（无 MIN_DISPLAY_MS 强制停留，尽量减少启动时间）
  */
-/** 最小展示时长（ms）：bootstrap 完成后仍保持展示，确保行楷字标可感知（对齐网易云自绘启动页停留） */
-const MIN_DISPLAY_MS = 1500;
+const BG_COLOR = "#F1F4FA";
+
+function clamp(v: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, v));
+}
 
 export default function BrandSplash() {
     const bootstrapState = useAtomValue(bootstrapAtom);
     const [visible, setVisible] = useState(true);
-    const [bootstrapDoneAt, setBootstrapDoneAt] = useState<number | null>(null);
     const fadeOpacity = React.useRef(new Animated.Value(1)).current;
-    // 接管过渡：整图从轻微缩小平滑放大到 100%，配合全程一致的渐变底
-    const iconScale = React.useRef(new Animated.Value(0.92)).current;
+    const iconScale = React.useRef(new Animated.Value(1.5)).current;
+    const textOpacity = React.useRef(new Animated.Value(0)).current;
+
+    // 运行时按屏幕短边弹性计算（大屏大、小屏小）
+    const { width, height } = Dimensions.get("window");
+    const short = Math.min(width, height);
+    const iconSize = clamp(short * 0.42, 160, 280);
+    const textWidth = clamp(short * 0.32, 120, 220);
+    const textHeight = textWidth / 3; // 文字图 1200×400，字居中
 
     useEffect(() => {
-        // 首帧接管：整图放大（仅一次）
+        // 图标从大收缩到目标（衔接窗口背景 fitCenter 大图标），文字随后淡入
         Animated.spring(iconScale, {
             toValue: 1,
-            friction: 8,
-            tension: 40,
+            friction: 9,
+            tension: 50,
             useNativeDriver: true,
         }).start();
+        const t = setTimeout(() => {
+            Animated.timing(textOpacity, {
+                toValue: 1,
+                duration: 320,
+                useNativeDriver: true,
+            }).start();
+        }, 220);
+        return () => clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    /* 记录 bootstrap 完成时刻（只记一次） */
+    /* bootstrap 完成立即淡出（无强制停留） */
     useEffect(() => {
-        if (
-            bootstrapState.state !== "Loading" &&
-            bootstrapDoneAt === null
-        ) {
-            setBootstrapDoneAt(Date.now());
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bootstrapState.state]);
-
-    /* 淡出：bootstrap 完成后至少再展示 MIN_DISPLAY_MS 才淡出（让行楷字标清晰可见） */
-    useEffect(() => {
-        if (bootstrapDoneAt === null) {
+        if (bootstrapState.state === "Loading") {
             return;
         }
-        const elapsed = Date.now() - bootstrapDoneAt;
-        const delay = Math.max(0, MIN_DISPLAY_MS - elapsed);
-        const timer = setTimeout(() => {
-            Animated.timing(fadeOpacity, {
-                toValue: 0,
-                duration: 350,
-                useNativeDriver: true,
-            }).start(({ finished }) => {
-                if (finished) {
-                    setVisible(false);
-                }
-            });
-        }, delay);
-        return () => clearTimeout(timer);
+        Animated.timing(fadeOpacity, {
+            toValue: 0,
+            duration: 260,
+            useNativeDriver: true,
+        }).start(({ finished }) => {
+            if (finished) {
+                setVisible(false);
+            }
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bootstrapDoneAt]);
+    }, [bootstrapState.state]);
 
     if (!visible) {
         return null;
@@ -76,19 +77,31 @@ export default function BrandSplash() {
         <Animated.View
             style={[styles.container, { opacity: fadeOpacity }]}
             pointerEvents={bootstrapState.state === "Loading" ? "auto" : "none"}>
-            <LinearGradient
-                colors={["#EAF0FA", "#F8F9FA"]}
-                start={{ x: 0, y: 1 }}
-                end={{ x: 0, y: 0 }}
-                style={styles.gradient}>
-                <View style={styles.center}>
-                    <Animated.Image
-                        source={ImgAsset.splashBrand}
-                        style={[styles.brand, { transform: [{ scale: iconScale }] }]}
-                        resizeMode="contain"
-                    />
-                </View>
-            </LinearGradient>
+            <View style={[styles.center, { backgroundColor: BG_COLOR }]}>
+                <Animated.Image
+                    source={ImgAsset.splashIcon}
+                    style={[
+                        {
+                            width: iconSize,
+                            height: iconSize,
+                            transform: [{ scale: iconScale }],
+                        },
+                    ]}
+                    resizeMode="contain"
+                />
+                <Animated.Image
+                    source={ImgAsset.splashBrandText}
+                    style={[
+                        {
+                            width: textWidth,
+                            height: textHeight,
+                            marginTop: 16,
+                            opacity: textOpacity,
+                        },
+                    ]}
+                    resizeMode="contain"
+                />
+            </View>
         </Animated.View>
     );
 }
@@ -99,16 +112,9 @@ const styles = StyleSheet.create({
         zIndex: 99999,
         elevation: 99999,
     },
-    gradient: {
-        flex: 1,
-    },
     center: {
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-    },
-    brand: {
-        flex: 1,
-        alignSelf: "stretch",
     },
 });

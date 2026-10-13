@@ -1,16 +1,14 @@
 {
-  "version": "0.6.2.8",
+  "version": "0.6.2.9",
   "changeLog": [
-    "推荐歌单择优：独立可用率统计，自动使用优质音源，失败自动切换",
-    "歌单详情显示来源音源",
-    "音源管理平板三列布局，末行不变形",
-    "修复沉浸歌词页 15s 闪退",
-    "左侧播放区多行歌词展示",
-    "下载设置/备份管理/主题设置卡片式样式",
-    "修复全屏播放页控件位置"
+    "音源订阅与软件更新仓库整合：gitee 仓库改名 jiyuejie，订阅源移入 sources/ 目录",
+    "软件更新兜底地址切至 updates/version.json（与音源目录分离）",
+    "推荐歌单来源支持「随机使用音源」：当日缓存源优先随机，失败自动切换可用率择优",
+    "内置歌单（我的喜欢/本地音乐/最近播放）保护：不再显示编辑菜单",
+    "推荐歌单独立可用率统计，自动优先使用优质音源"
   ],
   "download": [
-    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/latest/app-arm64-v8a-release.apk",
-    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/latest/app-universal-release.apk"
+    "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-arm64-v8a-release.apk",
+    "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-universal-release.apk"
   ]
 }

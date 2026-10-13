@@ -74,12 +74,13 @@ export default function Pages() {
                             <Dialogs />
                             <ToastBaseComponent />
                             <PortalHost />
-                            {/* 自绘启动页：原生渐变底之上，bootstrap 完成前覆盖全屏（图标占比/字标可控） */}
+                            {/* 代码层启动页：窗口背景（纯色+图标）之上，bootstrap 完成前显示 图标+行楷文字，
+                                尺寸按屏幕弹性计算（对齐网易云/QQ），完成后立即淡出，无强制停留 */}
                             <BrandSplash />
                         </NavigationContainer>
                     ) : (
                         <>
-                            {/* 首次启动：品牌启动页 + 引导页（无主界面，杜绝闪现） */}
+                            {/* 首次启动：启动页 + 引导页（无主界面，杜绝闪现） */}
                             <BrandSplash />
                             <Onboarding />
                         </>
