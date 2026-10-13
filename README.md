@@ -20,13 +20,13 @@
 在 MusicFree / 极悦界中订阅本仓库清单：
 
 ```
-https://gitee.com/xunwulove/jiyuejie-updates/raw/master/plugins.json
+https://gitee.com/xunwulove/jiyuejie/raw/master/plugins.json
 ```
 
 备用 CDN（主地址被限时换用）：
 
 ```
-https://raw.giteeusercontent.com/xunwulove/jiyuejie-updates/raw/master/plugins.json
+https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/plugins.json
 ```
 
 ### 2.2 音源获取来源
