@@ -1,10 +1,14 @@
 # 极悦界（JiyueJie）发布仓库
 
 本仓库统一托管极悦界（基于 MusicFree 二次开发的音乐播放器）的**软件更新**与**音源订阅**：
-- 软件更新：`version.json`（版本信息）+ APK 安装包（release 附件）
-- 音源订阅：`plugins.json`（MusicFree 播放器插件订阅源，当前 100 个音源）
 
-原音源仓库 `jishijie-release` 已弃用，音源订阅收口到本仓库。
+```
+jiyuejie/
+├── updates/   软件更新：version.json（版本信息）+ APK 安装包
+└── sources/   音源订阅：plugins.json（当前 100 个音源）+ probe_plugin.js 验证脚本
+```
+
+原音源仓库 `jishijie-release` 已弃用（仓库 `jiyuejie-updates` 已改名为 `jiyuejie`），音源订阅收口到本仓库。
 
 ## 一、软件更新（version.json + APK）
 
@@ -20,13 +24,13 @@
 在 MusicFree / 极悦界中订阅本仓库清单：
 
 ```
-https://gitee.com/xunwulove/jiyuejie/raw/master/plugins.json
+https://gitee.com/xunwulove/jiyuejie/raw/master/sources/plugins.json
 ```
 
 备用 CDN（主地址被限时换用）：
 
 ```
-https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/plugins.json
+https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.json
 ```
 
 ### 2.2 音源获取来源
@@ -48,7 +52,7 @@ https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/plugins.json
 4. **去除失效插件**（含间歇性超时、重测仍失败的）；
 5. 与本地现有 `plugins.json` 按 URL 去重后整合；
 6. 生成新 `plugins.json`（严格 MusicFree 格式）；
-7. 覆盖上传仓库 `plugins.json`（**文件名必须保持 `plugins.json`，勿改名**，否则订阅地址失效无法拉取）。
+7. 覆盖上传仓库 `sources/plugins.json`（**文件名必须保持 `plugins.json`，勿改名**，否则订阅地址失效无法拉取）。
 
 ### 2.4 格式规范（必须严格遵循 MusicFree）
 
@@ -86,7 +90,7 @@ https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/plugins.json
 
 **为什么需要**：插件 URL 能打开（HTTP 200）≠ 插件能用。很多音源插件内部接口已失效、被风控或签名不通过，需要**真实调用插件的搜索接口**验证。
 
-**脚本位置**：仓库根目录 `probe_plugin.js`（配套 `package.json` 声明依赖）。
+**脚本位置**：仓库 `sources/probe_plugin.js`（配套 `sources/package.json` 声明依赖）。
 
 **运行方式**（需要 Node.js ≥ 18）：
 
