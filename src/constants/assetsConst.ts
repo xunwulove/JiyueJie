@@ -8,7 +8,6 @@ export const ImgAsset = {
     logoTransparent: require("@/assets/imgs/logo-transparent.png"),
     splashIcon: require("@/assets/imgs/splash-icon.png"),
     splashBrandText: require("@/assets/imgs/splash-brand-text.png"),
-    wechatChannel: require("@/assets/imgs/wechat_channel.jpg"),
     // 音质
     quality: {
         low: require("@/assets/imgs/low-quality.png"),

@@ -2,6 +2,7 @@ import PluginManager from "@/core/pluginManager";
 import { resetMediaItem } from "@/utils/mediaUtils";
 import { devLog } from "@/utils/log";
 import getOrCreateMMKV from "@/utils/getOrCreateMMKV";
+import PersistStatus from "@/utils/persistStatus";
 import pluginReliability, {
     getRecommendReliabilitySync,
     ensureRecommendLoaded,
@@ -165,6 +166,56 @@ export async function refreshCachedPluginRecommend(
 }
 
 /**
+ * 每日勘探（方案 A）：选优成功后，小概率（20%）额外探测 1~2 个"次选源"做对比。
+ * 目的：打破"首日赢者通吃"——首选源成功后其他源永远无数据（0.5）排最后；
+ * 勘探让次选源也有机会真实拉取、积累可用率（成功记 ok / 失败记 fail 均在
+ * fetchPluginRecommendSheets 内部完成，这里不重复记录），次日排序即可参与竞争。
+ *
+ * 规则：
+ * - 每天最多勘探一轮（PersistStatus.app.recommendExploreDate 标记当天日期）；
+ * - 20% 概率触发（Math.random() < 0.2）；
+ * - 候选 = 本次排序结果中"非首选源"的插件，打乱后取 1~2 个；
+ * - 后台探测（fire-and-forget，不阻塞推荐区返回）：当天已有缓存直接复用，
+ *   无缓存/跨天才真实请求插件。
+ */
+async function exploreBackupSources(
+    allPlugins: Array<{ hash: string }>,
+    winnerHash: string,
+): Promise<void> {
+    try {
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${
+            today.getMonth() + 1
+        }-${today.getDate()}`;
+        if (PersistStatus.get("app.recommendExploreDate") === todayStr) {
+            return;
+        }
+        PersistStatus.set("app.recommendExploreDate", todayStr);
+
+        // 20% 概率触发
+        if (Math.random() >= 0.2) {
+            return;
+        }
+
+        const candidates = allPlugins.filter(p => p.hash !== winnerHash);
+        if (!candidates.length) {
+            return;
+        }
+        // 打乱后取 1~2 个（各 50%）
+        const shuffled = [...candidates].sort(
+            () => Math.random() - 0.5,
+        );
+        const count = Math.random() < 0.5 ? 1 : 2;
+        for (const plugin of shuffled.slice(0, count)) {
+            // allowStaleFallback 默认 true：当天已成功复用（不请求）；无缓存/跨天才真实探测并自动记 ok/fail
+            await getCachedPluginRecommend(plugin.hash);
+        }
+    } catch (e: any) {
+        devLog("error", "推荐歌单每日勘探失败", e?.message ?? e);
+    }
+}
+
+/**
  * 遍历所有具备 getRecommendSheetTags 能力的已启用插件，
  * 返回第一个成功返回数据的插件（失败自动尝试下一个）。带每日缓存。
  *
@@ -232,6 +283,8 @@ export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecomme
             allowStaleFallback: false,
         });
         if (data) {
+            // 选优成功后：后台每日勘探（不阻塞本次返回）
+            void exploreBackupSources(plugins, plugin.hash);
             return data;
         }
     }

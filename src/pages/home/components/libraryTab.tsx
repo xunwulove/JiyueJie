@@ -21,6 +21,8 @@ import Toast from "@/utils/toast";
 import { ListDivider } from "@/components/base/divider";
 import appConfig from "@/core/appConfig";
 import { useMusicHistory } from "@/core/musicHistory";
+import mp3Util from "@/native/mp3Util";
+import dayjs from "dayjs";
 
 /** 音乐库列表排序维度（持久化键 basic.musicLibrarySort） */
 type MusicLibrarySort =
@@ -378,7 +380,8 @@ export default function LibraryTab() {
                     {/* 排序行：位于卡片下方、歌曲列表上方，随列表滚动 */}
                     <View style={styles.sortRow}>
                         <ThemeText
-                            fontSize="content"
+                            fontSize="subTitle"
+                            fontColor="primary"
                             fontWeight="bold">
                             本地歌曲
                         </ThemeText>
@@ -484,17 +487,58 @@ function LocalSongItem({
                         });
                         break;
                     case "info": {
-                        const path = getLocalPath(item) ?? "";
-                        showDialog("SimpleDialog", {
-                            title: "歌曲信息",
-                            content: [
-                                `歌曲：${item.title ?? "-"}`,
-                                `歌手：${item.artist || "-"}`,
-                                `专辑：${item.album || "-"}`,
-                                `时长：${formatDuration(item.duration ?? 0)}`,
-                                `路径：${path || "-"}`,
-                            ].join("\n"),
-                        });
+                        void (async () => {
+                            const path = getLocalPath(item) ?? "";
+                            // 码率：原生 bitrate 为 bps（如 320000 → 320 kbps）；读取失败/无数据显示 "-"
+                            let bitrateStr = "-";
+                            if (path) {
+                                try {
+                                    const meta = await mp3Util.getBasicMeta(
+                                        path,
+                                    );
+                                    const bps = parseInt(
+                                        meta?.bitrate ?? "",
+                                        10,
+                                    );
+                                    if (!isNaN(bps) && bps > 0) {
+                                        bitrateStr = `${Math.round(
+                                            bps / 1000,
+                                        )} kbps`;
+                                    }
+                                } catch {}
+                            }
+                            const sizeStr = item.size
+                                ? `${(item.size / 1048576).toFixed(1)} MB`
+                                : "-";
+                            const extMatch = path.match(
+                                /\.([a-zA-Z0-9]+)$/,
+                            );
+                            const ext = extMatch
+                                ? extMatch[1].toUpperCase()
+                                : "-";
+                            showDialog("SimpleDialog", {
+                                title: "歌曲信息",
+                                content: [
+                                    `歌曲：${item.title ?? "-"}`,
+                                    `歌手：${item.artist || "-"}`,
+                                    `专辑：${item.album || "-"}`,
+                                    `时长：${formatDuration(
+                                        item.duration ?? 0,
+                                    )}`,
+                                    `大小：${sizeStr}`,
+                                    `格式：${ext}`,
+                                    `码率：${bitrateStr}`,
+                                    `入库时间：${
+                                        item.$timestamp
+                                            ? dayjs(
+                                                  item.$timestamp,
+                                              ).format("YYYY-MM-DD HH:mm")
+                                            : "-"
+                                    }`,
+                                    `路径：${path || "-"}`,
+                                ].join("\n"),
+                            });
+                        })();
                         break;
                     }
                     case "delete":
@@ -540,7 +584,7 @@ function LocalSongItem({
             <LocalSongCover musicItem={item} size={48} borderRadius={8} />
             <View style={styles.songInfo}>
                 <ThemeText
-                    fontSize="body"
+                    fontSize="content"
                     fontWeight="medium"
                     numberOfLines={1}
                     ellipsizeMode="tail">

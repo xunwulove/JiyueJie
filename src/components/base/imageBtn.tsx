@@ -24,7 +24,8 @@ export default function ImageBtn(props: IImageBtnProps) {
                 emptySrc={ImgAsset.albumDefault}
             />
             <ThemeText
-                fontSize="subTitle"
+                fontSize="normal"
+                fontWeight="medium"
                 numberOfLines={2}
                 ellipsizeMode="tail">
                 {title ?? ""}

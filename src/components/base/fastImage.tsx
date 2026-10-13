@@ -7,9 +7,12 @@ interface IFastImageProps {
     defaultSource?: FastImageProps["defaultSource"];
     placeholderSource?: ImageRequireSource;
     source?: FastImageProps["source"] | string;
+    /** 图片缩放模式，默认由底层 FastImage 决定（cover） */
+    resizeMode?: FastImageProps["resizeMode"];
 }
 export default function (props: IFastImageProps) {
-    const { style, placeholderSource, defaultSource, source } = props ?? {};
+    const { style, placeholderSource, defaultSource, source, resizeMode } =
+        props ?? {};
     const [isError, setIsError] = useState(false);
 
 
@@ -40,6 +43,7 @@ export default function (props: IFastImageProps) {
                 console.error("Image load error:", realSource);
             }}
             defaultSource={defaultSource}
+            resizeMode={resizeMode}
         />
     );
 }

@@ -1,5 +1,8 @@
 import { Platform } from "react-native";
-import RNFS, { CachesDirectoryPath } from "react-native-fs";
+import RNFS, {
+    CachesDirectoryPath,
+    ExternalStorageDirectoryPath,
+} from "react-native-fs";
 
 export const basePath =
     Platform.OS === "android"
@@ -18,7 +21,12 @@ export default {
     lrcCachePath: `${basePath}/cache/lrc/`,
     downloadCachePath: `${basePath}/cache/download/`,
     downloadPath: `${basePath}/download/`,
-    downloadMusicPath: `${basePath}/download/music/`,
+    // 2026-10-13：默认下载保存路径改为系统 Music 目录（用户可见；需"所有文件访问"权限，下载前自动建目录）；
+    // 非 Android 保持应用内目录
+    downloadMusicPath:
+        Platform.OS === "android"
+            ? `${ExternalStorageDirectoryPath}/Music`
+            : `${basePath}/download/music/`,
     mmkvPath: `${basePath}/mmkv`,
     mmkvCachePath: `${basePath}/cache/mmkv`,
 };

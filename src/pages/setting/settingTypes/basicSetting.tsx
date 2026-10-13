@@ -12,6 +12,7 @@ import { ROUTE_PATH, useNavigate } from "@/core/router";
 import { useI18N } from "@/core/i18n";
 import useColors from "@/hooks/useColors";
 import LyricUtil, { NativeTextAlignment } from "@/native/lyricUtil";
+import NativeUtils from "@/native/utils";
 import { AppConfigPropertyKey } from "@/types/core/config";
 import { clearCache, getCacheSize, sizeFormatter } from "@/utils/fileUtils";
 import { qualityKeys } from "@/utils/qualities";
@@ -131,6 +132,7 @@ export default function BasicSetting() {
     const showExitOnNotification = useAppConfig("basic.showExitOnNotification");
     const musicOrderInLocalSheet = useAppConfig("basic.musicOrderInLocalSheet");
     const tryChangeSourceWhenPlayFail = useAppConfig("basic.tryChangeSourceWhenPlayFail");
+    const autoBoot = useAppConfig("basic.autoBoot");
 
     const { t } = useI18N();
 
@@ -173,7 +175,7 @@ export default function BasicSetting() {
             createSwitch(
                 t("basicSettings.tryChangeSourceWhenPlayFail"),
                 "basic.tryChangeSourceWhenPlayFail",
-                tryChangeSourceWhenPlayFail ?? false,
+                tryChangeSourceWhenPlayFail ?? true,
             ),
             createSwitch(
                 t("basicSettings.autoStopWhenError"),
@@ -183,19 +185,19 @@ export default function BasicSetting() {
             createSwitch(
                 t("basicSettings.notInterrupt"),
                 "basic.notInterrupt",
-                notInterrupt ?? false,
+                notInterrupt ?? true,
             ),
             createRadio(
                 t("basicSettings.tempRemoteDuck"),
                 "basic.tempRemoteDuck",
                 ["pause", "lowerVolume"],
-                tempRemoteDuck ?? "pause",
+                tempRemoteDuck ?? "lowerVolume",
                 {
                     pause: t("basicSettings.tempRemoteDuck.pause"),
                     "lowerVolume": t("basicSettings.tempRemoteDuck.lowerVolume"),
                 }
             ),
-            ...(tempRemoteDuck === "lowerVolume" ? [
+            ...((tempRemoteDuck ?? "lowerVolume") === "lowerVolume" ? [
                 createRadio(
                     t("basicSettings.tempRemoteDuck.volumeDecreaseLevel"),
                     "basic.tempRemoteDuckVolume",
@@ -218,12 +220,12 @@ export default function BasicSetting() {
             createSwitch(
                 t("basicSettings.useCelluarNetworkPlay"),
                 "basic.useCelluarNetworkPlay",
-                useCelluarNetworkPlay ?? false,
+                useCelluarNetworkPlay ?? true,
             ),
             createSwitch(
                 t("basicSettings.useCelluarNetworkDownload"),
                 "basic.useCelluarNetworkDownload",
-                useCelluarNetworkDownload ?? false,
+                useCelluarNetworkDownload ?? true,
             ),
             {
                 title: t("basicSettings.cache.musicCacheLimit"),
@@ -356,6 +358,16 @@ export default function BasicSetting() {
                 t("basicSettings.showExitOnNotification"),
                 "basic.showExitOnNotification",
                 showExitOnNotification ?? false,
+            ),
+            // 开机自启动（车机/平板常电场景）：同步写原生标记供 BootReceiver 开机读取
+            createSwitch(
+                "开机自启动",
+                "basic.autoBoot",
+                autoBoot ?? NativeUtils.isAutoBootEnabled(),
+                v => {
+                    Config.setConfig("basic.autoBoot", v);
+                    NativeUtils.setAutoBootEnabled(v);
+                },
             ),
         ],
     };
@@ -625,8 +637,15 @@ function LyricSetting() {
                 <ListItem.Content title={openStatusBarLyric.title} />
                 {openStatusBarLyric.right}
             </ListItem>
-            <View style={lyricStyles.sliderContainer}>
-                <ThemeText>{t("basicSettings.lyric.leftRightDistance")}</ThemeText>
+            <View style={lyricStyles.sliderRow}>
+                <View style={lyricStyles.sliderLabelRow}>
+                    <ThemeText fontSize="content" fontWeight="medium">
+                        {t("basicSettings.lyric.leftRightDistance")}
+                    </ThemeText>
+                    <ThemeText fontSize="content" fontColor="textSecondary">
+                        {Math.round((leftPercent ?? 0.5) * 100)}%
+                    </ThemeText>
+                </View>
                 <Slider
                     style={lyricStyles.slider}
                     minimumTrackTintColor={colors.primary}
@@ -646,8 +665,15 @@ function LyricSetting() {
                     }}
                 />
             </View>
-            <View style={lyricStyles.sliderContainer}>
-                <ThemeText>{t("basicSettings.lyric.topBottomDistance")}</ThemeText>
+            <View style={lyricStyles.sliderRow}>
+                <View style={lyricStyles.sliderLabelRow}>
+                    <ThemeText fontSize="content" fontWeight="medium">
+                        {t("basicSettings.lyric.topBottomDistance")}
+                    </ThemeText>
+                    <ThemeText fontSize="content" fontColor="textSecondary">
+                        {Math.round((topPercent ?? 0) * 100)}%
+                    </ThemeText>
+                </View>
                 <Slider
                     style={lyricStyles.slider}
                     minimumTrackTintColor={colors.primary}
@@ -667,8 +693,15 @@ function LyricSetting() {
                     }}
                 />
             </View>
-            <View style={lyricStyles.sliderContainer}>
-                <ThemeText>{t("basicSettings.lyric.width")}</ThemeText>
+            <View style={lyricStyles.sliderRow}>
+                <View style={lyricStyles.sliderLabelRow}>
+                    <ThemeText fontSize="content" fontWeight="medium">
+                        {t("basicSettings.lyric.width")}
+                    </ThemeText>
+                    <ThemeText fontSize="content" fontColor="textSecondary">
+                        {Math.round((widthPercent ?? 0.5) * 100)}%
+                    </ThemeText>
+                </View>
                 <Slider
                     style={lyricStyles.slider}
                     minimumTrackTintColor={colors.primary}
@@ -688,8 +721,15 @@ function LyricSetting() {
                     }}
                 />
             </View>
-            <View style={lyricStyles.sliderContainer}>
-                <ThemeText>{t("basicSettings.lyric.fontSize")}</ThemeText>
+            <View style={lyricStyles.sliderRow}>
+                <View style={lyricStyles.sliderLabelRow}>
+                    <ThemeText fontSize="content" fontWeight="medium">
+                        {t("basicSettings.lyric.fontSize")}
+                    </ThemeText>
+                    <ThemeText fontSize="content" fontColor="textSecondary">
+                        {Math.round(fontSize ?? 20)}
+                    </ThemeText>
+                </View>
                 <Slider
                     style={lyricStyles.slider}
                     minimumTrackTintColor={colors.primary}
@@ -775,15 +815,18 @@ function LyricSetting() {
 }
 
 const lyricStyles = StyleSheet.create({
-    slider: {
-        flex: 1,
-        marginLeft: 12,
+    // 与主题设置 backgroundCustom 滑块行写法统一：标签行（左标签 medium / 右数值 textSecondary）在上、滑块在下
+    sliderRow: {
+        marginTop: rpx(28),
     },
-    sliderContainer: {
-        height: 48, // 与 ListItem small 行高一致（原 rpx(96) 在平板 ≈102dp，比正常列表行大一倍）
-        width: "100%",
+    sliderLabelRow: {
         flexDirection: "row",
+        justifyContent: "space-between",
         alignItems: "center",
-        paddingHorizontal: 16, // 与三级浮窗列表行 withHorizontalPadding 对齐
+        marginBottom: rpx(8),
+    },
+    slider: {
+        width: "100%",
+        height: rpx(36),
     },
 });

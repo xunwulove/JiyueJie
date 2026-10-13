@@ -33,7 +33,9 @@
 
 ### 第 3 屏 · 音源就绪 + 快速上手（替代"偏好设置"——新用户无偏好基础，选音质/下载位置无感知价值）
 - 说明卡片："已内置常用音源，搜索/听歌/下载即刻可用"，展示当前已启用音源数量
-- 一个开关：**"扫描本地音乐"**（默认开，引导结束自动扫描，避免音乐库空态）
+- 开关 1：**"自动更新音源"**（默认开，对应设置页 `basic.autoUpdatePlugin`；引导结束后立即拉取一次内置订阅源）
+- 开关 2：**"扫描本地音乐"**（默认开，引导结束自动扫描，避免音乐库空态）
+- 开关 3：**"进入软件自动播放"**（默认跟随设置页 `basic.autoPlayWhenAppStart`；启动后自动续播上次的歌曲）
 - 不引导用户选择默认音质/下载位置（保留默认，可在设置页修改）
 
 ### 结束
@@ -50,4 +52,4 @@
 3. ✅ `persistStatus.ts`：新增 `app.onboardingDone: boolean`
 4. ✅ 第 3 屏"扫描本地音乐"开关（默认开）→ 引导结束触发 `importLocal(defaultScanFolders())` 自动扫描
 5. ✅ 本地音乐库空态"去扫描"按钮（`localMusicList.tsx`：图标 + 说明 + 去扫描 → 文件选择器选目录扫描）
-6. ✅ 入口挂载：`entry/index.tsx` BrandSplash 之后 `<Onboarding />`（bootstrap Done 后 450ms 接管，跳过不写标记下次仍提示）
+6. ✅ 入口挂载：`entry/index.tsx` 首次启动（`app.onboardingDone` 未设置）时**不挂主界面**，仅渲染 `<BrandSplash /><Onboarding />` 避免主界面闪现；bootstrap 完成后立即展示 Onboarding（无额外延迟）；引导完成写标记后主界面自动挂载。跳过不写标记，下次启动仍提示。

@@ -114,7 +114,7 @@ static def getVersion() {
 // }
 
 def appVersion = getVersion()
-def appVersionCode = 400020
+def appVersionCode = 400022
 
 
 android {
@@ -156,8 +156,10 @@ android {
             abi {
                 reset()
                 enable true
-                universalApk true
-                include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                universalApk false
+                // 2026-10-13：默认只出 arm64 单包（与 gradle.properties reactNativeArchitectures 对齐），
+                // 需要全 ABI 时把 include 改回 4 个 ABI 并 universalApk true
+                include "arm64-v8a"
             }
     }
 

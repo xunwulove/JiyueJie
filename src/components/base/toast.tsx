@@ -5,7 +5,7 @@ import rpx from "@/utils/rpx";
 import { GlobalState } from "@/utils/stateMapper";
 import { nanoid } from "nanoid";
 import React, { useCallback, useEffect } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import {
     Directions,
     Gesture,
@@ -20,6 +20,7 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 import Icon from "@/components/base/icon.tsx";
+import ThemeText from "./themeText";
 
 export interface IToastConfig {
     /** 类型 */
@@ -130,11 +131,13 @@ export function ToastBaseComponent() {
                         name={typeConfig[activeToast.type].name}
                         color={typeConfig[activeToast.type].color}
                     />
-                    <Text
+                    <ThemeText
+                        fontSize="content"
+                        color={colors.text}
                         numberOfLines={2}
-                        style={[styles.text, { color: colors.text }]}>
+                        style={styles.text}>
                         {activeToast.message}
-                    </Text>
+                    </ThemeText>
                     {activeToast.actionText && activeToast.onActionClick ? (
                         <Pressable
                             style={[
@@ -142,9 +145,9 @@ export function ToastBaseComponent() {
                                 { backgroundColor: colors.primary },
                             ]}
                             onPress={activeToast.onActionClick}>
-                            <Text style={styles.actionText} numberOfLines={1}>
+                            <ThemeText fontSize="content" color="white" numberOfLines={1}>
                                 {activeToast.actionText}
-                            </Text>
+                            </ThemeText>
                         </Pressable>
                     ) : null}
                 </Animated.View>
@@ -181,15 +184,8 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     text: {
-        fontSize: fontSizeConst.content,
-        includeFontPadding: false,
         flex: 1,
         marginLeft: rpx(24),
-    },
-    actionText: {
-        fontSize: fontSizeConst.content,
-        includeFontPadding: false,
-        color: "white",
     },
     actionTextContainer: {
         marginLeft: rpx(24),

@@ -9,6 +9,19 @@ import { safeParse, safeStringify } from "@/utils/jsonUtil";
 const configStore = getOrCreateMMKV("App.config");
 
 class AppConfig implements IAppConfig {
+    // 配置变化监听（浮窗/面板等非 hook 场景实时刷新用）
+    private listeners = new Set<() => void>();
+
+    /** 订阅配置变化（setConfig 写入时触发），返回取消订阅句柄 */
+    onConfigChanged(listener: () => void): { remove: () => void } {
+        this.listeners.add(listener);
+        return {
+            remove: () => {
+                this.listeners.delete(listener);
+            },
+        };
+    }
+
     // 迁移函数
     private async migrateConfig(): Promise<void> {
 
@@ -210,6 +223,8 @@ class AppConfig implements IAppConfig {
             }
             configStore.set(key, str);
         }
+        // 通知配置变化订阅者（浮窗/面板实时刷新）
+        this.listeners.forEach(listener => listener());
     }
 
     getConfig<K extends keyof IAppConfigProperties>(
@@ -227,7 +242,6 @@ class AppConfig implements IAppConfig {
 
 const appConfig = new AppConfig();
 export default appConfig;
-
 /***** hooks *****/
 export function useAppConfig<K extends keyof IAppConfigProperties>(key: K): IAppConfigProperties[K] | undefined {
     return useMMKVObject<IAppConfigProperties[K]>(key, configStore)[0];

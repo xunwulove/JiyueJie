@@ -50,16 +50,17 @@ export const CacheControl = {
     NoStore: "no-store",
 };
 
+/**
+ * 本地音乐扫描白名单：仅收录播放引擎（ExoPlayer）可解码的格式。
+ * 已移除 ExoPlayer 不支持的 .ape/.wma（曾导致"入库但播放失败"）；修正 .acc 笔误。
+ */
 export const supportLocalMediaType = [
     ".mp3",
     ".flac",
-    ".wma",
     ".wav",
     ".m4a",
     ".ogg",
-    ".acc",
     ".aac",
-    ".ape",
     ".opus",
 ];
 

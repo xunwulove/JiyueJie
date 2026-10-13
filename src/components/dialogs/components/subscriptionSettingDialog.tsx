@@ -177,21 +177,6 @@ export default function SubscriptionSettingDialog(
                         />
                     </Pressable>
                 </View>
-                <Pressable
-                    style={styles.restoreRow}
-                    onPress={onRestoreDefault}>
-                    <Icon
-                        name="arrow-path"
-                        size={iconSizeConst.light}
-                        color={colors.primary}
-                    />
-                    <ThemeText
-                        fontSize="content"
-                        fontColor="primary"
-                        style={styles.restoreText}>
-                        恢复默认订阅
-                    </ThemeText>
-                </Pressable>
             </Dialog.Content>
             <Dialog.Actions
                 actions={[
@@ -199,6 +184,11 @@ export default function SubscriptionSettingDialog(
                         title: t("common.cancel"),
                         type: "normal",
                         onPress: hideDialog,
+                    },
+                    {
+                        title: "恢复默认",
+                        type: "normal",
+                        onPress: onRestoreDefault,
                     },
                     {
                         title: "更新订阅",
@@ -234,15 +224,5 @@ const styles = StyleSheet.create({
     addBtn: {
         paddingHorizontal: 12,
         paddingVertical: 8,
-    },
-    restoreRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        marginTop: 4,
-        paddingVertical: 8,
-    },
-    restoreText: {
-        marginLeft: 6,
     },
 });

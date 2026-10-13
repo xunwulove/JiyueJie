@@ -3,7 +3,6 @@ import React from "react";
 import Header from "./header";
 import Body from "./body";
 import PanelBase from "../../base/panelBase";
-import Divider from "@/components/base/divider";
 import { vh } from "@/utils/rpx";
 
 export default function () {
@@ -14,7 +13,6 @@ export default function () {
             renderBody={loading => (
                 <>
                     <Header />
-                    <Divider />
                     <Body loading={loading} />
                 </>
             )}

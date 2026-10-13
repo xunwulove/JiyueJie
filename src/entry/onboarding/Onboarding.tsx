@@ -26,7 +26,6 @@ import PluginManager from "@/core/pluginManager";
 import Toast from "@/utils/toast";
 import { isTabletScreen } from "@/utils/tablet";
 import Config from "@/core/appConfig";
-import { DEFAULT_PLUGIN_SUBSCRIPTION_URL } from "@/constants/defaultPluginSubscription";
 
 /**
  * 首次启动引导页（Onboarding）
@@ -63,6 +62,10 @@ export default function Onboarding() {
     // 第 3 屏：自动拉取默认订阅源（默认开，与设置页 basic.autoUpdatePlugin 同一配置）
     const [autoFetchPlugin, setAutoFetchPlugin] = useState(
         () => Config.getConfig("basic.autoUpdatePlugin") !== false,
+    );
+    // 第 3 屏：使用移动网络播放（默认跟随设置页配置，与设置页 basic.useCelluarNetworkPlay 同一配置）
+    const [useCellularPlay, setUseCellularPlay] = useState(
+        () => Config.getConfig("basic.useCelluarNetworkPlay") ?? true,
     );    const [checkingStorage, setCheckingStorage] = useState(false);
 
     /* 显隐：bootstrap Done 后立即接管（无自绘启动页，不做多余停留，尽量减少启动时间） */
@@ -149,40 +152,13 @@ export default function Onboarding() {
         Config.setConfig("basic.autoPlayWhenAppStart", autoPlay);
         // 自动拉取默认订阅源：开启 → 写配置并立即拉取一次；关闭 → 显式关闭启动自动更新
         Config.setConfig("basic.autoUpdatePlugin", autoFetchPlugin);
+        // 写入"使用移动网络播放"偏好（与设置页 basic.useCelluarNetworkPlay 同一配置）
+        Config.setConfig("basic.useCelluarNetworkPlay", useCellularPlay);
         if (autoFetchPlugin) {
             // 标记本次已拉取（避免 bootstrap 的每日一次逻辑重复拉）
             PersistStatus.set("app.pluginUpdateTime", Date.now());
-            (async () => {
-                try {
-                    let subscribeUrl = Config.getConfig("plugin.subscribeUrl");
-                    if (!subscribeUrl) {
-                        subscribeUrl = JSON.stringify([
-                            { url: DEFAULT_PLUGIN_SUBSCRIPTION_URL },
-                        ]);
-                        Config.setConfig("plugin.subscribeUrl", subscribeUrl);
-                    }
-                    const urlItems = JSON.parse(subscribeUrl);
-                    if (Array.isArray(urlItems)) {
-                        for (let i = 0; i < urlItems.length; ++i) {
-                            const url = urlItems[i]?.url;
-                            if (url) {
-                                await PluginManager.installPluginFromUrl(
-                                    url,
-                                ).catch(() => {});
-                            }
-                        }
-                    }
-                    const plugins = PluginManager.getEnabledPlugins();
-                    for (let i = 0; i < plugins.length; ++i) {
-                        const srcUrl = plugins[i].instance.srcUrl;
-                        if (srcUrl) {
-                            await PluginManager.installPluginFromUrl(
-                                srcUrl,
-                            ).catch(() => {});
-                        }
-                    }
-                } catch {}
-            })();
+            // 按订阅清单增量更新音源：解析清单 + name/version 对比 + 限并发下载（失败静默）
+            PluginManager.updatePluginsFromSubscription().catch(() => {});
         }
         setVisible(false);
         if (scanOnboarding) {
@@ -212,7 +188,6 @@ export default function Onboarding() {
         return null;
     }
 
-    const enabledPluginCount = PluginManager.getEnabledPlugins().length;
     const width = Dimensions.get("window").width;
 
     return (
@@ -597,7 +572,7 @@ export default function Onboarding() {
                                 />
                             </View>
 
-                            {/* 音源就绪卡片 */}
+                            {/* 使用移动网络播放开关（与设置页 basic.useCelluarNetworkPlay 同一配置） */}
                             <View style={styles.permissionCard}>
                                 <View
                                     style={[
@@ -607,22 +582,25 @@ export default function Onboarding() {
                                             .toString() },
                                     ]}>
                                     <Icon
-                                        name="server-stack"
+                                        name="wifi"
                                         size={24}
                                         color={primary}
                                     />
                                 </View>
                                 <View style={styles.permissionText}>
                                     <ThemeText fontWeight="bold">
-                                        已内置常用音源
+                                        使用移动网络播放
                                     </ThemeText>
                                     <ThemeText
                                         fontSize="description"
                                         fontColor="textSecondary">
-                                        当前已启用 {enabledPluginCount} 个音源，
-                                        搜索 / 听歌 / 下载即刻可用
+                                        允许在移动数据（流量）下在线播放，适合车机 / 平板插卡场景
                                     </ThemeText>
                                 </View>
+                                <ThemeSwitch
+                                    value={useCellularPlay}
+                                    onValueChange={setUseCellularPlay}
+                                />
                             </View>
 
                             {/* 扫描本地音乐开关 */}

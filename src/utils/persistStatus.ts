@@ -36,6 +36,8 @@ interface IPersistStatus {
     "app.pluginUpdateTime": number;
     /** 上次自动检查 app 更新的时间（用于每日节流） */
     "app.lastUpdateCheckTime": number;
+    /** 推荐歌单"每日勘探"日期（yyyy-mm-dd；当天已勘探则跳过，每天最多一轮） */
+    "app.recommendExploreDate": string;
     /** 最近一次检查更新的结果（我的页版本卡动态显示） */
     "app.updateCheckResult": {
         checkedAt: number;

@@ -262,7 +262,8 @@ export default function ScanSettings() {
                         color={colors.primary}
                     />
                     <ThemeText
-                        fontSize="body"
+                        fontSize="content"
+                        fontWeight="medium"
                         style={styles.permissionTitle}>
                         管理外部存储权限
                     </ThemeText>
@@ -330,7 +331,7 @@ function SectionTitle({ title }: { title: string }) {
     );
 }
 
-/** 开关设置行（对齐 APlayer SettingSwitchRow：20 图标 primary + 标题 15 + 副标题 12 + Switch） */
+/** 开关设置行（对齐设置行标题 content 16/medium：20 图标 primary + 标题 16 + 副标题 12 + Switch） */
 function SettingSwitchRow(props: {
     icon: any;
     title: string;
@@ -344,7 +345,9 @@ function SettingSwitchRow(props: {
         <View style={styles.switchRow}>
             <Icon name={icon} size={20} color={colors.primary} />
             <View style={styles.switchTextWrap}>
-                <ThemeText fontSize="body">{title}</ThemeText>
+                <ThemeText fontSize="content" fontWeight="medium">
+                    {title}
+                </ThemeText>
                 {subtitle ? (
                     <ThemeText
                         fontSize="description"
@@ -358,7 +361,7 @@ function SettingSwitchRow(props: {
     );
 }
 
-/** 添加行（对齐 APlayer 添加按钮：16 图标 primary + 13sp primary 文字） */
+/** 添加行（与同级功能行统一 content 16/medium primary；加号 16 primary） */
 function AddRow({
     title,
     onPress,
@@ -378,7 +381,8 @@ function AddRow({
             ]}>
             <Icon name="plus" size={16} color={colors.primary} />
             <ThemeText
-                fontSize="normal"
+                fontSize="content"
+                fontWeight="medium"
                 color={colors.primary}
                 style={styles.addText}>
                 {title}

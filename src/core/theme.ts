@@ -52,8 +52,9 @@ export const darkTheme = {
         textSecondary: "#94A3B8",
         primary: "#5A8FFF",
         pageBackground: "#0F172A",
-        // 深色不启用顶部渐变（PageBackground 仅白天使用），同色占位以满足类型
-        pageBackgroundTop: "#0F172A",
+        // 深色渐变底部端点：顶部 pageBackground(深黑) → 底部 pageBackgroundTop(深蓝灰)，
+        // 与白天"底部品牌色氛围"方向一致；从下到上逐渐变深（顶部最深）
+        pageBackgroundTop: "#182848",
         shadow: "#999",
         appBar: "#2F6FED",
         appBarText: "#FFFFFF",

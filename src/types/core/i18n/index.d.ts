@@ -467,6 +467,7 @@ export interface ILanguageData {
     "panel.editMusicSheetInfo.title": string; // 编辑歌单信息
     "panel.editMusicSheetInfo.sheetName": string; // 歌单名
     "panel.editMusicSheetInfo.toast.updateSuccess": string; // 更新歌单信息成功    // 面板相关 - 图片查看器
+    "panel.imageViewer.title": string; // 图片预览
     "panel.imageViewer.saveImage": string; // 保存图片
     "panel.imageViewer.saveImageSuccess": string; // 图片已保存
     "panel.imageViewer.saveImageFail": string; // 保存图片失败

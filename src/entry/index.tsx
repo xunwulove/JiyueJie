@@ -42,9 +42,11 @@ export default function Pages() {
             <ReducedMotionConfig mode={ReduceMotion.Never} />
             <GestureHandlerRootView style={globalStyle.flex1}>
                 <SafeAreaProvider>
-                    <PageBackground />
                     {onboardingDone ? (
                         <NavigationContainer theme={theme}>
+                            {/* 全局背景：必须在 NavigationContainer 内（useTheme 才能拿到当前主题），
+                                与二级页面（SubPageOverlay 复用同款）渐变一致；所有页面透明透出此层 */}
+                            <PageBackground />
                             <Stack.Navigator
                                 initialRouteName={routes[0].path}
                                 screenOptions={{

@@ -206,7 +206,8 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
             title: t("panel.musicItemOptions.timingClose"),
             show: from === ROUTE_PATH.MUSIC_DETAIL,
             onPress: () => {
-                showPanel("TimingClose");
+                // C15 用户拍板：定时关闭统一用居中浮窗版（TimingCloseDialog），下线面板版
+                showDialog("TimingCloseDialog");
             },
         },
         {

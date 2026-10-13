@@ -27,7 +27,6 @@ import RNTrackPlayer, { AppKilledPlaybackBehavior, Capability } from "react-nati
 import i18n from "@/core/i18n";
 import bootstrapAtom from "./bootstrap.atom";
 import { getDefaultStore } from "jotai";
-import { DEFAULT_PLUGIN_SUBSCRIPTION_URL } from "@/constants/defaultPluginSubscription";
 
 
 // 依赖管理
@@ -223,36 +222,8 @@ async function extraMakeup() {
             const now = Date.now();
             if (Math.abs(now - lastUpdated) > 86400000) {
                 PersistStatus.set("app.pluginUpdateTime", now);
-                // 未配置订阅时：写入内置默认订阅源（极悦界音源库，gitee release 附件）
-                let subscribeUrl = Config.getConfig("plugin.subscribeUrl");
-                if (!subscribeUrl) {
-                    subscribeUrl = JSON.stringify([
-                        { url: DEFAULT_PLUGIN_SUBSCRIPTION_URL },
-                    ]);
-                    Config.setConfig("plugin.subscribeUrl", subscribeUrl);
-                }
-                // 拉取订阅清单（plugins.json 内逐个安装/更新插件，失败静默）
-                try {
-                    const urlItems = JSON.parse(subscribeUrl);
-                    if (Array.isArray(urlItems)) {
-                        for (let i = 0; i < urlItems.length; ++i) {
-                            const url = urlItems[i]?.url;
-                            if (url) {
-                                await PluginManager.installPluginFromUrl(
-                                    url,
-                                ).catch(emptyFunction);
-                            }
-                        }
-                    }
-                } catch { }
-                const plugins = PluginManager.getEnabledPlugins();
-                for (let i = 0; i < plugins.length; ++i) {
-                    const srcUrl = plugins[i].instance.srcUrl;
-                    if (srcUrl) {
-                        // 静默失败
-                        await PluginManager.installPluginFromUrl(srcUrl).catch(emptyFunction);
-                    }
-                }
+                // 按订阅清单增量更新音源：解析清单 + name/version 对比 + 限并发下载（失败静默）
+                await PluginManager.updatePluginsFromSubscription();
             }
         }
     } catch { }

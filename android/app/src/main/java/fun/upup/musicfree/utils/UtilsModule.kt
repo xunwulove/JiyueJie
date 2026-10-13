@@ -27,6 +27,30 @@ class UtilsModule(context: ReactApplicationContext) : ReactContextBaseJavaModule
 
     override fun getName() = "NativeUtils"
 
+    /** 桌面快捷方式冷启动兜底：读取并清空 pending action（无则返回 null） */
+    @ReactMethod(isBlockingSynchronousMethod = true)
+    fun consumePendingShortcutAction(): String? {
+        return `fun`.upup.musicfree.ShortcutBridge.consumePendingAction()
+    }
+
+    /** 开机自启开关：写入 SharedPreferences（BootReceiver 开机时读取同文件同键） */
+    @ReactMethod
+    fun setAutoBootEnabled(enabled: Boolean) {
+        reactContext
+            .getSharedPreferences("autoBootPrefs", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("enabled", enabled)
+            .apply()
+    }
+
+    /** 开机自启开关当前状态（同步读，供 RN 设置页初始化） */
+    @ReactMethod(isBlockingSynchronousMethod = true)
+    fun isAutoBootEnabled(): Boolean {
+        return reactContext
+            .getSharedPreferences("autoBootPrefs", Context.MODE_PRIVATE)
+            .getBoolean("enabled", false)
+    }
+
     @ReactMethod
     fun exitApp() {
         val activity = reactContext.currentActivity

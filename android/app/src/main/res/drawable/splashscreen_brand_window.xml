@@ -1,19 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 窗口背景 = 品牌启动画面：浅蓝纯色底 + 品牌图标（方形圆角透明底，完整不被圆形遮罩裁切）
-     对齐网易云/QQ音乐实测：品牌图放 windowBackground，窗口一创建立即全屏显示，零额外停留。
-     API<31：窗口背景即启动画面（纯色底 + 图标）；
-     API 31+：系统 splash（纯色+隐形图标，见 values-v31）退出后，窗口背景同色底 + 完整图标承接，
-     直到 bootstrap 完成渲染主界面——品牌可感知且不拖慢启动（图标属背景层，无任何等待）。 -->
+<!-- 窗口背景 = 品牌启动画面（v2 视觉：渐变背景 + 圆角渐变容器 + 白色音符）：
+     层1 背景：从下(#EAF0FA 微品牌蓝) → 上(#F8F9FA 白) 线性渐变（angle=90，与软件内部 PageBackground 同款渐变）
+     层2 容器：圆角矩形，135° 渐变 #4055D4→#B7CDFE（同桌面图标），边长=屏短边×42%（dimens 分档）
+     层3 音符：白色音符图（音符≈100% 画布），边长=容器×78%，fitCenter 等比
+     与 RN BrandSplash（同渐变背景 + 同容器 + 音符 + 主题色文字）两段无缝。
+     API<31：窗口背景即启动画面；API 31+：系统 splash（白色+隐形图标，见 values-v31）退出后由本背景承接。 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#F1F4FA" />
+            <gradient
+                android:type="linear"
+                android:angle="90"
+                android:startColor="#EAF0FA"
+                android:endColor="#F8F9FA" />
         </shape>
     </item>
-    <item>
+    <item
+        android:width="@dimen/splash_note_container"
+        android:height="@dimen/splash_note_container"
+        android:gravity="center">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/splash_note_corner" />
+            <gradient
+                android:type="linear"
+                android:angle="135"
+                android:startColor="#4055D4"
+                android:endColor="#B7CDFE" />
+        </shape>
+    </item>
+    <item
+        android:width="@dimen/splash_note_icon"
+        android:height="@dimen/splash_note_icon"
+        android:gravity="center">
+        <!-- 音符图已为"音符≈100% 画布"，fitCenter 于 item 内 → 音符=容器×78% -->
         <bitmap
             android:src="@drawable/splashscreen_icon"
-            android:gravity="center"
             android:scaleType="fitCenter" />
     </item>
 </layer-list>

@@ -181,7 +181,7 @@ export default function Operations() {
                                 />
                             </LinearGradient>
                             <ThemeText
-                                fontSize="body"
+                                fontSize="title"
                                 fontWeight="bold"
                                 numberOfLines={1}
                                 style={styles.cardText}>

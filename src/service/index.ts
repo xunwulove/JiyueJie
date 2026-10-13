@@ -19,7 +19,8 @@ module.exports = async function () {
     RNTrackPlayer.addEventListener(
         Event.RemoteDuck,
         async ({ paused, permanent }) => {
-            if (Config.getConfig("basic.notInterrupt")) {
+            // 通知不打断播放（默认开启）：来电/通知不中断音乐
+            if (Config.getConfig("basic.notInterrupt") ?? true) {
                 return;
             }
             if (permanent) {
@@ -28,7 +29,7 @@ module.exports = async function () {
             const tempRemoteDuckConf = Config.getConfig(
                 "basic.tempRemoteDuck",
             );
-            if (tempRemoteDuckConf === "lowerVolume") {
+            if ((tempRemoteDuckConf ?? "lowerVolume") === "lowerVolume") {
                 if (paused) {
                     const tempRemoteDuckVolume = Config.getConfig(
                         "basic.tempRemoteDuckVolume",

@@ -4,6 +4,7 @@ export interface IBasicMeta {
     album?: string;
     artist?: string;
     author?: string;
+    bitrate?: string;
     duration?: string;
     title?: string;
 }

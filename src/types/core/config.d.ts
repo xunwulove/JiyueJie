@@ -31,6 +31,8 @@ export interface IAppConfigProperties {
     "basic.showExitOnNotification": boolean;
     "basic.musicOrderInLocalSheet": SortType;
     "basic.tryChangeSourceWhenPlayFail": boolean;
+    // 开机自启动（车机/平板常电场景；与原生 SharedPreferences autoBootPrefs/enabled 同步）
+    "basic.autoBoot": boolean;
     "basic.sortPluginByReliability": boolean;
     // 全屏播放页沉浸歌词（无操作自动进入沉浸展示层）
     "basic.immersiveEnable": boolean;

@@ -440,7 +440,8 @@ class TrackPlayer extends EventEmitter<{
             const localPath = getLocalPath(musicItem);
             if (
                 Network.isCellular &&
-                !this.configService.getConfig("basic.useCelluarNetworkPlay") &&
+                this.configService.getConfig("basic.useCelluarNetworkPlay") ===
+                    false &&
                 !LocalMusicSheet.isLocalMusic(musicItem) &&
                 !localPath
             ) {
@@ -566,8 +567,8 @@ class TrackPlayer extends EventEmitter<{
                         plugin?.instance?.platform,
                         false,
                     );
-                    // 插件失效的情况
-                    if (this.configService.getConfig("basic.tryChangeSourceWhenPlayFail")) {
+                    // 插件失效的情况（播放失败自动切换音源，默认开启）
+                    if (this.configService.getConfig("basic.tryChangeSourceWhenPlayFail") ?? true) {
                         // 重试
                         const similarMusic = await this.getSimilarMusic(
                             musicItem,

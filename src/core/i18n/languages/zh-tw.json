@@ -390,6 +390,7 @@
     "panel.editMusicSheetInfo.title": "編輯歌單資訊",
     "panel.editMusicSheetInfo.sheetName": "歌單名",
     "panel.editMusicSheetInfo.toast.updateSuccess": "更新歌單資訊成功~",
+    "panel.imageViewer.title": "圖片預覽",
     "panel.imageViewer.saveImage": "儲存圖片",
     "panel.imageViewer.saveImageSuccess": "圖片已儲存到 {path}",
     "panel.imageViewer.saveImageFail": "儲存圖片失敗: {reason}",

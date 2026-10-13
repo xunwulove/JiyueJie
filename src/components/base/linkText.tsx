@@ -4,6 +4,7 @@ import { fontSizeConst, fontWeightConst } from "@/constants/uiConst";
 import openUrl from "@/utils/openUrl";
 import ThemeText from "./themeText";
 import Color from "color";
+import useColors from "@/hooks/useColors";
 
 type ILinkTextProps = TextProps & {
     fontSize?: keyof typeof fontSizeConst;
@@ -14,11 +15,18 @@ type ILinkTextProps = TextProps & {
 
 export default function LinkText(props: ILinkTextProps) {
     const [isPressed, setIsPressed] = useState(false);
+    const colors = useColors();
 
     return (
         <ThemeText
             {...props}
-            style={[style.linkText, isPressed ? style.pressed : null]}
+            color={colors.primary}
+            style={[
+                style.linkText,
+                isPressed
+                    ? { color: Color(colors.primary).alpha(0.4).toString() }
+                    : null,
+            ]}
             onPressIn={() => {
                 setIsPressed(true);
             }}
@@ -39,10 +47,6 @@ export default function LinkText(props: ILinkTextProps) {
 
 const style = StyleSheet.create({
     linkText: {
-        color: "#66ccff",
         textDecorationLine: "underline",
-    },
-    pressed: {
-        color: Color("#66ccff").alpha(0.4).toString(),
     },
 });

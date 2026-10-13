@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import rpx from "@/utils/rpx";
-import * as DocumentPicker from "expo-document-picker";
 import Loading from "@/components/base/loading";
 
 import PluginManager, { useSortedPlugins } from "@/core/pluginManager";
@@ -10,13 +9,14 @@ import { trace } from "@/utils/log";
 import Toast from "@/utils/toast";
 import axios from "axios";
 import { useNavigate, ROUTE_PATH } from "@/core/router";
-import Config, { useAppConfig } from "@/core/appConfig";
+import Config from "@/core/appConfig";
+import { IAppConfigProperties } from "@/types/core/config";
 import Empty from "@/components/base/empty";
 import HorizontalSafeAreaView from "@/components/base/horizontalSafeAreaView.tsx";
 import { showDialog } from "@/components/dialogs/useDialog";
-import { showPanel } from "@/components/panels/usePanel";
 import AppBar from "@/components/base/appBar";
 import Fab from "@/components/base/fab";
+import Input from "@/components/base/input";
 import PluginItem from "../components/pluginItem";
 import { IIconName } from "@/components/base/icon.tsx";
 import { IInstallPluginResult } from "@/types/core/pluginManager";
@@ -34,6 +34,10 @@ interface IOption {
     onPress?: () => void;
     /** 开关项：渲染右侧开关，点击不收起面板 */
     type?: "default" | "switch";
+    /** 开关配置 key：由 MenuDialog 内部实时订阅（快照 payload 不更新） */
+    configKey?: keyof IAppConfigProperties;
+    /** 开关默认值（配置未设置时） */
+    defaultValue?: boolean;
     value?: boolean;
     onValueChange?: (v: boolean) => void;
 }
@@ -44,45 +48,42 @@ export default function PluginList() {
     const isTablet = useIsTablet();
 
     const [loading, setLoading] = useState(false);
+    // 从网络安装：输入框组件级状态（三级浮窗 SimpleDialog 内，关闭重开不丢失）
+    const [networkUrl, setNetworkUrl] = useState("");
 
     const navigate = useNavigate();
 
     // 音源相关配置（与基础设置"音源"分组一致；已迁入三点菜单三级页面）
-    const autoUpdatePlugin = useAppConfig("basic.autoUpdatePlugin");
-    const notCheckPluginVersion = useAppConfig("basic.notCheckPluginVersion");
-    const lazyLoadPlugin = useAppConfig("basic.lazyLoadPlugin");
-    const sortPluginByReliability = useAppConfig("basic.sortPluginByReliability");
+    // 开关项通过 configKey 由 MenuDialog 内部实时订阅（showDialog payload 是快照，不能依赖外部重渲染）
 
     const menuOptions: IOption[] = [
         {
             type: "switch",
             icon: "arrow-path",
             title: t("basicSettings.autoUpdatePlugin"),
-            value: autoUpdatePlugin ?? true,
-            onValueChange: v => Config.setConfig("basic.autoUpdatePlugin", v),
+            configKey: "basic.autoUpdatePlugin",
+            defaultValue: true,
         },
         {
             type: "switch",
             icon: "shield-keyhole-outline",
             title: t("basicSettings.notCheckPluginVersion"),
-            value: notCheckPluginVersion ?? false,
-            onValueChange: v =>
-                Config.setConfig("basic.notCheckPluginVersion", v),
+            configKey: "basic.notCheckPluginVersion",
+            defaultValue: false,
         },
         {
             type: "switch",
             icon: "moon",
             title: t("basicSettings.lazyLoadPlugin"),
-            value: lazyLoadPlugin ?? false,
-            onValueChange: v => Config.setConfig("basic.lazyLoadPlugin", v),
+            configKey: "basic.lazyLoadPlugin",
+            defaultValue: true,
         },
         {
             type: "switch",
             icon: "strategy",
             title: t("basicSettings.sortPluginByReliability"),
-            value: sortPluginByReliability ?? true,
-            onValueChange: v =>
-                Config.setConfig("basic.sortPluginByReliability", v),
+            configKey: "basic.sortPluginByReliability",
+            defaultValue: true,
         },
         {
             icon: "share",
@@ -108,51 +109,72 @@ export default function PluginList() {
         },
     ];
 
+    /** 从本地安装插件：三级浮窗文件选择器（与音乐库屏蔽文件夹同款选择器，file 多选 + .js 过滤） */
     async function onInstallFromLocalClick() {
-        try {
-            const results = await DocumentPicker.getDocumentAsync({
-                copyToCacheDirectory: true,
-                multiple: true,
-                type: ["application/javascript", "text/javascript"],
-            });
-            if (results.canceled) {
-                // 用户取消
-                return;
-            }
-            setLoading(true);
-
-            await Promise.all(
-                results.assets.map(async it => {
-                    await PluginManager.installPluginFromLocalFile(it.uri, {
-                        notCheckVersion: Config.getConfig(
-                            "basic.notCheckPluginVersion",
-                        ),
-                        useExpoFs: true,
-                    });
-                }),
-            );
-            // 初步过滤
-
-            Toast.success(t("toast.installPluginSuccess"));
-        } catch (e: any) {
-            trace("插件安装失败", e?.message);
-            Toast.warn(t("toast.installPluginFail", {
-                reason: e?.message ?? "",
-            }));
-        }
-        setLoading(false);
+        showDialog("FileSelectorDialog", {
+            fileType: "file",
+            multi: true,
+            actionText: t("pluginSetting.fabOptions.installFromLocal"),
+            matchExtension: path => path.toLowerCase().endsWith(".js"),
+            async onAction(selectedFiles) {
+                try {
+                    setLoading(true);
+                    await Promise.all(
+                        selectedFiles.map(async it => {
+                            await PluginManager.installPluginFromLocalFile(
+                                it.path,
+                                {
+                                    notCheckVersion: Config.getConfig(
+                                        "basic.notCheckPluginVersion",
+                                    ),
+                                },
+                            );
+                        }),
+                    );
+                    Toast.success(t("toast.installPluginSuccess"));
+                } catch (e: any) {
+                    trace("插件安装失败", e?.message);
+                    Toast.warn(
+                        t("toast.installPluginFail", {
+                            reason: e?.message ?? "",
+                        }),
+                    );
+                }
+                setLoading(false);
+                return true;
+            },
+        });
     }
 
-    async function onInstallFromNetworkClick() {
-        showPanel("SimpleInput", {
+    /** 从网络安装插件：三级浮窗（SimpleDialog + 输入框），确定后按链接安装 */
+    function onInstallFromNetworkClick() {
+        showDialog("SimpleDialog", {
             title: t("pluginSetting.menu.installPlugin"),
-            placeholder: t("pluginSetting.menu.installPluginDialogPlaceholder"),
-            maxLength: 200,
-            async onOk(text, closePanel) {
+            content: (
+                <View>
+                    <Input
+                        value={networkUrl}
+                        onChangeText={setNetworkUrl}
+                        placeholder={t(
+                            "pluginSetting.menu.installPluginDialogPlaceholder",
+                        )}
+                        maxLength={200}
+                        style={style.networkUrlInput}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                    />
+                </View>
+            ),
+            okText: t("common.confirm"),
+            async onOk() {
+                const text = networkUrl.trim();
+                if (!text) {
+                    Toast.warn("请输入插件链接");
+                    return;
+                }
                 setLoading(true);
-                closePanel();
 
-                const result = await installPluginFromUrl(text.trim());
+                const result = await installPluginFromUrl(text);
 
                 // 检查是否全部安装成功
                 const successResults: IInstallPluginResult[] = [];
@@ -168,24 +190,48 @@ export default function PluginList() {
                 if (!failResults.length) {
                     Toast.success(t("toast.installPluginSuccess"));
                 } else {
-                    Toast.warn(successResults.length ? t("toast.partialPluginInstallFailed") : t("toast.allPluginInstallFailed"), {
-                        "type": "warn",
-                        "actionText": t("common.view"),
-                        "onActionClick": () => {
-                            showDialog("SimpleDialog", {
-                                title: t("pluginSetting.menu.pluginInstallFailedDialogTitle"),
-                                content: t("pluginSetting.pluginInstallFailedDialogContent", {
-                                    detail: failResults.map(it => (it.pluginUrl ?? "") + "\n" + t("pluginSetting.failReason", {
-                                        reason: it.message ?? "",
-                                    })).join("\n-----\n"),
-                                }),
-                            });
+                    Toast.warn(
+                        successResults.length
+                            ? t("toast.partialPluginInstallFailed")
+                            : t("toast.allPluginInstallFailed"),
+                        {
+                            type: "warn",
+                            actionText: t("common.view"),
+                            onActionClick: () => {
+                                showDialog("SimpleDialog", {
+                                    title: t(
+                                        "pluginSetting.menu.pluginInstallFailedDialogTitle",
+                                    ),
+                                    content: t(
+                                        "pluginSetting.pluginInstallFailedDialogContent",
+                                        {
+                                            detail: failResults
+                                                .map(
+                                                    it =>
+                                                        (it.pluginUrl ??
+                                                            "") +
+                                                        "\n" +
+                                                        t(
+                                                            "pluginSetting.failReason",
+                                                            {
+                                                                reason:
+                                                                    it
+                                                                        .message ??
+                                                                    "",
+                                                            },
+                                                        ),
+                                                )
+                                                .join("\n-----\n"),
+                                        },
+                                    ),
+                                });
+                            },
                         },
-                    });
+                    );
                 }
 
-
                 setLoading(false);
+                setNetworkUrl("");
             },
         });
     }
@@ -409,33 +455,34 @@ export default function PluginList() {
                     <Fab
                         icon="plus"
                         onPress={() => {
-                            showPanel("SimpleSelect", {
-                                header: t("pluginSetting.menu.installPlugin"),
-                                candidates: [
+                            // 三级浮窗（MenuDialog）：与三点菜单同体系，居中对话框
+                            showDialog("MenuDialog", {
+                                title: t(
+                                    "pluginSetting.menu.installPlugin",
+                                ),
+                                options: [
                                     {
-                                        value: "从本地安装插件",
-                                        title: t("pluginSetting.fabOptions.installFromLocal"),
+                                        icon: "folder-outline",
+                                        title: t(
+                                            "pluginSetting.fabOptions.installFromLocal",
+                                        ),
+                                        onPress: onInstallFromLocalClick,
                                     },
                                     {
-                                        value: "从网络安装插件",
-                                        title: t("pluginSetting.fabOptions.installFromNetwork"),
+                                        icon: "link",
+                                        title: t(
+                                            "pluginSetting.fabOptions.installFromNetwork",
+                                        ),
+                                        onPress: onInstallFromNetworkClick,
                                     },
                                     {
-                                        value: "更新全部插件",
-                                        title: t("pluginSetting.fabOptions.updateAllPlugins"),
+                                        icon: "arrow-path",
+                                        title: t(
+                                            "pluginSetting.fabOptions.updateAllPlugins",
+                                        ),
+                                        onPress: onUpdateAllClick,
                                     },
                                 ],
-                                onPress(item) {
-                                    if (item.value === "从本地安装插件") {
-                                        onInstallFromLocalClick();
-                                    } else if (
-                                        item.value === "从网络安装插件"
-                                    ) {
-                                        onInstallFromNetworkClick();
-                                    } else if (item.value === "更新全部插件") {
-                                        onUpdateAllClick();
-                                    }
-                                },
                             });
                         }}
                     />
@@ -470,6 +517,11 @@ const style = StyleSheet.create({
     gridCard: {
         marginHorizontal: 0,
         marginTop: rpx(16),
+    },
+    /** 网络安装输入框：底部细分割线（对齐扫描设置弹窗输入框） */
+    networkUrlInput: {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: "rgba(128,128,128,0.3)",
     },
 });
 

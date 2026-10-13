@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- sw720-839dp（9-10 寸平板）：容器=短边×42%≈336 -->
+    <dimen name="splash_note_container">336dp</dimen>
+    <dimen name="splash_note_icon">262dp</dimen>
+    <dimen name="splash_note_corner">74dp</dimen>
+</resources>

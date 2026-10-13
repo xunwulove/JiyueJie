@@ -4,6 +4,7 @@ import rpx from "@/utils/rpx";
 import useColors from "@/hooks/useColors";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import Icon from "@/components/base/icon.tsx";
+import { iconSizeConst } from "@/constants/uiConst";
 
 interface ICheckboxProps {
     checked?: boolean;
@@ -32,7 +33,7 @@ export default function Checkbox(props: ICheckboxProps) {
                 style,
             ]}>
             {checked ? (
-                <Icon name="check" color={colors.appBarText} size={18} />
+                <Icon name="check" color={colors.appBarText} size={iconSizeConst.light} />
             ) : null}
         </View>
     );

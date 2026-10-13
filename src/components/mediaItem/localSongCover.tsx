@@ -33,11 +33,16 @@ function fetchLocalCover(localPath: string): Promise<string | null> {
     let pending = coverPromiseCache.get(localPath);
     if (!pending) {
         pending = Mp3Util.getMediaCoverImg(localPath)
-            .then(uri => uri ?? null)
-            .catch(() => null)
-            .then(result => {
+            .then(uri => {
+                // 成功（含"确认无内嵌封面"resolve null）才缓存；
+                // 读取失败不缓存、并移除进行中标记，允许后续挂载/播放后重试成功
+                const result = uri ?? null;
                 coverResultCache.set(localPath, result);
                 return result;
+            })
+            .catch(() => {
+                coverPromiseCache.delete(localPath);
+                return null;
             });
         coverPromiseCache.set(localPath, pending);
     }
@@ -103,11 +108,11 @@ export default function LocalSongCover(props: ILocalSongCoverProps) {
         overflow: "hidden",
     };
 
-    // 封面展示优先级：内嵌封面（读取完成）> artwork 回退（确认无内嵌封面后）> 占位
-    // coverUri === undefined 表示内嵌封面仍在读取中，先显示占位避免闪烁
+    // 封面展示优先级：内嵌封面（读取完成）> artwork 回退（确认无内嵌封面或纯网络歌曲）> 占位
+    // coverUri === undefined 表示内嵌封面仍在读取中，先显示占位避免闪烁；
+    // coverUri === null 表示"确认无内嵌封面"，此时回退 musicItem.artwork（网络歌/本地歌通用）
     const showImage =
         coverUri !== undefined &&
-        coverUri !== null &&
         (coverUri || artwork) &&
         !loadError;
 

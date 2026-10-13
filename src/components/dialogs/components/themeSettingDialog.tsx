@@ -4,10 +4,11 @@ import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import Mode from "@/pages/setting/settingTypes/themeSetting/mode";
 import Background from "@/pages/setting/settingTypes/themeSetting/background";
+import BackgroundCustom from "@/pages/setting/settingTypes/themeSetting/backgroundCustom";
 
 /**
  * 主题设置三级浮窗（B3 决策：设置页点"主题"直接弹三级浮窗，
- * 不再叠二级设置覆盖层；自定义取色功能已去除）
+ * 不再叠二级设置覆盖层；自定义取色功能已去除，自定义背景于 2026-10-14 恢复入口）
  */
 export default function ThemeSettingDialog() {
     const { t } = useI18N();
@@ -20,6 +21,7 @@ export default function ThemeSettingDialog() {
                 style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0 }}>
                 <Mode />
                 <Background />
+                <BackgroundCustom />
             </Dialog.Content>
             <Dialog.Actions
                 actions={[

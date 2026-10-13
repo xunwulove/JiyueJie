@@ -73,7 +73,7 @@ export default function AppBar(props: IAppBarProps) {
                 <View style={[globalStyle.grow, styles.content, contentStyle]}>
                     {typeof children === "string" ? (
                         <ThemeText
-                            fontSize="title"
+                            fontSize="appbar"
                             fontWeight="bold"
                             numberOfLines={1}
                             color={

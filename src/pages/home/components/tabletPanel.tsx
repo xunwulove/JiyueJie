@@ -155,9 +155,9 @@ export default function TabletPanel() {
                     source={ImgAsset.brandLogo}
                 />
                 <ThemeText
-                    fontSize="title"
+                    fontSize="xlarge"
                     fontColor="textSecondary"
-                    style={[styles.greeting, { fontSize: 32 }]}>
+                    style={styles.greeting}>
                     {getGreeting()}
                 </ThemeText>
             </View>

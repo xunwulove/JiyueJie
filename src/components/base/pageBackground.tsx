@@ -19,8 +19,9 @@ function PageBackground() {
 
     return (
         <>
-            {/* 方案A：白天顶部 pageBackground（白）→ 底部微品牌蓝（从下到上逐渐变白）；深色保持单色 */}
-            {isLight && top ? (
+            {/* 页面底色渐变：白天顶部 pageBackground（白）→ 底部微品牌蓝；深色顶部深黑 → 底部深蓝灰。
+                方向一致（从下到上逐渐变亮/变深至顶部基色）；无渐变端点时回退单色 */}
+            {top ? (
                 <LinearGradient
                     colors={[
                         colors?.pageBackground ?? colors.background,
@@ -56,7 +57,8 @@ function PageBackground() {
                     pointerEvents="none"
                 />
             ) : null}
-            {!theme.id.startsWith("p-") && background?.url ? (
+            {/* 自定义背景（2026-10-14 恢复：不限主题，浅/深色下同样渲染，模糊+透明度可调） */}
+            {background?.url ? (
                 <Image
                     uri={background.url}
                     style={[

@@ -1,10 +1,9 @@
 import React, { Component, ReactNode, useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Image, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Platform } from "react-native";
 import DeviceInfo from "react-native-device-info";
 import useColors from "@/hooks/useColors";
 import rpx from "@/utils/rpx";
 import LinkText from "@/components/base/linkText";
-import { ImgAsset } from "@/constants/assetsConst";
 import ThemeText from "@/components/base/themeText";
 
 interface DeviceInfoProps {
@@ -65,16 +64,16 @@ function DeviceInfoSection({ colors }: DeviceInfoProps) {
             </ThemeText>
             <View style={styles.deviceInfoList}>
                 <View style={styles.deviceInfoRow}>
-                    <Text style={[styles.deviceInfoLabel, { color: colors.textSecondary }]}>应用版本:</Text>
-                    <Text style={[styles.deviceInfoValue, { color: colors.text }]}>{deviceInfo.appVersion} ({deviceInfo.buildNumber})</Text>
+                    <ThemeText fontSize="description" color={colors.textSecondary} style={styles.deviceInfoLabel}>应用版本:</ThemeText>
+                    <ThemeText fontSize="body" fontWeight="medium" color={colors.text} style={styles.deviceInfoValue}>{deviceInfo.appVersion} ({deviceInfo.buildNumber})</ThemeText>
                 </View>
                 <View style={styles.deviceInfoRow}>
-                    <Text style={[styles.deviceInfoLabel, { color: colors.textSecondary }]}>系统版本:</Text>
-                    <Text style={[styles.deviceInfoValue, { color: colors.text }]}>{systemDisplayName} {deviceInfo.systemVersion}</Text>
+                    <ThemeText fontSize="description" color={colors.textSecondary} style={styles.deviceInfoLabel}>系统版本:</ThemeText>
+                    <ThemeText fontSize="body" fontWeight="medium" color={colors.text} style={styles.deviceInfoValue}>{systemDisplayName} {deviceInfo.systemVersion}</ThemeText>
                 </View>
                 <View style={styles.deviceInfoRow}>
-                    <Text style={[styles.deviceInfoLabel, { color: colors.textSecondary }]}>设备型号:</Text>
-                    <Text style={[styles.deviceInfoValue, { color: colors.text }]}>{deviceInfo.deviceBrand} {deviceInfo.deviceModel}</Text>
+                    <ThemeText fontSize="description" color={colors.textSecondary} style={styles.deviceInfoLabel}>设备型号:</ThemeText>
+                    <ThemeText fontSize="body" fontWeight="medium" color={colors.text} style={styles.deviceInfoValue}>{deviceInfo.deviceBrand} {deviceInfo.deviceModel}</ThemeText>
                 </View>
             </View>
         </View>
@@ -165,18 +164,18 @@ function ErrorFallback({ error, errorInfo }: ErrorFallbackProps) {
                     >
                         🐛 错误详情
                     </ThemeText>
-                    <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+                    <ThemeText fontSize="description" color={colors.textSecondary} style={styles.errorText}>
                         {error?.message || "未知错误"}
-                    </Text>
+                    </ThemeText>
                     {error?.stack && (
                         <ScrollView 
                             style={styles.stackContainer}
                             showsVerticalScrollIndicator={true}
                             nestedScrollEnabled={true}
                         >
-                            <Text style={[styles.stackText, { color: colors.textSecondary }]}>
+                            <ThemeText fontSize="caption" color={colors.textSecondary} style={styles.stackText}>
                                 {error.stack}
-                            </Text>
+                            </ThemeText>
                         </ScrollView>
                     )}
                 </View>
@@ -196,9 +195,9 @@ function ErrorFallback({ error, errorInfo }: ErrorFallbackProps) {
                             showsVerticalScrollIndicator={true}
                             nestedScrollEnabled={true}
                         >
-                            <Text style={[styles.stackText, { color: colors.textSecondary }]}>
+                            <ThemeText fontSize="caption" color={colors.textSecondary} style={styles.stackText}>
                                 {errorInfo.componentStack}
-                            </Text>
+                            </ThemeText>
                         </ScrollView>
                     </View>
                 )}
@@ -236,30 +235,6 @@ function ErrorFallback({ error, errorInfo }: ErrorFallbackProps) {
                             >
                                 点击链接或复制粘贴到浏览器打开
                             </ThemeText>
-                        </View>
-
-                        {/* 微信公众号 */}
-                        <View style={[styles.feedbackItem, { backgroundColor: colors.card, borderColor: colors.divider }]}>
-                            <ThemeText 
-                                fontSize="content" 
-                                fontWeight="medium"
-                                style={[styles.feedbackLabel, { color: colors.text }]}
-                            >
-                                💬 微信公众号【一只猫头猫】:
-                            </ThemeText>
-                            <View style={styles.qrCodeContainer}>
-                                <Image 
-                                    source={ImgAsset.wechatChannel} 
-                                    style={styles.qrCode}
-                                    resizeMode="contain"
-                                />
-                                <ThemeText 
-                                    fontSize="description" 
-                                    style={[styles.qrCodeHint, { color: colors.textSecondary }]}
-                                >
-                                    扫描二维码关注公众号反馈
-                                </ThemeText>
-                            </View>
                         </View>
                     </View>
                 </View>
@@ -310,14 +285,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     deviceInfoLabel: {
-        fontSize: rpx(28),
         flex: 1,
     },
     deviceInfoValue: {
-        fontSize: rpx(28),
         flex: 2,
         textAlign: "right",
-        fontWeight: "500",
     },
     errorBox: {
         borderRadius: rpx(16),
@@ -339,7 +311,6 @@ const styles = StyleSheet.create({
         padding: rpx(16),
     },
     stackText: {
-        fontSize: rpx(24),
         fontFamily: "monospace",
         lineHeight: rpx(32),
     },
@@ -367,18 +338,6 @@ const styles = StyleSheet.create({
     },
     link: {
         lineHeight: rpx(36),
-    },
-    qrCodeContainer: {
-        alignItems: "center",
-        gap: rpx(16),
-    },
-    qrCode: {
-        width: rpx(300),
-        height: rpx(300),
-        borderRadius: rpx(12),
-    },
-    qrCodeHint: {
-        textAlign: "center",
     },
     bottomTip: {
         alignItems: "center",

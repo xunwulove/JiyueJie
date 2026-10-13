@@ -22,6 +22,7 @@ import ThemeSwitch from "@/components/base/switch";
 import { IIconName } from "@/components/base/icon.tsx";
 import { useI18N } from "@/core/i18n";
 import IconButton from "@/components/base/iconButton";
+import { fontSizeConst } from "@/constants/uiConst";
 
 interface IPluginItemProps {
     plugin: Plugin;
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
         marginLeft: rpx(4),
     },
     reliabilityText: {
-        fontSize: 12,
+        fontSize: fontSizeConst.description,
         color: "#FFFFFF",
         includeFontPadding: false,
     },

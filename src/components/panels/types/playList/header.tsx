@@ -1,64 +1,22 @@
-import IconTextButton from "@/components/base/iconTextButton";
-import ThemeText from "@/components/base/themeText";
-import repeatModeConst from "@/constants/repeatModeConst";
+import PanelHeader from "../../base/panelHeader";
+import { usePlayList } from "@/core/trackPlayer";
 import { useI18N } from "@/core/i18n";
-import TrackPlayer, { usePlayList, useRepeatMode } from "@/core/trackPlayer";
-import delay from "@/utils/delay";
-import rpx from "@/utils/rpx";
 import React from "react";
-import { InteractionManager, StyleSheet, View } from "react-native";
 
+/**
+ * 播放队列标题栏 - 与其他右侧浮出层统一（PanelHeader 规格：56dp 行高 + 对角渐变 + 标题 title(18)/bold 居中）。
+ * 循环模式/清空按钮已移至列表底部工具条（body.tsx）。
+ */
 export default function Header() {
-    const repeatMode = useRepeatMode();
     const playList = usePlayList();
     const { t } = useI18N();
 
     return (
-        <View style={style.wrapper}>
-            <ThemeText
-                style={style.headerText}
-                fontSize="title"
-                fontWeight="bold">
-                {t("panel.playList.title")}
-                <ThemeText fontColor="textSecondary" fontSize="subTitle">
-                    {t("panel.playList.count", {
-                        count: playList.length,
-                    })}
-                </ThemeText>
-            </ThemeText>
-            <IconTextButton
-                onPress={() => {
-                    InteractionManager.runAfterInteractions(async () => {
-                        await delay(20, false);
-                        TrackPlayer.toggleRepeatMode();
-                    });
-                }}
-                icon={repeatModeConst[repeatMode].icon}>
-                {t(("repeatMode." + repeatMode) as any)}
-            </IconTextButton>
-            <IconTextButton
-                icon="trash-outline"
-                onPress={() => {
-                    TrackPlayer.clearPlayList();
-                }}>
-                {t("common.clear")}
-            </IconTextButton>
-        </View>
+        <PanelHeader
+            hideButtons
+            title={`${t("panel.playList.title")}${t("panel.playList.count", {
+                count: playList.length,
+            })}`}
+        />
     );
 }
-
-const style = StyleSheet.create({
-    wrapper: {
-        width: "100%",
-        height: 56,
-        paddingHorizontal: 16,
-        marginTop: 12,
-        marginBottom: 12,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    headerText: {
-        flex: 1,
-    },
-});

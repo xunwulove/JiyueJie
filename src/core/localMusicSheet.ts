@@ -20,9 +20,81 @@ import CryptoJs from "crypto-js";
 import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
 import { ReadDirItem, exists, readDir, unlink } from "react-native-fs";
+import getOrCreateMMKV from "@/utils/getOrCreateMMKV";
 
 let localSheet: IMusic.IMusicItem[] = [];
 const localSheetStateMapper = new StateMapper(() => localSheet);
+
+/* ===== 内嵌封面解析缓存（filePath → "none" 表示已确认无封面；成功路径直接写入 artwork 持久化） ===== */
+const coverCacheStore = getOrCreateMMKV("LocalMusic.CoverCache");
+const COVER_PARALLEL = 5;
+
+/** 解析单曲内嵌封面：有封面 → 更新 artwork；无封面/失败 → 记 "none" 避免下次启动重复解析 */
+async function resolveCoverForItem(item: IMusic.IMusicItem): Promise<void> {
+    if (item.artwork) {
+        return;
+    }
+    const localPath = getLocalPath(item);
+    if (!localPath) {
+        return;
+    }
+    if (coverCacheStore.getString(localPath) === "none") {
+        return;
+    }
+    try {
+        const cover = await mp3Util.getMediaCoverImg(localPath);
+        if (cover) {
+            item.artwork = cover;
+            coverCacheStore.set(localPath, cover);
+        } else {
+            coverCacheStore.set(localPath, "none");
+        }
+    } catch {
+        coverCacheStore.set(localPath, "none");
+    }
+}
+
+/**
+ * 后台批量解析内嵌封面（限并发 COVER_PARALLEL，不阻塞调用方）。
+ * 解析成功后持久化 localSheet 并通知 UI（列表行/播放页/通知栏的 artwork 展示自动生效）。
+ * refresh=true（重扫新入库）：先清除无封面标记，确保文件封面变化可被重新感知。
+ */
+async function resolveLocalCovers(
+    items: IMusic.IMusicItem[],
+    refresh = false,
+): Promise<void> {
+    const pending = items.filter(
+        it => !it.artwork && getLocalPath(it),
+    );
+    if (!pending.length) {
+        return;
+    }
+    if (refresh) {
+        pending.forEach(it => {
+            const p = getLocalPath(it);
+            if (p) {
+                coverCacheStore.delete(p);
+            }
+        });
+    }
+    let index = 0;
+    const worker = async () => {
+        while (index < pending.length) {
+            const item = pending[index++];
+            await resolveCoverForItem(item);
+        }
+    };
+    await Promise.all(
+        Array.from(
+            { length: Math.min(COVER_PARALLEL, pending.length) },
+            worker,
+        ),
+    );
+    try {
+        await saveLocalSheet();
+        localSheetStateMapper.notify();
+    } catch {}
+}
 
 export async function setup() {
     const sheet = await getStorage(StorageKeys.LocalMusicSheet);
@@ -52,6 +124,10 @@ export async function setup() {
         await setStorage(StorageKeys.LocalMusicSheet, []);
     }
     localSheetStateMapper.notify();
+    // 存量本地歌曲：后台解析缺失的内嵌封面（不阻塞启动；无封面文件经 MMKV 标记跳过）
+    if (localSheet.length) {
+        void resolveLocalCovers(localSheet);
+    }
 }
 
 export async function addMusic(
@@ -256,6 +332,8 @@ async function importLocal(_folderPaths: string[]): Promise<number> {
         throw new Error("Import Broken");
     }
     addMusic(musicItems);
+    // 新入库歌曲：后台解析内嵌封面（refresh 清除无封面标记，感知文件封面变化）
+    void resolveLocalCovers(musicItems, true);
     return musicItems.length;
 }
 

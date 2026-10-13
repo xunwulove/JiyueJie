@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 软件内更新：安装未知来源 APK（Android 8+ 必须声明，否则拉起安装器直接失败） -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- 开机自启动（车机/平板常电场景；开关由设置页控制，BootReceiver 校验标记后启动） -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
       android:name=".MainApplication"
@@ -42,6 +44,10 @@
         android:launchMode="singleTask"
         android:windowSoftInputMode="adjustResize"
         android:exported="true">
+        <!-- 桌面快捷方式（App Shortcuts）：shortcuts.xml 定义 4 个快捷项 -->
+        <meta-data
+          android:name="android.app.shortcuts"
+          android:resource="@xml/shortcuts" />
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -175,5 +181,13 @@
               <data android:pathPattern=".*\\.JS" />
           </intent-filter>
       </activity>
+      <!-- 开机自启动接收器：收到 BOOT_COMPLETED 后校验 SharedPreferences 开关标记，开启则拉起 MainActivity -->
+      <receiver
+        android:name=".BootReceiver"
+        android:exported="true">
+        <intent-filter>
+          <action android:name="android.intent.action.BOOT_COMPLETED" />
+        </intent-filter>
+      </receiver>
     </application>
 </manifest>

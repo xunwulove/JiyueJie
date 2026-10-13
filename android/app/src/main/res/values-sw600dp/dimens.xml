@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- sw600-719dp（7-8 寸平板）：容器=短边×42%≈270 -->
+    <dimen name="splash_note_container">270dp</dimen>
+    <dimen name="splash_note_icon">211dp</dimen>
+    <dimen name="splash_note_corner">59dp</dimen>
+</resources>

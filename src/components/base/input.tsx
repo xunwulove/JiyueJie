@@ -2,6 +2,7 @@ import useColors from "@/hooks/useColors";
 import Color from "color";
 import React from "react";
 import { StyleSheet, TextInput, TextInputProps } from "react-native";
+import { fontSizeConst } from "@/constants/uiConst";
 
 interface IInputProps extends TextInputProps {
     fontColor?: string;
@@ -16,6 +17,7 @@ export default function Input(props: IInputProps) {
 
     const defaultStyle = {
         color: currentColor,
+        fontSize: fontSizeConst.content,
     };
 
     return (

@@ -1,5 +1,5 @@
 import React, { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, LayoutRectangle, Text } from "react-native";
+import { View, StyleSheet, LayoutRectangle } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
     useSharedValue,
@@ -8,10 +8,10 @@ import Animated, {
     runOnJS,
 } from "react-native-reanimated";
 import Portal from "./portal";
+import ThemeText from "./themeText";
 import rpx from "@/utils/rpx";
 import useColors from "@/hooks/useColors";
 import { timingConfig } from "@/constants/commonConst";
-import { fontSizeConst } from "@/constants/uiConst";
 
 type TipPosition = "top" | "bottom" | "left" | "right";
 
@@ -180,7 +180,7 @@ const TipPortal = ({
                 style={[styles.tipContainer, styles.measurementContainer]}
                 onLayout={handleLayout}
             >
-                <Text style={[styles.tipText, { color: textColor }]}>{content}</Text>
+                <ThemeText fontSize="description" color={textColor} style={styles.tipText}>{content}</ThemeText>
             </View>
         );
     }
@@ -205,7 +205,7 @@ const TipPortal = ({
                 animatedStyle,
             ]}
         >
-            <Text style={[styles.tipText, { color: textColor }]}>{content}</Text>
+            <ThemeText fontSize="description" color={textColor} style={styles.tipText}>{content}</ThemeText>
             <View
                 style={[
                     styles.triangle,
@@ -301,7 +301,6 @@ const styles = StyleSheet.create({
         top: -1000,
     },
     tipText: {
-        fontSize: fontSizeConst.description,
         lineHeight: 18,
         textAlign: "center",
     },

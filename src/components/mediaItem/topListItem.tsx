@@ -54,7 +54,7 @@ export default function TopListItem(props: ITopListResultsProps) {
                 </LinearGradient>
                 <View style={styles.info}>
                     <ThemeText
-                        fontSize="body"
+                        fontSize="content"
                         fontWeight="medium"
                         numberOfLines={1}>
                         {topListItem.title}

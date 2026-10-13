@@ -11,5 +11,9 @@
       "@/*": ["./src/*"]
     },
     "types": ["node"]
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "MusicFree-upstream"
+  ]
 }

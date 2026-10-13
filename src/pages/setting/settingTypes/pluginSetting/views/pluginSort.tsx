@@ -3,6 +3,7 @@ import HorizontalSafeAreaView from "@/components/base/horizontalSafeAreaView.tsx
 import SortableFlatList from "@/components/base/SortableFlatList";
 import ThemeText from "@/components/base/themeText";
 import globalStyle from "@/constants/globalStyle";
+import { fontSizeConst } from "@/constants/uiConst";
 import { useI18N } from "@/core/i18n";
 import PluginManager, { Plugin, useSortedPlugins } from "@/core/pluginManager";
 import pluginReliability from "@/core/pluginReliability";
@@ -266,7 +267,7 @@ const style = StyleSheet.create({
     },
     platformBadgeText: {
         color: "#FFFFFF",
-        fontSize: 11,
+        fontSize: fontSizeConst.caption,
         includeFontPadding: false,
     },
     sortItemName: {

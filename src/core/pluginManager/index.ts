@@ -4,6 +4,7 @@ import {
     localPluginPlatform,
 } from "@/constants/commonConst";
 import pathConst from "@/constants/pathConst";
+import { DEFAULT_PLUGIN_SUBSCRIPTION_URL } from "@/constants/defaultPluginSubscription";
 import {
     IInstallPluginConfig,
     IInstallPluginResult,
@@ -32,6 +33,30 @@ import pluginReliability from "../pluginReliability";
 
 const pluginsAtom = atom<Plugin[]>([]);
 const pluginCacheStore = getOrCreateMMKV("plugin.cache");
+
+/**
+ * 自动更新音源的并发下载上限。
+ * 增量对比后待下载量通常很小（仅新增/更新的插件）；即使首次全量（100 个），
+ * 10 并发也远低于 98 全并发，避免触发 gitee 反爬（历史有 403 风控记录）。
+ */
+const PLUGIN_UPDATE_CONCURRENCY = 10;
+
+/** 限并发执行异步任务：固定 worker 数，按序取任务（失败由任务自身处理） */
+async function runWithConcurrency<T>(
+    items: T[],
+    limit: number,
+    task: (item: T) => Promise<void>,
+): Promise<void> {
+    let index = 0;
+    const workerCount = Math.min(limit, items.length);
+    const workers = Array.from({ length: workerCount }, async () => {
+        while (index < items.length) {
+            const i = index++;
+            await task(items[i]);
+        }
+    });
+    await Promise.all(workers);
+}
 
 const ee = new EventEmitter<{
     "order-updated": () => void;
@@ -112,10 +137,11 @@ class PluginManager implements IPluginManager, IInjectable {
                     // 如果存在缓存信息
                     let plugin: Plugin;
                     let isLazyLoad = false;
+                    // 懒加载默认开启（与菜单开关 defaultValue 一致）：仅显式关闭才全量加载
                     if (
                         this.appConfigService.getConfig(
                             "basic.lazyLoadPlugin",
-                        ) &&
+                        ) !== false &&
                         pluginCacheStore.contains(pluginFileItem.path)
                     ) {
                         isLazyLoad = true;
@@ -452,6 +478,106 @@ class PluginManager implements IPluginManager, IInjectable {
             } else {
                 throw e;
             }
+        }
+    }
+
+    /**
+     * 按订阅清单增量更新音源（启动自动更新 / 首启引导共用）：
+     * 1. 解析订阅地址（未配置时写入内置默认源并直接使用）
+     * 2. 逐个订阅地址下载清单：.json 取 plugins[]，其余视为单个插件直链
+     * 3. 与已安装插件按 name + version 增量对比：已装同名且版本不低于清单 → 跳过；否则加入待下载
+     * 4. 限并发下载（失败静默，与历史行为一致）
+     */
+    async updatePluginsFromSubscription(): Promise<void> {
+        try {
+            let subscribeUrl = this.appConfigService.getConfig(
+                "plugin.subscribeUrl",
+            );
+            if (!subscribeUrl) {
+                subscribeUrl = JSON.stringify([
+                    { url: DEFAULT_PLUGIN_SUBSCRIPTION_URL },
+                ]);
+                this.appConfigService.setConfig(
+                    "plugin.subscribeUrl",
+                    subscribeUrl,
+                );
+            }
+            const urlItems = JSON.parse(subscribeUrl);
+            if (!Array.isArray(urlItems)) {
+                return;
+            }
+            const noCacheHeaders = {
+                "Cache-Control": "no-cache",
+                Pragma: "no-cache",
+                Expires: "0",
+            };
+            const needDownload: string[] = [];
+            for (const item of urlItems) {
+                const url: string | undefined = item?.url;
+                if (!url) {
+                    continue;
+                }
+                try {
+                    const text = (
+                        await axios.get(url, { headers: noCacheHeaders })
+                    ).data;
+                    let list: Array<{
+                        name?: string;
+                        version?: string;
+                        url?: string;
+                    }> = [];
+                    if (url.endsWith(".json")) {
+                        list = (text?.plugins ?? []).map((it: any) => ({
+                            name: it?.name,
+                            version: it?.version,
+                            url: it?.url,
+                        }));
+                    } else {
+                        list = [{ url }];
+                    }
+                    const installed = this.getPlugins();
+                    for (const p of list) {
+                        if (!p?.url) {
+                            continue;
+                        }
+                        const old = installed.find(
+                            _ => _.name === p.name,
+                        );
+                        if (old && p.version) {
+                            try {
+                                if (
+                                    compare(
+                                        old.instance.version ?? "",
+                                        p.version,
+                                        ">=",
+                                    )
+                                ) {
+                                    // 已装版本不低于清单版本 → 跳过
+                                    continue;
+                                }
+                            } catch {
+                                // 版本不可比 → 走下载，保守更新
+                            }
+                        }
+                        needDownload.push(p.url);
+                    }
+                } catch {
+                    // 清单拉取失败静默
+                }
+            }
+            if (needDownload.length) {
+                await runWithConcurrency(
+                    needDownload,
+                    PLUGIN_UPDATE_CONCURRENCY,
+                    async url => {
+                        await this.installPluginFromUrl(url).catch(
+                            emptyFunction,
+                        );
+                    },
+                );
+            }
+        } catch {
+            // 整体静默，不阻塞启动
         }
     }
 

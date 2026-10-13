@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 启动页音符容器尺寸（正方形，=屏短边×42%，按 sw 档位分档接近自适应）
+         splash_note_icon = 容器×78%（音符视觉占容器约 78%）
+         splash_note_corner = 容器×22%（圆角） -->
+    <dimen name="splash_note_container">160dp</dimen>
+    <dimen name="splash_note_icon">125dp</dimen>
+    <dimen name="splash_note_corner">35dp</dimen>
+</resources>

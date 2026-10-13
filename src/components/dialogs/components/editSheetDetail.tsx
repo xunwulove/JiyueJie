@@ -95,6 +95,9 @@ export default function EditSheetDetailDialog(props: IEditSheetDetailProps) {
 
     return (
         <Dialog onDismiss={hideDialog}>
+            <Dialog.Title withDivider>
+                {t("panel.editMusicSheetInfo.title")}
+            </Dialog.Title>
             <Dialog.Content>
                 <View style={style.row}>
                     <ThemeText>{t("common.cover")}</ThemeText>

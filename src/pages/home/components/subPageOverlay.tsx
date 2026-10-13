@@ -20,8 +20,11 @@ import PageBackground from "@/components/base/pageBackground";
  * - 一级页面（tab 内容）点击 → 二级页面：右内容区内从右滑入的全宽覆盖层（不盖 tab、不盖左播放区）
  * - 二级页面内再点击 → 三级浮窗：由 Dialog 系统实现（showDialog，内容区中心缩放浮窗）
  * - 栈式导航：Android 返回键逐级 pop
- * - 背景：直接复用全局 PageBackground（含封面取色氛围层/自定义背景图），
- *   与一级页面背景 100% 一致——不再自绘近似渐变（自绘缺氛围层导致滑入时明显分层）
+ * - 背景：覆盖层自绘一层 PageBackground（NavigationContainer 内拿到主题 → 与全局同款渐变）。
+ *   必须自绘：覆盖层需不透明背景遮挡下方一级内容（否则一级图标/组件透出）；
+ *   不透明渐变完全盖住全局层 → 视觉与一级 100% 一致，无氛围层叠加。
+ *   （2026-10-13 两次修正：①全局层移入 NavigationContainer 内修复"一级纯色/二级渐变"不一致；
+ *   ②曾误删覆盖层背景导致一级内容透出，已恢复）
  */
 export default function SubPageOverlay() {
     const subPages = useAtomValue(tabletSubPagesAtom);
@@ -92,7 +95,8 @@ function FullOverlay({ children }: { children: React.ReactNode }) {
                 animatedStyle,
                 { zIndex: 1000 },
             ]}>
-            {/* 背景：与一级页面完全一致的 PageBackground（渐变+封面氛围层+背景图），消除滑入分层 */}
+            {/* 背景：覆盖层自绘 PageBackground（不透明渐变）——遮挡下方一级内容 + 与一级同款渐变，
+                不透明层盖住全局层 → 视觉一致且无氛围层叠加 */}
             <PageBackground />
             {children}
         </Animated.View>

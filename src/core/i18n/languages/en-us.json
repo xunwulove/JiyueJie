@@ -390,6 +390,7 @@
     "panel.editMusicSheetInfo.title": "Edit Playlist Info",
     "panel.editMusicSheetInfo.sheetName": "Playlist Name",
     "panel.editMusicSheetInfo.toast.updateSuccess": "Playlist info updated successfully~",
+    "panel.imageViewer.title": "Image Preview",
     "panel.imageViewer.saveImage": "Save Image",
     "panel.imageViewer.saveImageSuccess": "Image saved to {path}",
     "panel.imageViewer.saveImageFail": "Failed to save image: {reason}",

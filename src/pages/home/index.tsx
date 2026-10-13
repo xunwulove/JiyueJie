@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useCallback } from "react";
+import { StyleSheet, View, BackHandler, DeviceEventEmitter } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 import NavBar from "./components/navBar";
@@ -15,11 +15,14 @@ import MineTab from "./components/mineTab";
 import LibraryTab from "./components/libraryTab";
 import TabletPanel from "./components/tabletPanel";
 import SearchPage from "@/pages/searchPage";
-import { useSetAtom, useAtomValue } from "jotai";
+import { useAtom, useSetAtom, useAtomValue } from "jotai";
 import { fullPlayingAtom, tabletSubPagesAtom } from "@/core/tabletNav";
+import { homeTabAtom } from "@/core/homeTab";
+import { ROUTE_PATH } from "@/core/router";
+import NativeUtils from "@/native/utils";
+import { checkUpdateAndShowResult } from "@/hooks/useCheckUpdate";
 import MusicDetail from "@/pages/musicDetail";
 import useIsTablet from "@/hooks/useIsTablet";
-import { BackHandler } from "react-native";
 import { useEffect } from "react";
 import SubPageOverlay from "./components/subPageOverlay";
 import Animated, {
@@ -70,10 +73,11 @@ function renderTab(
 }
 
 function Home() {
-    const [selectedTab, setSelectedTab] = useState<SaltTab>(SaltTab.HOME);
+    const [selectedTab, setSelectedTab] = useAtom(homeTabAtom);
     const isTablet = useIsTablet();
     const setSubPages = useSetAtom(tabletSubPagesAtom);
     const subPages = useAtomValue(tabletSubPagesAtom);
+    const setFullPlaying = useSetAtom(fullPlayingAtom);
     const navigation = useNavigation<any>();
 
     // 共享轴转场：二级页从右滑入时，一级内容同向左移被"推走"（tab 栏与左播放区固定不动）。
@@ -97,8 +101,59 @@ function Home() {
             setSubPages([]);
             setSelectedTab(tab);
         },
-        [setSubPages],
+        [setSubPages, setSelectedTab],
     );
+
+    // ===== 桌面快捷方式（App Shortcuts）=====
+    // 原生 MainActivity 解析 shortcuts.xml 的 action 后：热启动 emit "AppShortcut" 事件；
+    // 冷启动写 pending，由 NativeUtils.consumePendingShortcutAction() 兜底读取
+    const handleShortcut = useCallback(
+        (action: string | null) => {
+            if (!action) {
+                return;
+            }
+            switch (action) {
+                case "play":
+                    // 打开播放页：平板切全屏播放层，手机走 MUSIC_DETAIL 路由（先清覆盖层）
+                    setSubPages([]);
+                    if (isTablet) {
+                        setFullPlaying(true);
+                    } else {
+                        navigation.navigate(ROUTE_PATH.MUSIC_DETAIL);
+                    }
+                    break;
+                case "local":
+                    switchTab(SaltTab.LIBRARY);
+                    break;
+                case "search":
+                    switchTab(SaltTab.SEARCH);
+                    break;
+                case "update":
+                    checkUpdateAndShowResult(true);
+                    break;
+                default:
+                    break;
+            }
+        },
+        [
+            isTablet,
+            navigation,
+            setSubPages,
+            setFullPlaying,
+            switchTab,
+        ],
+    );
+
+    useEffect(() => {
+        // 冷启动兜底：消费原生 pending action（JS 未加载时事件可能丢失）
+        handleShortcut(NativeUtils.consumePendingShortcutAction());
+        // 热启动：事件直达
+        const sub = DeviceEventEmitter.addListener(
+            "AppShortcut",
+            handleShortcut,
+        );
+        return () => sub.remove();
+    }, [handleShortcut]);
 
     // 搜索 tab（平板独占态 / 手机端整 tab 页）、音乐库与我的 tab：硬件返回键回首页 tab（避免直接退出 App）
     // 优先级低于 SubPageOverlay/全屏层（覆盖层激活时仍先逐级 pop，随后才落到本监听）

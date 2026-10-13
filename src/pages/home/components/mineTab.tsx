@@ -193,7 +193,7 @@ export default function MineTab({
     /* ---- 用户卡（平板两卡并排 / 手机单长条含版本） ---- */
     const avatarBox = (
         <View style={[styles.avatar, { backgroundColor: primary }]}>
-            <ThemeText fontWeight="bold" style={styles.avatarText}>
+            <ThemeText fontWeight="bold" fontSize="large" color="#FFFFFF">
                 极
             </ThemeText>
         </View>
@@ -574,7 +574,7 @@ export default function MineTab({
 
             {isTablet ? (
                 <>
-                    <ThemeText fontSize="content" fontWeight="bold" style={styles.sectionTitle}>
+                    <ThemeText fontSize="subTitle" fontColor="primary" fontWeight="bold" style={styles.sectionTitle}>
                         我的音乐
                     </ThemeText>
                     <View style={styles.entryRow}>
@@ -583,7 +583,8 @@ export default function MineTab({
                         )}
                     </View>
                     <ThemeText
-                        fontSize="content"
+                        fontSize="subTitle"
+                        fontColor="primary"
                         fontWeight="bold"
                         style={[styles.sectionTitle, styles.sectionTitleGap]}>
                         数据与设置
@@ -599,7 +600,7 @@ export default function MineTab({
                     <View style={styles.statRow}>
                         {statCards.map(renderMineStatCard)}
                     </View>
-                    <ThemeText fontSize="content" fontWeight="bold" style={styles.sectionTitle}>
+                    <ThemeText fontSize="subTitle" fontColor="primary" fontWeight="bold" style={styles.sectionTitle}>
                         我的音乐
                     </ThemeText>
                     <View
@@ -687,11 +688,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         marginRight: 16,
-    },
-    avatarText: {
-        color: "#FFFFFF",
-        // 对齐 UI_ALIGNMENT #30 头像 24sp（无 24 档位，参照全屏播放页字面量先例）
-        fontSize: 24,
     },
     userInfo: {
         flex: 1,

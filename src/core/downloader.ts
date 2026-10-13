@@ -423,7 +423,7 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
             return;
         }
 
-        if (network.isCellular && !this.configService.getConfig("basic.useCelluarNetworkDownload")) {
+        if (network.isCellular && this.configService.getConfig("basic.useCelluarNetworkDownload") === false) {
             this.emit(DownloaderEvent.DownloadError, DownloadFailReason.NotAllowToDownloadInCellular);
             return;
         }

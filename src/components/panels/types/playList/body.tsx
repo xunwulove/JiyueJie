@@ -4,11 +4,15 @@ import rpx from "@/utils/rpx";
 import ThemeText from "@/components/base/themeText";
 import { isSameMediaItem } from "@/utils/mediaUtils";
 import IconButton from "@/components/base/iconButton";
+import IconTextButton from "@/components/base/iconTextButton";
+import Divider from "@/components/base/divider";
 import Loading from "@/components/base/loading";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useColors from "@/hooks/useColors";
-import TrackPlayer, { useCurrentMusic, usePlayList } from "@/core/trackPlayer";
+import TrackPlayer, { useCurrentMusic, usePlayList, useRepeatMode } from "@/core/trackPlayer";
+import repeatModeConst from "@/constants/repeatModeConst";
 import { FlashList } from "@shopify/flash-list";
+import { useI18N } from "@/core/i18n";
 
 // 对齐媒体行规范：行高 64dp（固定值，跨设备一致），左右 padding 16dp
 const ITEM_HEIGHT = 64;
@@ -53,7 +57,7 @@ function _PlayListItem(props: IPlayListProps) {
             </ThemeText>
             <View style={style.info}>
                 <ThemeText
-                    fontSize="body"
+                    fontSize="content"
                     fontWeight={
                         isCurrentMusic ? "bold" : "medium"
                     }
@@ -102,6 +106,8 @@ export default function Body(props: IBodyProps) {
     const { loading } = props;
     const playList = usePlayList();
     const currentMusicItem = useCurrentMusic();
+    const repeatMode = useRepeatMode();
+    const { t } = useI18N();
     const listRef = useRef<FlashList<IMusic.IMusicItem> | null>();
     const safeAreaInsets = useSafeAreaInsets();
 
@@ -146,6 +152,23 @@ export default function Body(props: IBodyProps) {
                 initialScrollIndex={initIndex}
                 renderItem={renderItem}
             />
+            <Divider />
+            <View style={style.toolbar}>
+                <IconTextButton
+                    onPress={() => {
+                        TrackPlayer.toggleRepeatMode();
+                    }}
+                    icon={repeatModeConst[repeatMode].icon}>
+                    {t(("repeatMode." + repeatMode) as any)}
+                </IconTextButton>
+                <IconTextButton
+                    icon="trash-outline"
+                    onPress={() => {
+                        TrackPlayer.clearPlayList();
+                    }}>
+                    {t("common.clear")}
+                </IconTextButton>
+            </View>
         </View>
     );
 }
@@ -154,6 +177,14 @@ const style = StyleSheet.create({
     playList: {
         width: rpx(750),
         flex: 1,
+    },
+    /** 底部工具条：承接原 header 的循环模式/清空按钮（header 已统一为 PanelHeader） */
+    toolbar: {
+        height: 56,
+        paddingHorizontal: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
     },
     musicItem: {
         width: "100%",

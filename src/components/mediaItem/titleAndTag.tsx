@@ -13,7 +13,7 @@ export default function TitleAndTag(props: ITitleAndTagProps) {
     const { title, tag, titleFontColor } = props;
     return (
         <View style={styles.container}>
-            <ThemeText fontColor={titleFontColor} numberOfLines={1} style={styles.title} fontSize="body" fontWeight="medium">
+            <ThemeText fontColor={titleFontColor} numberOfLines={1} style={styles.title} fontSize="content" fontWeight="medium">
                 {title}
             </ThemeText>
             {tag ? <Tag tagName={tag} /> : null}

@@ -26,6 +26,7 @@ import ImmersiveSettingDialog from "./immersiveSettingDialog";
 import VolumeSettingDialog from "./volumeSettingDialog";
 import LyricColorDialog from "./lyricColorDialog";
 import RecommendSourceDialog from "./recommendSourceDialog";
+import ImageViewerDialog from "./imageViewerDialog";
 
 const dialogs = {
     SimpleDialog,
@@ -56,6 +57,7 @@ const dialogs = {
     VolumeSettingDialog,
     LyricColorDialog,
     RecommendSourceDialog,
+    ImageViewerDialog,
 };
 
 export default dialogs;

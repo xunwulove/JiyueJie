@@ -164,10 +164,9 @@ function HorizontalBar({
                                 }
                             />
                             <ThemeText
-                                fontSize="title"
+                                fontSize="xlarge"
                                 style={{
                                     marginLeft: rpx(8),
-                                    fontSize: 32,
                                     color: selected
                                         ? activeColor
                                         : idleColor,

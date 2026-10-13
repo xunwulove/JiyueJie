@@ -22,6 +22,8 @@ const fontSizeConst = {
     title: 18,
     /** 大数字（统计/旧 titleLarge 22sp） */
     large: 22,
+    /** 平板顶栏 Tab / 问候语大字号（旧 32sp，沉浸式大标题） */
+    xlarge: 32,
     /** AppBar 标题（旧 CommonAppBar 18sp） */
     appbar: 18,
 };

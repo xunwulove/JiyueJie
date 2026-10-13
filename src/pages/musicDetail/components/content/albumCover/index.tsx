@@ -6,7 +6,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useCurrentMusic } from "@/core/trackPlayer";
 import globalStyle from "@/constants/globalStyle";
 import { StyleSheet, View } from "react-native";
-import { showPanel } from "@/components/panels/usePanel.ts";
+import { showDialog } from "@/components/dialogs/useDialog";
 
 interface IProps {
     onTurnPageClick?: () => void;
@@ -51,7 +51,7 @@ export default function AlbumCover(props: IProps) {
     const longPress = Gesture.LongPress()
         .onStart(() => {
             if (musicItem?.artwork) {
-                showPanel("ImageViewer", {
+                showDialog("ImageViewerDialog", {
                     url: musicItem.artwork,
                 });
             }
@@ -91,6 +91,7 @@ export default function AlbumCover(props: IProps) {
                                 style={styles.fullImage}
                                 source={musicItem?.artwork}
                                 placeholderSource={ImgAsset.albumDefault}
+                                resizeMode="contain"
                             />
                         </View>
                     ) : (
@@ -98,6 +99,7 @@ export default function AlbumCover(props: IProps) {
                             style={artworkStyle}
                             source={musicItem?.artwork}
                             placeholderSource={ImgAsset.albumDefault}
+                            resizeMode="contain"
                         />
                     )}
                 </View>
