@@ -1,0 +1,19 @@
+{
+  "name": "jishijie-plugin-verifier",
+  "version": "1.0.0",
+  "private": true,
+  "description": "极悦界 MusicFree 音源插件真实搜索功能验证脚本（加载插件 JS，真实调用搜索/榜单接口，确认能否搜到歌）",
+  "main": "probe_plugin.js",
+  "scripts": {
+    "verify": "node probe_plugin.js",
+    "verify:all": "node probe_plugin.js --file plugins.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "axios": "^1.20.0",
+    "cheerio": "^1.2.0",
+    "crypto-js": "^4.1.1"
+  }
+}
