@@ -1,13 +1,15 @@
 {
-  "version": "0.6.2",
+  "version": "0.6.2.5",
   "changeLog": [
-    "极悦界 v0.6.2：应用更名「极悦界」",
-    "设置页整合梳理（8 组卡片式）",
-    "修复齿轮重复点击黑屏",
-    "更新链路切换至 gitee"
+    "我的页返回手势回首页（不再直接退出）",
+    "设置页缓存大小改为惰性统计：进入页面不再遍历缓存目录，点击缓存行时才统计，消除进设置页卡顿",
+    "首页内容区标题统一16加粗主题色；设置页分组标题统一14加粗主题色",
+    "左侧播放面板接入当前歌词（三态：歌词/加载中/暂无）",
+    "音乐库排序行移至统计卡片下方，作为固定表头不随列表滚动",
+    "齿轮设置选中态：进入设置时4个tab取消高亮、齿轮高亮"
   ],
   "download": [
-    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/V0.6.2/app-arm64-v8a-release.apk",
-    "https://gitee.com/xunwulove/jiyuejie-updates/releases/download/V0.6.2/app-universal-release.apk"
+    "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-arm64-v8a-release.apk",
+    "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-universal-release.apk"
   ]
 }
