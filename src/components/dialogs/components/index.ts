@@ -27,6 +27,7 @@ import VolumeSettingDialog from "./volumeSettingDialog";
 import LyricColorDialog from "./lyricColorDialog";
 import RecommendSourceDialog from "./recommendSourceDialog";
 import ImageViewerDialog from "./imageViewerDialog";
+import SimpleInputDialog from "./simpleInputDialog";
 
 const dialogs = {
     SimpleDialog,
@@ -58,6 +59,7 @@ const dialogs = {
     LyricColorDialog,
     RecommendSourceDialog,
     ImageViewerDialog,
+    SimpleInputDialog,
 };
 
 export default dialogs;

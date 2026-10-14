@@ -6,48 +6,32 @@ import Image from "@/components/base/image";
 import Slider from "@react-native-community/slider";
 import useColors from "@/hooks/useColors";
 import Theme from "@/core/theme";
-import { showDialog } from "@/components/dialogs/useDialog";
 
-const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"];
+export const IMAGE_EXTENSIONS = [
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".gif",
+    ".bmp",
+];
 
 /**
  * 主题设置 - 自定义背景（B3 恢复：自定义取色已去除，背景自定义保留并重新开放入口）。
- * 支持：选择本地图片 / 背景模糊滑块 / 背景透明度滑块 / 清除背景。
+ * 支持：背景模糊滑块 / 背景透明度滑块 / 清除背景；选图由浮窗层统一提供（onPickImage）。
  * 写入链路：Theme.setBackground（store + 持久化 theme.background / backgroundBlur / backgroundOpacity）。
  */
-export default function BackgroundCustom() {
+export default function BackgroundCustom({
+    onPickImage,
+}: {
+    onPickImage: () => void;
+}) {
     const colors = useColors();
     const background = Theme.useBackground();
 
     const url = background?.url;
     const blur = background?.blur ?? 20;
     const opacity = background?.opacity ?? 0.6;
-
-    const pickLocalImage = () => {
-        // 文件选择浮窗会替换当前主题浮窗（对话框全局单值）；确认/取消后重开主题浮窗，保持"主题浮窗 → 选图 → 回到主题浮窗"闭环
-        const reopenThemeDialog = () => {
-            showDialog("ThemeSettingDialog");
-        };
-        showDialog("FileSelectorDialog", {
-            fileType: "file",
-            actionText: "设为背景",
-            matchExtension: path =>
-                IMAGE_EXTENSIONS.some(ext =>
-                    path.toLowerCase().endsWith(ext),
-                ),
-            onAction: files => {
-                const file = files?.[0];
-                if (file?.path) {
-                    Theme.setBackground({
-                        url: `file://${file.path}`,
-                    });
-                }
-                reopenThemeDialog();
-                return true;
-            },
-            onCancel: reopenThemeDialog,
-        });
-    };
 
     const clearBackground = () => {
         Theme.setBackground({ url: undefined });
@@ -87,9 +71,9 @@ export default function BackgroundCustom() {
                 自定义背景
             </ThemeText>
 
-            {/* 当前背景预览（点击整个预览框选择图片） */}
+            {/* 当前背景预览（点击整个预览框换图） */}
             <Pressable
-                onPress={pickLocalImage}
+                onPress={onPickImage}
                 style={({ pressed }) => [
                     style.previewWrapper,
                     pressed && { opacity: 0.8 },
@@ -119,64 +103,66 @@ export default function BackgroundCustom() {
                 </ThemeText>
             </Pressable>
 
-            {/* 清除背景 */}
-            <View style={style.sectionWrapper}>
-                {actionRow("清除背景", clearBackground, true)}
-            </View>
+            {/* 仅设置了背景时才显示：清除背景 + 模糊/透明度滑块（无图时无可调项，隐藏避免空控件） */}
+            {url ? (
+                <>
+                    <View style={style.sectionWrapper}>
+                        {actionRow("清除背景", clearBackground, true)}
+                    </View>
 
-            {/* 背景模糊 */}
-            <View style={style.sliderRow}>
-                <View style={style.sliderLabelRow}>
-                    <ThemeText fontSize="content" fontWeight="medium">
-                        背景模糊
-                    </ThemeText>
-                    <ThemeText
-                        fontSize="content"
-                        fontColor="textSecondary">
-                        {Math.round(blur)}
-                    </ThemeText>
-                </View>
-                <Slider
-                    style={style.slider}
-                    minimumValue={0}
-                    maximumValue={100}
-                    step={5}
-                    value={blur}
-                    minimumTrackTintColor={colors.primary}
-                    maximumTrackTintColor={colors.divider}
-                    thumbTintColor={colors.primary}
-                    onValueChange={val =>
-                        Theme.setBackground({ blur: val })
-                    }
-                />
-            </View>
+                    <View style={style.sliderRow}>
+                        <View style={style.sliderLabelRow}>
+                            <ThemeText fontSize="content" fontWeight="medium">
+                                背景模糊
+                            </ThemeText>
+                            <ThemeText
+                                fontSize="content"
+                                fontColor="textSecondary">
+                                {Math.round(blur)}
+                            </ThemeText>
+                        </View>
+                        <Slider
+                            style={style.slider}
+                            minimumValue={0}
+                            maximumValue={100}
+                            step={5}
+                            value={blur}
+                            minimumTrackTintColor={colors.primary}
+                            maximumTrackTintColor={colors.divider}
+                            thumbTintColor={colors.primary}
+                            onValueChange={val =>
+                                Theme.setBackground({ blur: val })
+                            }
+                        />
+                    </View>
 
-            {/* 背景透明度 */}
-            <View style={style.sliderRow}>
-                <View style={style.sliderLabelRow}>
-                    <ThemeText fontSize="content" fontWeight="medium">
-                        背景透明度
-                    </ThemeText>
-                    <ThemeText
-                        fontSize="content"
-                        fontColor="textSecondary">
-                        {opacity.toFixed(2)}
-                    </ThemeText>
-                </View>
-                <Slider
-                    style={style.slider}
-                    minimumValue={0.1}
-                    maximumValue={1}
-                    step={0.05}
-                    value={opacity}
-                    minimumTrackTintColor={colors.primary}
-                    maximumTrackTintColor={colors.divider}
-                    thumbTintColor={colors.primary}
-                    onValueChange={val =>
-                        Theme.setBackground({ opacity: val })
-                    }
-                />
-            </View>
+                    <View style={style.sliderRow}>
+                        <View style={style.sliderLabelRow}>
+                            <ThemeText fontSize="content" fontWeight="medium">
+                                背景透明度
+                            </ThemeText>
+                            <ThemeText
+                                fontSize="content"
+                                fontColor="textSecondary">
+                                {opacity.toFixed(2)}
+                            </ThemeText>
+                        </View>
+                        <Slider
+                            style={style.slider}
+                            minimumValue={0.1}
+                            maximumValue={1}
+                            step={0.05}
+                            value={opacity}
+                            minimumTrackTintColor={colors.primary}
+                            maximumTrackTintColor={colors.divider}
+                            thumbTintColor={colors.primary}
+                            onValueChange={val =>
+                                Theme.setBackground({ opacity: val })
+                            }
+                        />
+                    </View>
+                </>
+            ) : null}
         </View>
     );
 }

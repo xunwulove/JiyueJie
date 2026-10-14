@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     logo: {
         width: 32,
         height: 32,
-        borderRadius: 10,
+        borderRadius: 7,
         alignItems: "center",
         justifyContent: "center",
         marginRight: 10,

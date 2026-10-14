@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { StyleSheet, View } from "react-native";
+import { Dimensions, StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Color from "color";
 import Image from "./image";
@@ -7,7 +7,22 @@ import useColors from "@/hooks/useColors";
 import Theme from "@/core/theme";
 import useAlbumTintColor from "@/hooks/useAlbumTintColor";
 
-function PageBackground() {
+/**
+ * 页面背景层：
+ * - 全局（entry/index.tsx）：无 screenInsets → 相对自身容器铺满（全屏），渐变 + 可选自定义背景图。
+ * - 二级页面覆盖层（SubPageOverlay/FullOverlay，平板）：覆盖层只占"内容区"（TabBar 下方 + 左播放面板右侧），
+ *   若直接 absoluteFill 渲染背景图，同一张图会以不同容器基准 cover 缩放/裁切 → 与全局背景错位。
+ *   因此传入 screenInsets（覆盖层左上角相对屏幕的偏移）后，渐变与背景图按**整屏几何**渲染
+ *   （负偏移扩展到全屏宽高），与全局背景完全重叠，视觉 100% 一致。
+ */
+const SCREEN_W = Dimensions.get("window").width;
+const SCREEN_H = Dimensions.get("window").height;
+
+function PageBackground({
+    screenInsets,
+}: {
+    screenInsets?: { top?: number; left?: number };
+}) {
     const theme = Theme.useTheme();
     const background = Theme.useBackground();
     const colors = useColors();
@@ -16,6 +31,19 @@ function PageBackground() {
 
     const isLight = !theme.dark;
     const top = (colors as any).pageBackgroundTop;
+
+    // 整屏几何基准：覆盖层左上角相对屏幕偏移 (insetLeft, insetTop)，
+    // 渲染区向左上扩展至屏幕原点、尺寸取整屏 → 与全局背景层覆盖完全相同的区域
+    const wrapStyle =
+        screenInsets && (screenInsets.top || screenInsets.left)
+            ? {
+                  position: "absolute" as const,
+                  top: -(screenInsets.top ?? 0),
+                  left: -(screenInsets.left ?? 0),
+                  width: SCREEN_W,
+                  height: SCREEN_H,
+              }
+            : style.wrapper;
 
     return (
         <>
@@ -29,12 +57,12 @@ function PageBackground() {
                     ]}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}
-                    style={style.wrapper}
+                    style={wrapStyle}
                 />
             ) : (
                 <View
                     style={[
-                        style.wrapper,
+                        wrapStyle,
                         {
                             backgroundColor:
                                 colors?.pageBackground ??
@@ -53,7 +81,7 @@ function PageBackground() {
                     ]}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}
-                    style={style.wrapper}
+                    style={wrapStyle}
                     pointerEvents="none"
                 />
             ) : null}
@@ -62,7 +90,7 @@ function PageBackground() {
                 <Image
                     uri={background.url}
                     style={[
-                        style.wrapper,
+                        wrapStyle,
                         {
                             opacity: background?.opacity ?? 0.6,
                         },

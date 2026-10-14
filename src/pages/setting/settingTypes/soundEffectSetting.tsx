@@ -18,13 +18,19 @@ import VerticalSafeAreaView from "@/components/base/verticalSafeAreaView";
 import globalStyle from "@/constants/globalStyle";
 import Config, { useAppConfig } from "@/core/appConfig";
 import { useI18N } from "@/core/i18n";
+import ReactNativeTrackPlayer, {
+    Event,
+} from "react-native-track-player";
 import {
     applyBandLevel,
     applyBassBoost,
     applyEqEnabled,
     applyEqPreset,
     applyVirtualizer,
+    ensureSoundEffectAttached,
+    EQ_PRESETS,
     getSoundEffectInfo,
+    getSoundEffectLastError,
     initBandsIfNeeded,
 } from "@/core/soundEffect";
 import useColors from "@/hooks/useColors";
@@ -52,13 +58,52 @@ export default function SoundEffectSetting() {
     const [info, setInfo] = useState<ISoundEffectInfo | null>(null);
 
     useEffect(() => {
+        // 进入页面先尝试绑定（本会话播放过 → 立即成功；从未播放 → 暂缓）
         (async () => {
+            await ensureSoundEffectAttached().catch(() => undefined);
             const i = await getSoundEffectInfo();
             setInfo(i);
             if (i) {
                 initBandsIfNeeded(i.bands);
             }
         })();
+        // 播放发生时 session 就绪 → 自动补绑并刷新：
+        // PlaybackActiveTrackChanged 只在切歌时触发，恢复播放（暂停→播放同一首）不触发，
+        // 因此同时监听 PlaybackState（paused→playing 也触发），并用轮询兜底
+        const refresh = async () => {
+            await ensureSoundEffectAttached().catch(() => undefined);
+            const i = await getSoundEffectInfo();
+            if (i) {
+                setInfo(i);
+                initBandsIfNeeded(i.bands);
+            }
+        };
+        const sub = ReactNativeTrackPlayer.addEventListener(
+            Event.PlaybackActiveTrackChanged,
+            refresh,
+        );
+        const subState = ReactNativeTrackPlayer.addEventListener(
+            Event.PlaybackState,
+            refresh,
+        );
+        // 轮询兜底：每 3 秒重试，成功即停（覆盖一切时序：恢复播放/缓冲完成等）
+        let tries = 0;
+        const timer = setInterval(async () => {
+            tries += 1;
+            const i = await getSoundEffectInfo();
+            if (i) {
+                setInfo(i);
+                initBandsIfNeeded(i.bands);
+                clearInterval(timer);
+            } else if (tries >= 20) {
+                clearInterval(timer);
+            }
+        }, 3000);
+        return () => {
+            sub.remove();
+            subState.remove();
+            clearInterval(timer);
+        };
     }, []);
 
     if (Platform.OS !== "android") {
@@ -76,7 +121,8 @@ export default function SoundEffectSetting() {
     }
 
     const bands = info?.bands ?? 0;
-    const presets = info?.presets ?? [];
+    // 预设列表固定用内置预设（不依赖设备系统预设，跨设备统一）
+    const presets = EQ_PRESETS.map(p => p.name);
     const levelMin = info?.levelMin ?? -1500;
     const levelMax = info?.levelMax ?? 1500;
 
@@ -248,6 +294,14 @@ export default function SoundEffectSetting() {
                                         fontColor="textSecondary">
                                         {t("soundEffect.eqWaitPlay")}
                                     </ThemeText>
+                                    {getSoundEffectLastError() ? (
+                                        <ThemeText
+                                            fontSize="caption"
+                                            fontColor="textSecondary"
+                                            style={style.eqErrText}>
+                                            {`诊断: ${getSoundEffectLastError()}`}
+                                        </ThemeText>
+                                    ) : null}
                                 </View>
                             )}
                         </View>
@@ -408,6 +462,10 @@ const style = StyleSheet.create({
     eqGridHint: {
         padding: rpx(24),
         alignItems: "center",
+    },
+    eqErrText: {
+        marginTop: rpx(8),
+        textAlign: "center",
     },
     sliderRow: {
         paddingHorizontal: rpx(16),

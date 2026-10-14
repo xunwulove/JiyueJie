@@ -13,7 +13,7 @@ import rpx from "@/utils/rpx";
 import Color from "color";
 import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import VerticalSafeAreaView from "@/components/base/verticalSafeAreaView";
 import LinearGradient from "react-native-linear-gradient";
 
 /** 本地音乐分组页 - 专辑 / 歌手 / 文件夹 三视图（对齐 APlayer AlbumCoverList / ArtistCoverList 行式） */
@@ -89,8 +89,9 @@ export default function LocalGroup() {
     ];
     const iconColor = Color(colors.primary).alpha(0.5).toString();
 
+    // 2026-10-14 修复：改 VerticalSafeAreaView（平板只保 bottom），与其他二级页标题栏高度一致
     return (
-        <SafeAreaView edges={["bottom", "top"]} style={styles.wrapper}>
+        <VerticalSafeAreaView style={styles.wrapper}>
             <StatusBar />
             <AppBar>
                 {selectedGroup ? selectedGroup.name : TITLES[groupType]}
@@ -183,7 +184,7 @@ export default function LocalGroup() {
                     )}
                 </ScrollView>
             )}
-        </SafeAreaView>
+        </VerticalSafeAreaView>
     );
 }
 

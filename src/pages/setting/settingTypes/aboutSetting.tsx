@@ -157,8 +157,8 @@ export default function AboutSetting() {
                 </ThemeText>
                 <ThemeText style={style.cardText}>
                     软件更新与音源订阅统一托管在 gitee 仓库{" "}
-                    <LinkText linkTo="https://gitee.com/xunwulove/jiyuejie-updates">
-                        xunwulove/jiyuejie-updates
+                    <LinkText linkTo="https://gitee.com/xunwulove/jiyuejie">
+                        xunwulove/jiyuejie
                     </LinkText>
                     ：软件更新通过软件内「检查更新」完成；音源插件支持订阅自动更新，
                     可在「音源管理」中管理订阅与排序。
@@ -212,7 +212,7 @@ const style = StyleSheet.create({
     brandImage: {
         width: 88,
         height: 88,
-        borderRadius: 20,
+        borderRadius: 19,
         marginRight: 16,
     },
     brandInfo: {

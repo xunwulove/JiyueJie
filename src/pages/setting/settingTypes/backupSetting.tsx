@@ -112,18 +112,19 @@ export default function BackupSetting() {
     }
 
     async function onResumeFromUrl() {
-        showPanel("SimpleInput", {
+        // 2026-10-14：输入类操作统一三级浮窗（原为底部 SimpleInput 面板，与缓存上限一致）
+        showDialog("SimpleInputDialog", {
             title: t("backupAndResume.resumeFromUrlDialogTitle"),
             placeholder: t("backupAndResume.resumeFromUrlDialogPlaceHolder"),
             maxLength: 1024,
-            async onOk(text, closePanel) {
+            async onOk(text, close) {
                 try {
                     const url = text.trim();
                     if (url.endsWith(".json") || url.endsWith(".txt")) {
                         const raw = (await axios.get(text)).data;
                         await Backup.resume(raw, resumeMode);
                         Toast.success(t("toast.resumeSuccess"));
-                        closePanel();
+                        close();
                     } else {
                         throw "无效的URL";
                     }

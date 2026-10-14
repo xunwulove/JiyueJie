@@ -10,7 +10,7 @@
 
 - 本文所有字号、字重、颜色、间距数值均直接取自 `src/` 代码，行号精确到用法出现行；采集时已逐项核对 `src/constants/uiConst.ts`、`src/core/theme.ts`，与基准档位表完全一致。
 - **事实修正（相对早期规格 1.8#5）**：早期记录"下载设置弹窗按钮为 取消/保存"有偏差。经核实 `components/dialogs/components/downloadSettingsDialog.tsx:238-251`，底部按钮构成确为"取消(normal) + 确定(primary)"，但**确定按钮文案是 `t("common.confirm")="确认"`**（`zh-cn.json:28`），并非"保存"；`zh-cn.json:12` 的 `common.save` 未被该弹窗引用。本文第 4 章相应对话框条目按"取消/确认"记录，是否改为"保存"列入决策项。
-- 其余已确立现状均已核实：scanSettings 的 AddRow 为 body(15)（与同级权限行/开关行同档）；MenuDialog 底部为 取消+确定（确定仅关闭）；音源管理加号弹 MenuDialog 三级浮窗（本地安装→FileSelectorDialog、网络安装→SimpleDialog+Input）；订阅设置按钮栏为 取消/恢复默认/更新订阅。
+- 其余已确立现状均已核实：scanSettings 的 AddRow 为 content(16)（与同级权限行/开关行同档，路径数据行 normal(13) textSecondary + x-mark 16 移除）；MenuDialog 底部为 取消+确定（确定仅关闭）；音源管理加号弹 MenuDialog 三级浮窗（本地安装→FileSelectorDialog、网络安装→SimpleDialog+Input）；订阅设置按钮栏为 取消/恢复默认/更新订阅。
 
 ### 通用约定
 
@@ -18,6 +18,7 @@
 - **浮出层位置**：右侧浮出层（平板下面板/三级浮窗）必须从内容页 tab 行（56dp）下方开始，即 `top=56（TAB_BAR_HEIGHT）`、`bottom=0`、`left=30%/width=70%`，不得遮挡 tab 栏与左播放区。
 - **页面背景**：所有页面统一为纵向渐变背景——顶部 `pageBackground` → 底部 `pageBackgroundTop`（白天顶部偏白、底部带品牌蓝氛围；暗色同理），由 `components/base/pageBackground.tsx` 的 LinearGradient 实现，另有封面 tint 氛围层与自定义背景层叠加。
 - **主题色**：明/暗两套完整色表（见 1.4 节），颜色一律通过主题色键引用，禁止在组件内散落硬编码色值（现存硬编码已列入第 8 章冲突清单）。
+- **品牌图圆角（2026-10-14 统一）**：品牌图（ImgAsset.brandLogo / 启动页 splash 图标 / 桌面图标）统一为**圆角 = 边长 22%**。启动页 v4：容器边长 55.8%、圆角 22%、白音符占容器边长 50%、音符几何中心对齐容器中心；关于页 88dp 圆角 19（≈22%）；播放区顶部小 logo 32dp 圆角 7（≈22%）。改动前：关于页 20/88=22.7%、播放顶部 10/32=31%，已统一。
 - **启动页三段体系**：系统 splash / 窗口背景 / RN BrandSplash 的白屏治理已有专题文档 `docs/启动页白屏问题与实现路径.md`，本文不重复起草，涉及启动页问题直接参阅该文档。
 
 ### 阅读指引
@@ -350,7 +351,7 @@
 
 `pages/setting/settingTypes/aboutSetting.tsx`：
 
-- **品牌卡应用名**（:70-75）：title(18)+bold(700)、colors.text、numberOfLines=1；Logo 88×88 圆角 20、卡片渐变 primary α0.18→α0.05、padding 20。
+- **品牌卡应用名**（:70-75）：title(18)+bold(700)、colors.text、numberOfLines=1；Logo 88×88 圆角 19（统一品牌图圆角 22%）、卡片渐变 primary α0.18→α0.05、padding 20。
 - **版本号副文本**（:76-82）：description(12)+regular(400)+textSecondary、marginTop=6。
 - **检查更新按钮**（:94-99）：normal(13)+medium(500)+primary；高 34、paddingH 20、圆角 17 胶囊、背景 primary α0.1。
 - **分组卡片标题**（:106-175 四处）：content(16)+bold(700)+text；卡片圆角 14、padding 16、marginBottom 16、标题 marginBottom=4。
@@ -447,6 +448,7 @@
 
 ### 7.5 tabletPanel 平板左播放面板
 
+- **顶部品牌图标**（`tabletPanel.tsx:153-156`）：FastImage 32×32、圆角 7（统一品牌图圆角 22%）、marginRight=10；品牌图源 ImgAsset.brandLogo。
 - **顶部问候**（`tabletPanel.tsx:157-162`）：fontSize="xlarge"(32，C20 新增档位)、regular(400)+textSecondary（原 fontSize="title"+inline 32，prop 失效已统一）。
 - **歌名**（:204-212）：硬编码 fontSize=20、bold(700)+text、lineHeight=28、居中 numberOfLines=1。
 - **歌手**（:214-220）：body(15)+regular(400)+textSecondary、lineHeight=22。

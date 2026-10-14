@@ -16,7 +16,6 @@ import { StatusBar } from "react-native";
 import { ReduceMotion, ReducedMotionConfig } from "react-native-reanimated";
 import { routes } from "@/core/router/routes.tsx";
 import ErrorBoundary from "@/components/errorBoundary";
-import BrandSplash from "./bootstrap/BrandSplash";
 import Onboarding from "./onboarding/Onboarding";
 import PersistStatus from "@/utils/persistStatus";
 
@@ -76,14 +75,12 @@ export default function Pages() {
                             <Dialogs />
                             <ToastBaseComponent />
                             <PortalHost />
-                            {/* 代码层启动页：窗口背景（纯色+图标）之上，bootstrap 完成前显示 图标+行楷文字，
-                                尺寸按屏幕弹性计算（对齐网易云/QQ），完成后立即淡出，无强制停留 */}
-                            <BrandSplash />
+                            {/* 2026-10-14 决策：启动页只用系统 splash（原生 windowBackground 承接），
+                                移除 RN 自制 BrandSplash——代码层背景页有启动时间长、背景错位问题 */}
                         </NavigationContainer>
                     ) : (
                         <>
-                            {/* 首次启动：启动页 + 引导页（无主界面，杜绝闪现） */}
-                            <BrandSplash />
+                            {/* 首次启动：引导页（启动画面由系统 splash / 窗口背景承接） */}
                             <Onboarding />
                         </>
                     )}

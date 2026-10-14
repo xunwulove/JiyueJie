@@ -6,4 +6,9 @@
     <dimen name="splash_note_container">160dp</dimen>
     <dimen name="splash_note_icon">125dp</dimen>
     <dimen name="splash_note_corner">35dp</dimen>
+    <!-- 品牌名"极悦界"文字图（透明底）：宽=容器×55%（约合 RN 短边×0.32 clamp 120~220），高=宽/3（原图 1200×400）
+         顶偏移 = 容器 + 2×16gap + 文字高，配合 layer gravity="center" 使文字中心落在"容器下缘+16dp 空隙"处 -->
+    <dimen name="splash_brand_text_width">88dp</dimen>
+    <dimen name="splash_brand_text_height">29.3dp</dimen>
+    <dimen name="splash_brand_text_top">221.3dp</dimen>
 </resources>

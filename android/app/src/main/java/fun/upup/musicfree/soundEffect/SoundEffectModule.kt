@@ -3,12 +3,15 @@ package `fun`.upup.musicfree.soundEffect
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
 import android.media.audiofx.Virtualizer
+import android.os.Handler
+import android.os.Looper
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.doublesymmetry.trackplayer.module.MusicModule
+import java.util.concurrent.CountDownLatch
 
 /**
  * 音效模块（均衡器/低音增强/环绕声）——2026-10-14 新增。
@@ -28,6 +31,7 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
     private var bassBoost: BassBoost? = null
     private var virtualizer: Virtualizer? = null
     private var sessionId = -1
+    private var lastError: String? = null
 
     override fun getName(): String = "SoundEffectModule"
 
@@ -42,12 +46,64 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
                 promise.reject("player_not_ready", "audio session not ready, play once first")
             }
         } catch (e: Exception) {
-            promise.reject("resolve_session_error", e.message ?: "unknown")
+            // 透传完整失败链：反射调用抛 InvocationTargetException 时 message 常为 null，
+            // 必须带上 cause 与异常类名，否则 RN 侧只能看到 "unknown." 无法定位
+            promise.reject("resolve_session_error", buildFailureDetail(e))
         }
     }
 
+    /** 组装可定位的失败描述：异常自身 message/类名 + 最内层 cause 的 message/类名 */
+    private fun buildFailureDetail(e: Exception): String {
+        val top = e.message ?: e.javaClass.simpleName
+        var cause = e.cause
+        var inner: String? = null
+        var depth = 0
+        while (cause != null && depth < 5) {
+            val m = cause.message ?: cause.javaClass.simpleName
+            inner = inner?.let { "$it → $m" } ?: m
+            cause = cause.cause
+            depth++
+        }
+        return inner?.let { "$top → $it" } ?: top
+    }
+
     private fun resolveAudioSessionId(): Int {
-        val module = reactContext.getNativeModule(MusicModule::class.java)
+        // ExoPlayer 非线程安全，必须在创建它的主线程上访问；
+        // RN 模块方法跑在 mqt_native_modules 线程，直接调 getAudioSessionId 会抛
+        // "Player is accessed on the wrong thread"（被反射包成 InvocationTargetException）。
+        // 方案 A：post 到主线程执行 + CountDownLatch 同步等待，方法仍同步返回。
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            // 兜底：若将来被主线程直接调用，避免 await 自锁
+            return resolveAudioSessionIdOnMain()
+        }
+        val latch = CountDownLatch(1)
+        var result = -1
+        var failure: Exception? = null
+        Handler(Looper.getMainLooper()).post {
+            try {
+                result = resolveAudioSessionIdOnMain()
+            } catch (e: Exception) {
+                failure = e
+            } finally {
+                latch.countDown()
+            }
+        }
+        try {
+            latch.await()
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw IllegalStateException("interrupted while waiting main thread", e)
+        }
+        failure?.let { throw it }
+        return result
+    }
+
+    /** 实际反射读取 audioSessionId（必须在主线程执行） */
+    private fun resolveAudioSessionIdOnMain(): Int {
+        // 不能使用 reactContext.getNativeModule(MusicModule::class.java)：
+        // RN 新版要求模块类带 @ReactModule 注解，RNTP 老库没有 → 抛
+        // "Could not find @ReactModule annotation"，改按注册名获取
+        val module = reactContext.getNativeModule("TrackPlayerModule") as? MusicModule
             ?: throw IllegalStateException("TrackPlayerModule not registered")
         val musicServiceField = MusicModule::class.java.getDeclaredField("musicService")
         musicServiceField.isAccessible = true
@@ -57,12 +113,28 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
         playerField.isAccessible = true
         val queuedPlayer = playerField.get(musicService)
             ?: throw IllegalStateException("player not created")
-        val exoMethod = queuedPlayer.javaClass.superclass.getDeclaredMethod("getExoPlayer")
-        exoMethod.isAccessible = true
+        // kotlinaudio 为 JitPack aar 依赖，类层级随版本可能变化：
+        // 沿继承链向上查找 getExoPlayer（BaseAudioPlayer 链上任意层），消除 superclass 硬编码
+        val exoMethod = findMethod(queuedPlayer.javaClass, "getExoPlayer")
+            ?: throw IllegalStateException("getExoPlayer not found on " + queuedPlayer.javaClass.name)
         val exo = exoMethod.invoke(queuedPlayer)
-        // ExoPlayer 不在 app 模块编译 classpath，用反射读取 audioSessionId
-        val sessionIdMethod = exo.javaClass.getMethod("getAudioSessionId")
+        // ExoPlayer 不在 app 模块编译 classpath，反射读取 audioSessionId（同样沿继承链查找）
+        val sessionIdMethod = findMethod(exo.javaClass, "getAudioSessionId")
+            ?: throw IllegalStateException("getAudioSessionId not found on " + exo.javaClass.name)
         return sessionIdMethod.invoke(exo) as Int
+    }
+
+    /** 沿继承链查找方法（含私有），避免 superclass 硬编码在 aar 版本变化时崩溃 */
+    private fun findMethod(cls: Class<*>?, name: String): java.lang.reflect.Method? {
+        var c: Class<*>? = cls
+        while (c != null) {
+            try {
+                return c.getDeclaredMethod(name).also { it.isAccessible = true }
+            } catch (_: NoSuchMethodException) {
+                c = c.superclass
+            }
+        }
+        return null
     }
 
     /** 绑定三个效果器到指定 session（幂等：同一 session 已绑定则跳过） */
@@ -71,13 +143,29 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
         if (sessionId <= 0) return
         if (this.sessionId == sessionId && equalizer != null) return
         releaseEffects()
+        // 逐个效果器独立 try：Equalizer 在个别 ROM（车机/华为）构造可能失败，
+        // 不能因一个失败连坐其余；失败原因记入 lastError 供 getInfo 诊断返回
+        var eqOk = false
         try {
             equalizer = Equalizer(0, sessionId)
-            bassBoost = BassBoost(0, sessionId)
-            virtualizer = Virtualizer(0, sessionId)
-            this.sessionId = sessionId
+            eqOk = true
         } catch (e: Exception) {
-            // 设备不支持时降级（release 置空，后续调用全部 no-op）
+            lastError = "Equalizer create failed: ${e.message}"
+        }
+        try {
+            bassBoost = BassBoost(0, sessionId)
+        } catch (e: Exception) {
+            lastError = (lastError ?: "") + " | BassBoost failed: ${e.message}"
+        }
+        try {
+            virtualizer = Virtualizer(0, sessionId)
+        } catch (e: Exception) {
+            lastError = (lastError ?: "") + " | Virtualizer failed: ${e.message}"
+        }
+        if (eqOk) {
+            this.sessionId = sessionId
+            lastError = null
+        } else {
             releaseEffects()
         }
     }
@@ -87,7 +175,11 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
     fun getInfo(promise: Promise) {
         val eq = equalizer
         if (eq == null) {
-            promise.reject("not_attached", "call attach first")
+            // 带诊断信息：区分"未 attach"与"attach 时设备报错"
+            promise.reject(
+                "not_attached",
+                lastError ?: "call attach first",
+            )
             return
         }
         try {

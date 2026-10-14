@@ -127,8 +127,8 @@ export default function MenuDialog(props: IMenuDialogProps) {
                         },
                     },
                     {
-                        // 开关项已即改即生效，确定仅作为"确认完成并关闭"
-                        title: t("common.confirm"),
+                        // 开关项已即改即生效，底部按钮仅作"完成并关闭"（2026-10-14 按用户规范：确认仅关闭 → 改为"完成"）
+                        title: t("common.done"),
                         type: "primary",
                         onPress() {
                             hideDialog();

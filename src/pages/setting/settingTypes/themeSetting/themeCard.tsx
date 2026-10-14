@@ -36,6 +36,8 @@ export default function ThemeCard(props: IThemeCardProps) {
                 <View
                     style={[
                         styles.container,
+                        // 色块不加常驻细框：浅色选中态由外层 primary 选中框标示（浅色下可见），
+                        // 深色模式下浅色白块天然可见（2026-10-14 按用户要求去除细框）
                         isPreviewColor
                             ? {
                                 backgroundColor: preview,

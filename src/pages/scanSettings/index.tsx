@@ -13,6 +13,7 @@ import ThemeText from "@/components/base/themeText";
 import Icon from "@/components/base/icon.tsx";
 import ThemeSwitch from "@/components/base/switch";
 import Input from "@/components/base/input";
+import { ListDivider } from "@/components/base/divider";
 import useColors from "@/hooks/useColors";
 import LinearGradient from "react-native-linear-gradient";
 import Color from "color";
@@ -226,6 +227,7 @@ export default function ScanSettings() {
                     checked={settings.useMediaLibrary}
                     onCheckedChange={v => patch({ useMediaLibrary: v })}
                 />
+                <ListDivider marginLeft={16} />
                 <SettingSwitchRow
                     icon="folder-outline"
                     title="自定义文件夹"
@@ -234,21 +236,26 @@ export default function ScanSettings() {
                     onCheckedChange={v => patch({ customEnabled: v })}
                 />
                 {settings.customEnabled
-                    ? settings.customFolders?.map((path: string) => (
-                          <FolderRow
-                              key={path}
-                              path={path}
-                              onRemove={() =>
-                                  removeItem("customFolders", path)
-                              }
-                          />
+                    ? settings.customFolders?.map((path: string, i: number) => (
+                          <React.Fragment key={path}>
+                              <ListDivider marginLeft={16} />
+                              <FolderRow
+                                  path={path}
+                                  onRemove={() =>
+                                      removeItem("customFolders", path)
+                                  }
+                              />
+                          </React.Fragment>
                       ))
                     : null}
                 {settings.customEnabled ? (
-                    <AddRow
-                        title="添加自定义文件夹"
-                        onPress={() => pickFolder("customFolders")}
-                    />
+                    <React.Fragment>
+                        <ListDivider marginLeft={16} />
+                        <AddRow
+                            title="添加自定义文件夹"
+                            onPress={() => pickFolder("customFolders")}
+                        />
+                    </React.Fragment>
                 ) : null}
 
                 {/* ===== 设置 ===== */}
@@ -267,19 +274,8 @@ export default function ScanSettings() {
                         style={styles.permissionTitle}>
                         管理外部存储权限
                     </ThemeText>
-                    <Icon
-                        name="arrow-left"
-                        size={16}
-                        color={
-                            colors.textSecondary
-                                ? Color(colors.textSecondary)
-                                      .alpha(0.5)
-                                      .toString()
-                                : undefined
-                        }
-                        style={styles.enterIcon}
-                    />
                 </Pressable>
+                <ListDivider marginLeft={16} />
                 <SettingSwitchRow
                     icon="arrow-path"
                     title="不扫描 60 秒以下音频"
@@ -290,13 +286,16 @@ export default function ScanSettings() {
 
                 {/* ===== 被屏蔽的文件夹 ===== */}
                 <SectionTitle title="被屏蔽的文件夹" />
-                {settings.blockedFolders?.map((path: string) => (
-                    <FolderRow
-                        key={path}
-                        path={path}
-                        onRemove={() => removeItem("blockedFolders", path)}
-                    />
+                {settings.blockedFolders?.map((path: string, i: number) => (
+                    <React.Fragment key={path}>
+                        <ListDivider marginLeft={16} />
+                        <FolderRow
+                            path={path}
+                            onRemove={() => removeItem("blockedFolders", path)}
+                        />
+                    </React.Fragment>
                 ))}
+                <ListDivider marginLeft={16} />
                 <AddRow
                     title="添加被屏蔽的文件夹"
                     onPress={showAddBlockedDialog}
@@ -386,18 +385,6 @@ function AddRow({
                 style={styles.addText}>
                 {title}
             </ThemeText>
-            <Icon
-                name="arrow-left"
-                size={16}
-                color={
-                    colors.textSecondary
-                        ? Color(colors.textSecondary)
-                              .alpha(0.5)
-                              .toString()
-                        : undefined
-                }
-                style={styles.enterIcon}
-            />
         </Pressable>
     );
 }
@@ -414,7 +401,7 @@ function FolderRow({
     return (
         <View style={styles.folderRow}>
             <ThemeText
-                fontSize="normal"
+                fontSize="content"
                 fontColor="textSecondary"
                 numberOfLines={1}
                 style={styles.folderPath}>
@@ -424,7 +411,13 @@ function FolderRow({
                 <Icon
                     name="x-mark"
                     size={16}
-                    color={colors.textSecondary}
+                    color={
+                        colors.textSecondary
+                            ? Color(colors.textSecondary)
+                                  .alpha(0.5)
+                                  .toString()
+                            : undefined
+                    }
                 />
             </Pressable>
         </View>
@@ -475,9 +468,6 @@ const styles = StyleSheet.create({
     permissionTitle: {
         flex: 1,
         marginLeft: 16,
-    },
-    enterIcon: {
-        transform: [{ rotate: "180deg" }],
     },
     folderRow: {
         width: "100%",

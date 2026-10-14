@@ -4,4 +4,7 @@
     <dimen name="splash_note_container">270dp</dimen>
     <dimen name="splash_note_icon">211dp</dimen>
     <dimen name="splash_note_corner">59dp</dimen>
+    <dimen name="splash_brand_text_width">148.5dp</dimen>
+    <dimen name="splash_brand_text_height">49.5dp</dimen>
+    <dimen name="splash_brand_text_top">351.5dp</dimen>
 </resources>

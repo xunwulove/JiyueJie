@@ -77,7 +77,23 @@ export async function fetchPluginRecommendSheets(
         return null;
     }
     try {
-        const result = await plugin.methods.getRecommendSheetTags();
+        // 超时保护：插件 getRecommendSheetTags 无超时约定，卡住的源会拖住首页推荐区
+        // 串行择优（首次打开零缓存时逐个真请求）。对齐 getRecommendSheetsByTag 的 8s。
+        const FETCH_TIMEOUT = 8000;
+        const result = await Promise.race([
+            plugin.methods.getRecommendSheetTags(),
+            new Promise<null>(resolve =>
+                setTimeout(() => resolve(null), FETCH_TIMEOUT),
+            ),
+        ]);
+        if (!result) {
+            // 超时视为失败：记 fail 返回 null，调用方继续尝试下一源
+            pluginReliability.recordRecommendResult(
+                plugin.instance.platform,
+                false,
+            );
+            return null;
+        }
         const pinned = (result?.pinned ?? [])
             .filter(Boolean)
             .map(item => resetMediaItem(item, plugin.instance.platform));
@@ -166,14 +182,14 @@ export async function refreshCachedPluginRecommend(
 }
 
 /**
- * 每日勘探（方案 A）：选优成功后，小概率（20%）额外探测 1~2 个"次选源"做对比。
+ * 每日勘探（方案 A）：选优成功后，中概率（40%）额外探测 1~2 个"次选源"做对比。
  * 目的：打破"首日赢者通吃"——首选源成功后其他源永远无数据（0.5）排最后；
  * 勘探让次选源也有机会真实拉取、积累可用率（成功记 ok / 失败记 fail 均在
  * fetchPluginRecommendSheets 内部完成，这里不重复记录），次日排序即可参与竞争。
  *
  * 规则：
  * - 每天最多勘探一轮（PersistStatus.app.recommendExploreDate 标记当天日期）；
- * - 20% 概率触发（Math.random() < 0.2）；
+ * - 40% 概率触发（Math.random() < 0.4）；
  * - 候选 = 本次排序结果中"非首选源"的插件，打乱后取 1~2 个；
  * - 后台探测（fire-and-forget，不阻塞推荐区返回）：当天已有缓存直接复用，
  *   无缓存/跨天才真实请求插件。
@@ -192,8 +208,8 @@ async function exploreBackupSources(
         }
         PersistStatus.set("app.recommendExploreDate", todayStr);
 
-        // 20% 概率触发
-        if (Math.random() >= 0.2) {
+        // 40% 概率触发
+        if (Math.random() >= 0.4) {
             return;
         }
 
@@ -228,6 +244,10 @@ async function exploreBackupSources(
  * 自动回退到可用率择优（单选优先 + 择优兜底）。
  */
 export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecommendSheets | null> {
+    // 总预算：全源极端卡死时最多等这么久（每源另有 8s 超时），
+    // 避免首次打开零缓存时串行请求拖住首页推荐区几十秒
+    const startBudget = Date.now();
+    const TOTAL_BUDGET = 20000;
     // 排序前确保推荐可用率统计已加载，避免启动初期所有源平权 0.5 导致择优失效
     await ensureRecommendLoaded();
     const plugins = PluginManager.getSortedPluginsWithAbility(
@@ -267,6 +287,9 @@ export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecomme
         const pool = cachedPool.length ? cachedPool : plugins;
         const shuffled = [...pool].sort(() => Math.random() - 0.5);
         for (const plugin of shuffled) {
+            if (Date.now() - startBudget > TOTAL_BUDGET) {
+                break; // 总预算耗尽（极端全卡场景），不再尝试
+            }
             const data = await getCachedPluginRecommend(plugin.hash, {
                 allowStaleFallback: false,
             });
@@ -277,12 +300,31 @@ export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecomme
         // 随机全失败 → 落入下方择优循环兜底
     }
 
-    for (const plugin of plugins) {
+    // 自动择优：可用率并列最高的源池内随机首选（不再固定排序第一个），
+    // 随机到的失败 → 回退次高可用率源 → 最终按可用率序兜底。
+    // 成功后把该源持久化为"当前歌单来源"：下次进软件（一天内）优先读它的缓存，保持离开时的歌单。
+    const topRel = plugins.length
+        ? getRecommendReliabilitySync(plugins[0].instance.platform)
+        : 0;
+    const topPool = plugins.filter(
+        p => getRecommendReliabilitySync(p.instance.platform) === topRel,
+    );
+    const primaryOrder =
+        topPool.length > 1
+            ? [...topPool].sort(() => Math.random() - 0.5)
+            : topPool;
+    const fallbackOrder = plugins.filter(p => !topPool.includes(p));
+    for (const plugin of [...primaryOrder, ...fallbackOrder]) {
+        if (Date.now() - startBudget > TOTAL_BUDGET) {
+            break; // 总预算耗尽（极端全卡场景），不再尝试
+        }
         const data = await getCachedPluginRecommend(plugin.hash, {
             // 跨天旧缓存不截胡：失败即继续尝试下一个更健康的插件
             allowStaleFallback: false,
         });
         if (data) {
+            // 持久化当前歌单来源：换歌单后写入，下次进软件（一天内）仍显示本歌单
+            Config.setConfig("plugin.recommendSource", plugin.hash);
             // 选优成功后：后台每日勘探（不阻塞本次返回）
             void exploreBackupSources(plugins, plugin.hash);
             return data;
@@ -299,6 +341,43 @@ export function flattenPluginRecommend(
         ...(data?.pinned ?? []),
         ...(data?.groups ?? []).flatMap(g => g?.data ?? []),
     ];
+}
+
+/**
+ * 同步读取"当日已有缓存"的第一个插件推荐数据（零网络、零异步）。
+ * 首页推荐区首帧渲染用：MMKV 读取为同步 API，首帧即可拿到缓存直接渲染，
+ * 不再依赖异步 load() 完成（修复"有缓存但首帧不显示、切 tab 才显示"）。
+ * 无当日缓存返回 null（此时走异步 load 拉取）。
+ */
+export function getCachedPluginRecommendSyncFirst(): IPluginRecommendSheets | null {
+    try {
+        const now = new Date();
+        const plugins = PluginManager.getSortedPluginsWithAbility(
+            "getRecommendSheetTags",
+        );
+        // 优先手动指定源：用户切换过来源（plugin.recommendSource=hash）后重进软件，
+        // 应保持所选来源的歌单；否则会被"可用率最高"的源缓存截胡回初始歌单。
+        // 手动源无当日缓存（如跨天/首次）→ 继续回退择优。
+        const manualHash = Config.getConfig("plugin.recommendSource");
+        if (manualHash && manualHash !== "random") {
+            const manual = plugins.find(p => p.hash === manualHash);
+            if (manual) {
+                const c = readCache(manual.hash);
+                if (c && sameDay(c.fetchedAt, now)) {
+                    return c.data;
+                }
+            }
+        }
+        for (const p of plugins) {
+            const c = readCache(p.hash);
+            if (c && sameDay(c.fetchedAt, now)) {
+                return c.data;
+            }
+        }
+    } catch (e: any) {
+        devLog("error", "同步读取推荐歌单缓存失败", e?.message ?? e);
+    }
+    return null;
 }
 
 /* ------------------------------------------------------------------ */

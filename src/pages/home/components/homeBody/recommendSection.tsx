@@ -8,6 +8,7 @@ import { ROUTE_PATH, useNavigate } from "@/core/router";
 import {
     IPluginRecommendSheets,
     getFirstAvailablePluginRecommend,
+    getCachedPluginRecommendSyncFirst,
     refreshCachedPluginRecommend,
     getCachedRecommendSheetsByTag,
     isRealSheetItem,
@@ -18,6 +19,7 @@ import Toast from "@/utils/toast";
 import { useI18N } from "@/core/i18n";
 import { showDialog } from "@/components/dialogs/useDialog";
 import Config from "@/core/appConfig";
+import { usePlugins } from "@/core/pluginManager";
 
 /** 首页横滑区胶囊：直接歌单（推荐）或 标签（选中后拉取歌单） */
 interface ITagItem {
@@ -40,45 +42,75 @@ interface ITagItem {
  * 标题行右端刷新按钮：点击打开"推荐歌单来源"三级浮窗（选择/恢复默认），
  * 应用后按新来源强制刷新数据（指定源强制拉取，失败自动回退择优）。
  */
+/** 构建胶囊列表：pinned 有封面 → 推荐胶囊；pinned 标签 + groups 标签 → 标签胶囊（模块级纯函数，供首帧同步初始化与异步刷新共用） */
+function buildTagListFromData(
+    data: IPluginRecommendSheets,
+    t: ReturnType<typeof useI18N>["t"],
+): ITagItem[] {
+    const pinned = data?.pinned ?? [];
+    const directSheets = pinned.filter(isRealSheetItem);
+    const pinnedTags = pinned.filter(item => !isRealSheetItem(item));
+    const tags = pinnedTags.length
+        ? pinnedTags
+        : (data?.groups ?? []).flatMap(g => g?.data ?? []);
+    const list: ITagItem[] = [];
+    if (directSheets.length) {
+        list.push({
+            key: "recommend",
+            label: t("recommendSheet.recommended"),
+            sheets: directSheets,
+        });
+    }
+    tags.forEach((item, index) => {
+        list.push({
+            key: `tag-${item.id ?? index}-${item.title ?? index}`,
+            label: item.title ?? t("common.unknownName"),
+            tag: { id: item.id, title: item.title },
+        });
+    });
+    return list;
+}
+
 export default function RecommendSection() {
     const navigate = useNavigate();
     const colors = useColors();
     const { t } = useI18N();
+    // 订阅插件列表：冷启动首帧插件异步加载未完成时，
+    // 插件就绪（列表从空变非空）会触发重渲染，用于补渲染推荐歌单
+    const plugins = usePlugins();
 
-    const [tagList, setTagList] = useState<ITagItem[]>([]);
+    // 首帧同步读取当日缓存：有缓存立即渲染（MMKV 同步 API，零网络、零异步），
+    // 修复"有缓存但首帧不显示、切 tab 才显示"；无缓存走下方异步 load 拉取
+    const [initState] = useState<{
+        tagList: ITagItem[];
+        hash: string;
+    } | null>(() => {
+        const data = getCachedPluginRecommendSyncFirst();
+        if (!data) {
+            return null;
+        }
+        return {
+            tagList: buildTagListFromData(data, t),
+            hash: data.pluginHash,
+        };
+    });
+
+    const [tagList, setTagList] = useState<ITagItem[]>(
+        initState?.tagList ?? [],
+    );
     const [selected, setSelected] = useState(0);
     const [feed, setFeed] = useState<IMusic.IMusicSheetItemBase[]>([]);
-    const [loaded, setLoaded] = useState(false);
+    const [loaded, setLoaded] = useState(!!initState);
     const [refreshing, setRefreshing] = useState(false);
     // 记录推荐歌单来自哪个插件，跳详情时携带 pluginHash
-    const [pluginHash, setPluginHash] = useState<string>();
+    const [pluginHash, setPluginHash] = useState<string | undefined>(
+        initState?.hash,
+    );
 
     /** 构建胶囊列表：pinned 有封面 → 推荐胶囊；pinned 标签 + groups 标签 → 标签胶囊 */
     const buildTagList = useCallback(
-        (data: IPluginRecommendSheets): ITagItem[] => {
-            const pinned = data?.pinned ?? [];
-            const directSheets = pinned.filter(isRealSheetItem);
-            const pinnedTags = pinned.filter(item => !isRealSheetItem(item));
-            const tags = pinnedTags.length
-                ? pinnedTags
-                : (data?.groups ?? []).flatMap(g => g?.data ?? []);
-            const list: ITagItem[] = [];
-            if (directSheets.length) {
-                list.push({
-                    key: "recommend",
-                    label: t("recommendSheet.recommended"),
-                    sheets: directSheets,
-                });
-            }
-            tags.forEach((item, index) => {
-                list.push({
-                    key: `tag-${item.id ?? index}-${item.title ?? index}`,
-                    label: item.title ?? t("common.unknownName"),
-                    tag: { id: item.id, title: item.title },
-                });
-            });
-            return list;
-        },
+        (data: IPluginRecommendSheets): ITagItem[] =>
+            buildTagListFromData(data, t),
         [t],
     );
 
@@ -137,6 +169,34 @@ export default function RecommendSection() {
         },
         [buildTagList, loadFeedForItem],
     );
+
+    useEffect(() => {
+        // 首帧同步缓存命中时：立即拉取首个胶囊的真实歌单（横滑卡）
+        if (initState) {
+            loadFeedForItem(initState.tagList, 0, initState.hash);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // 根因修复（v2）：冷启动首帧插件列表为空 → 同步读缓存拿不到 → load() 排序列表也空 → 永不渲染。
+    // 关键：load() 在插件就绪前失败会 setLoaded(true) 锁死状态 → 用 loaded 判断会漏补。
+    // 改为以 tagList.length 为准：只要还没有内容，插件一旦就绪（0→N）就补——
+    // 有当日缓存 → 同步渲染（插件列表非空后能真正读到缓存）；无缓存 → 异步 load。
+    // 覆盖冷启动首次与二次打开（二次打开插件加载同样晚于首帧同步读）。
+    useEffect(() => {
+        if (tagList.length > 0) {
+            return;
+        }
+        if (plugins.length > 0) {
+            const data = getCachedPluginRecommendSyncFirst();
+            if (data) {
+                applyFeed(data);
+            } else {
+                load();
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [plugins.length, tagList.length]);
 
     const load = useCallback(async () => {
         const data: IPluginRecommendSheets | null =

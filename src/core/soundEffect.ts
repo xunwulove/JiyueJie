@@ -20,6 +20,25 @@ let infoCache: {
     levelMin: number;
     levelMax: number;
 } | null = null;
+let lastError: string | null = null;
+
+/**
+ * 内置 EQ 预设曲线（10 段，单位 millibel，约 ±12dB 内）。
+ * 不依赖设备系统预设（Android Equalizer 预设随 ROM 差异大、部分设备为 0）：
+ * UI 预设列表固定 = 手动 + 以下 N 个，跨设备统一；
+ * 设备频段数少于 10 时取前 N 段近似（频段自低频到高频，截取方向一致）。
+ */
+export const EQ_PRESETS: { name: string; bands: number[] }[] = [
+    { name: "摇滚", bands: [350, 250, -150, -200, 150, 300, 400, 350, 250, 150] },
+    { name: "流行", bands: [150, 100, -100, -200, -100, 200, 300, 350, 300, 200] },
+    { name: "爵士", bands: [300, 200, -100, -200, -100, 150, 250, 300, 250, 200] },
+    { name: "古典", bands: [300, 250, 0, -100, -150, 100, 250, 300, 250, 200] },
+    { name: "舞曲", bands: [400, 350, 100, -100, 0, 200, 300, 350, 300, 250] },
+    { name: "重低音", bands: [500, 450, 300, 150, 50, -50, -100, -100, 0, 100] },
+    { name: "电子", bands: [400, 300, 100, -150, -100, 200, 400, 450, 400, 300] },
+    { name: "人声", bands: [150, 100, 150, 250, 300, 200, 100, 0, -100, -150] },
+    { name: "高音增强", bands: [-100, 0, 100, 150, 200, 300, 400, 450, 500, 450] },
+];
 
 /** 确保效果器已绑定（播放器就绪且有 session 时执行一次） */
 export async function ensureSoundEffectAttached() {
@@ -29,13 +48,20 @@ export async function ensureSoundEffectAttached() {
         if (typeof sessionId === "number" && sessionId > 0) {
             SoundEffect.attach(sessionId);
             attached = true;
+            lastError = null;
             applyAllConfig();
             trace("均衡器已绑定 session " + sessionId);
         }
     } catch (e: any) {
-        // 播放器未就绪（如尚未播放过），下次播放再试
-        trace("均衡器绑定暂缓: " + (e?.message ?? e));
+        // 播放器未就绪（未播放过 → session 未分配）或反射失败：记录原因供页面诊断
+        lastError = e?.message ?? e?.code ?? String(e);
+        trace("均衡器绑定暂缓: " + lastError);
     }
+}
+
+/** 绑定/读取失败时的诊断信息（页面展示用） */
+export function getSoundEffectLastError(): string | null {
+    return lastError;
 }
 
 /** 效果器能力信息（首次成功缓存；未绑定返回 null） */
@@ -54,7 +80,12 @@ export async function getSoundEffectInfo() {
         };
         return infoCache;
     } catch (e: any) {
-        errorLog("读取均衡器能力失败", e?.message ?? e);
+        // 不覆盖已有错误：getAudioSessionId 的失败原因（如模块未注册/反射失败）比
+        // getInfo 的 "call attach first" 兜底文案更有诊断价值
+        if (!lastError) {
+            lastError = e?.message ?? e?.code ?? String(e);
+        }
+        errorLog("读取均衡器能力失败", lastError);
         return null;
     }
 }
@@ -68,15 +99,23 @@ export function applyAllConfig() {
     const bass = Config.getConfig("sound.bassBoost") ?? 0;
     const virtualizer = Config.getConfig("sound.virtualizer") ?? 0;
 
-    if (enabled && preset != null && preset >= 0) {
-        SoundEffect.setPreset(preset);
-    }
-    if (enabled && Array.isArray(bands) && bands.length > 0) {
-        bands.forEach((level: number, i: number) => {
-            if (typeof level === "number") {
-                SoundEffect.setBandLevel(i, level);
+    if (enabled) {
+        if (typeof preset === "number" && preset >= 0) {
+            // 内置预设：逐段应用预设曲线
+            const p = EQ_PRESETS[preset];
+            if (p) {
+                p.bands.forEach((level: number, i: number) => {
+                    SoundEffect.setBandLevel(i, level);
+                });
             }
-        });
+        } else if (Array.isArray(bands) && bands.length > 0) {
+            // 手动：应用用户拖动的频段
+            bands.forEach((level: number, i: number) => {
+                if (typeof level === "number") {
+                    SoundEffect.setBandLevel(i, level);
+                }
+            });
+        }
     }
     SoundEffect.setBassBoost(bass);
     SoundEffect.setVirtualizer(virtualizer);
@@ -90,18 +129,27 @@ export function applyEqEnabled(enabled: boolean) {
 }
 
 export function applyEqPreset(index: number) {
+    // index: -1 = 手动，>=0 = 内置预设（EQ_PRESETS[index]，0..N-1）
     Config.setConfig("sound.eqPreset", index);
     if (attached && SoundEffect) {
+        const bands = Config.getConfig("sound.eqBands") ?? [];
         if (index >= 0) {
-            SoundEffect.setPreset(index);
+            // 应用内置预设曲线（设备频段少时截取前 N 段近似）
+            const p = EQ_PRESETS[index];
+            if (p) {
+                p.bands.forEach((level: number, i: number) => {
+                    bands[i] = level;
+                    SoundEffect.setBandLevel(i, level);
+                });
+                Config.setConfig("sound.eqBands", bands);
+            }
         } else {
             // 切回手动：按现有 bands 重放
-            const bands = Config.getConfig("sound.eqBands") ?? [];
             bands.forEach((level: number, i: number) => {
                 if (typeof level === "number") SoundEffect.setBandLevel(i, level);
             });
-            SoundEffect.setEqEnabled(!!Config.getConfig("sound.eqEnabled"));
         }
+        SoundEffect.setEqEnabled(!!Config.getConfig("sound.eqEnabled"));
     }
 }
 

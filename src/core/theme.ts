@@ -205,7 +205,9 @@ function setBackground(backgroundInfo: Partial<IBackgroundInfo>) {
         Config.setConfig("theme.backgroundOpacity", backgroundInfo.opacity);
         newBgInfo.opacity = backgroundInfo.opacity;
     }
-    if (backgroundInfo.url !== undefined) {
+    // 用 in 判断而非 !== undefined：调用方传 { url: undefined } 表示"清除背景"，
+    // 值比较会把 undefined 当"未提供"而跳过清除分支（清除无效根因）
+    if ("url" in backgroundInfo) {
         Config.setConfig("theme.background", backgroundInfo.url);
         newBgInfo.url = backgroundInfo.url;
     }

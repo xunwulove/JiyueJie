@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 import settingTypes from "./settingTypes";
-import { SafeAreaView } from "react-native-safe-area-context";
+import VerticalSafeAreaView from "@/components/base/verticalSafeAreaView";
 import StatusBar from "@/components/base/statusBar";
 import { useParams } from "@/core/router";
 import HorizontalSafeAreaView from "@/components/base/horizontalSafeAreaView.tsx";
@@ -15,7 +15,9 @@ export default function Setting() {
     const { t } = useI18N();
 
     return (
-        <SafeAreaView edges={["bottom", "top"]} style={style.wrapper}>
+        // 2026-10-14 修复：改为 VerticalSafeAreaView（平板只保 bottom），
+        // 与其他二级页标题栏高度一致——此前 edges 含 top，平板上标题栏多出一段状态栏高度
+        <VerticalSafeAreaView style={style.wrapper}>
             <StatusBar />
             {settingItem.showNav === false ? null : (
                 <AppBar>{t(settingItem.i18nKey as any)}</AppBar>
@@ -24,7 +26,7 @@ export default function Setting() {
             <HorizontalSafeAreaView style={style.wrapper}>
                 <settingItem.component />
             </HorizontalSafeAreaView>
-        </SafeAreaView>
+        </VerticalSafeAreaView>
     );
 }
 

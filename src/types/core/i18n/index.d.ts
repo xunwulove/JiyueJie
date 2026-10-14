@@ -125,6 +125,7 @@ export interface ILanguageData {
     "recommendSheet.allTags": string; // 全部标签
     "recommendSheet.sourceUnavailable": string; // 该音源推荐歌单不可用，已回退自动择优
     "common.restoreDefault": string; // 恢复默认
+    "common.refresh": string; // 刷新
 
     // 搜索音乐列表相关
     "searchMusicList.searchPlaceHolder": string; // 搜索音乐
@@ -243,6 +244,10 @@ export interface ILanguageData {
     "themeSettings.lightMode": string; // 明亮模式
     "themeSettings.darkMode": string; // 黑暗模式
     "themeSettings.customMode": string; // 自定义模式
+    "themeSettings.customBgOpenHint": string; // 已设背景展开提示
+    "themeSettings.customBgNotSetHint": string; // 未设背景展开提示
+    "themeSettings.resetDefault": string; // 恢复默认
+    "themeSettings.resetDefaultToast": string; // 恢复默认提示
 
 
     // 自定义主题相关

@@ -237,10 +237,11 @@ export default function BasicSetting() {
                     </ThemeText>
                 ),
                 onPress() {
-                    showPanel("SimpleInput", {
+                    // 2026-10-14：输入类操作统一三级浮窗（原为底部 SimpleInput 面板）
+                    showDialog("SimpleInputDialog", {
                         title: t("dialog.setCacheTitle"),
                         placeholder: t("dialog.setCachePlaceholder"),
-                        onOk(text, closePanel) {
+                        onOk(text, close) {
                             let val = parseInt(text);
                             if (val < 100) {
                                 val = 100;
@@ -252,7 +253,7 @@ export default function BasicSetting() {
                                     "basic.maxCacheSize",
                                     val * 1024 * 1024,
                                 );
-                                closePanel();
+                                close();
                                 Toast.success(t("toast.cacheSetSuccess"));
                             }
                         },

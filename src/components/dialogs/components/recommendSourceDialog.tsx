@@ -56,11 +56,6 @@ export default function RecommendSourceDialog(props: IRecommendSourceDialogProps
                 title: t("recommendSheet.autoSelect"),
                 reliability: null,
             },
-            {
-                key: "random",
-                title: "随机使用音源",
-                reliability: null,
-            },
             ...plugins.map(p => ({
                 key: p.hash,
                 title: p.name,
@@ -71,12 +66,29 @@ export default function RecommendSourceDialog(props: IRecommendSourceDialogProps
         ];
     }, [t]);
 
-    /** 应用并关闭：auto=清除指定（回自动择优），random=随机使用音源，hash=锁定该源；随后通知调用方强制刷新 */
+    /** 应用并关闭：auto=清除指定（回自动择优），hash=锁定该源；随后通知调用方强制刷新 */
     const apply = (next: string) => {
         Config.setConfig(
             "plugin.recommendSource",
             next === "auto" ? undefined : next,
         );
+        hideDialog();
+        onApplied?.();
+    };
+
+    /** 刷新：随机选择一个音源作为歌单（写入配置并持久化，下次进软件一天内仍显示该歌单） */
+    const refreshRandom = () => {
+        const plugins = PluginManager.getSortedPluginsWithAbility(
+            "getRecommendSheetTags",
+        );
+        if (!plugins.length) {
+            hideDialog();
+            onApplied?.();
+            return;
+        }
+        const picked =
+            plugins[Math.floor(Math.random() * plugins.length)];
+        Config.setConfig("plugin.recommendSource", picked.hash);
         hideDialog();
         onApplied?.();
     };
@@ -139,6 +151,11 @@ export default function RecommendSourceDialog(props: IRecommendSourceDialogProps
             <Dialog.Actions
                 actions={[
                     {
+                        title: t("common.refresh"),
+                        type: "normal",
+                        onPress: refreshRandom,
+                    },
+                    {
                         title: t("common.cancel"),
                         type: "normal",
                         onPress: hideDialog,
@@ -147,11 +164,6 @@ export default function RecommendSourceDialog(props: IRecommendSourceDialogProps
                         title: t("common.confirm"),
                         type: "primary",
                         onPress: () => apply(selected),
-                    },
-                    {
-                        title: t("common.restoreDefault"),
-                        type: "normal",
-                        onPress: () => apply("auto"),
                     },
                 ]}
             />

@@ -12,7 +12,7 @@ import {
     StyleSheet,
     View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import VerticalSafeAreaView from "@/components/base/verticalSafeAreaView";
 import LinearGradient from "react-native-linear-gradient";
 import StatusBar from "@/components/base/statusBar";
 import Icon from "@/components/base/icon.tsx";
@@ -399,8 +399,9 @@ export default function Statistics() {
         </LinearGradient>
     );
 
+    // 2026-10-14 修复：改 VerticalSafeAreaView（平板只保 bottom），与其他二级页标题栏高度一致
     return (
-        <SafeAreaView edges={["bottom", "top"]} style={styles.wrapper}>
+        <VerticalSafeAreaView style={styles.wrapper}>
             <StatusBar />
             <AppBar>
                 <ThemeText fontSize="title" fontWeight="bold">
@@ -481,7 +482,7 @@ export default function Statistics() {
                     </>
                 )}
             </ScrollView>
-        </SafeAreaView>
+        </VerticalSafeAreaView>
     );
 }
 

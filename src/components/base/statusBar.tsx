@@ -1,13 +1,15 @@
 import React from "react";
-import { StatusBar, StatusBarProps, View } from "react-native";
+import { StatusBar, StatusBarProps, StyleSheet, View } from "react-native";
 import useColors from "@/hooks/useColors";
 import Theme from "@/core/theme";
+import Image from "./image";
 
 interface IStatusBarProps extends StatusBarProps {}
 
 export default function (props: IStatusBarProps) {
     const colors = useColors();
     const theme = Theme.useTheme();
+    const background = Theme.useBackground();
     const { backgroundColor, barStyle } = props;
 
     return (
@@ -23,13 +25,31 @@ export default function (props: IStatusBarProps) {
                     zIndex: 10000,
                     position: "absolute",
                     top: 0,
-                    // 默认跟随页面背景色（对齐旧项目：状态栏区域 = 页面背景，不出现强调色长条）
-                    backgroundColor:
-                        backgroundColor ?? colors.background,
+                    // 显式传色（如沉浸式播放页）用传的颜色；默认跟随页面背景同款：
+                    // 无自定义背景图 = pageBackground 色（与现状一致），有图 = 渲染同一张图（模糊+透明度），
+                    // 避免换背景后状态栏区域留白底（2026-10-14 修复）
+                    backgroundColor: backgroundColor ?? "transparent",
                     width: "100%",
                     height: StatusBar.currentHeight,
-                }}
-            />
+                }}>
+                {backgroundColor ? null : background?.url ? (
+                    <Image
+                        uri={background.url}
+                        style={[
+                            StyleSheet.absoluteFill,
+                            { opacity: background?.opacity ?? 0.6 },
+                        ]}
+                        blurRadius={background?.blur ?? 20}
+                    />
+                ) : (
+                    <View
+                        style={[
+                            StyleSheet.absoluteFill,
+                            { backgroundColor: colors.pageBackground },
+                        ]}
+                    />
+                )}
+            </View>
         </>
     );
 }

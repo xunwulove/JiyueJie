@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
-import { BackHandler, StyleSheet, View } from "react-native";
+import { BackHandler, StyleSheet } from "react-native";
 import { useAtomValue, useSetAtom } from "jotai";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
@@ -12,7 +13,7 @@ import {
     popTabletSubPage,
     tabletSubPagesAtom,
 } from "@/core/tabletNav";
-import rpx, { vw } from "@/utils/rpx";
+import { vw } from "@/utils/rpx";
 import PageBackground from "@/components/base/pageBackground";
 
 /**
@@ -51,7 +52,7 @@ export default function SubPageOverlay() {
 
     return (
         <>
-            {subPages.map((page, idx) => {
+            {subPages.map(page => {
                 const routeDef = routes.find(r => r.path === page.path);
                 if (!routeDef) {
                     return null;
@@ -75,6 +76,13 @@ export default function SubPageOverlay() {
 /** 二级页面：右内容区全宽，从右滑入；背景 = 复用全局 PageBackground（与一级完全一致） */
 function FullOverlay({ children }: { children: React.ReactNode }) {
     const progress = useSharedValue(0);
+    const insets = useSafeAreaInsets();
+    // 覆盖层左上角相对屏幕原点的偏移（背景图/渐变需按整屏几何渲染才能与全局背景完全重叠）：
+    // top = 状态栏高度 + TabBar 固定高 56dp（对齐 APlayer）；left = 左播放面板宽（平板左侧 30%）
+    const screenInsets = {
+        top: insets.top + 56,
+        left: vw(100) * 0.3,
+    };
     // 注意：vw() 是普通 JS 函数，不能在 worklet 内调用（reanimated UI 线程无此函数），先算成常量
     const slideDistance = vw(100) * 0.7;
     useEffect(() => {
@@ -95,26 +103,10 @@ function FullOverlay({ children }: { children: React.ReactNode }) {
                 animatedStyle,
                 { zIndex: 1000 },
             ]}>
-            {/* 背景：覆盖层自绘 PageBackground（不透明渐变）——遮挡下方一级内容 + 与一级同款渐变，
-                不透明层盖住全局层 → 视觉一致且无氛围层叠加 */}
-            <PageBackground />
+            {/* 背景：覆盖层自绘 PageBackground（不透明渐变）——遮挡下方一级内容 + 与一级同款渐变；
+                传入 screenInsets 后背景图/渐变按整屏几何渲染，与全局背景完全重叠（不错位） */}
+            <PageBackground screenInsets={screenInsets} />
             {children}
         </Animated.View>
     );
 }
-
-const styles = StyleSheet.create({
-    mask: {
-        zIndex: 1100,
-        backgroundColor: "#000000",
-    },
-    modalCenter: {
-        ...StyleSheet.absoluteFillObject,
-        zIndex: 1101,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    modal: {
-        overflow: "hidden",
-    },
-});

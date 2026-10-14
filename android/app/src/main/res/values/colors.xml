@@ -1,7 +1,9 @@
 <resources>
-    <!-- 启动页 v2：窗口背景 = 渐变（下 #EAF0FA 微品牌蓝 → 上 #F8F9FA 白，同软件内部 PageBackground，见 splashscreen_brand_window.xml） -->
-    <!-- Android 12+ 系统 splash 纯色背景 = 顶部白 #F8F9FA，与窗口背景渐变顶部/RN BrandSplash 顶部无缝衔接 -->
+    <!-- 启动页 v5：窗口背景背景层 = 软件内 PageBackground 同款浅色渐变（下 #EAF0FA → 上 #F8F9FA，见 splashscreen_brand_window.xml 与 src/core/theme.ts） -->
+    <!-- Android 12+ 系统 splash 纯色背景 = 渐变顶部白 #F8F9FA，与窗口背景渐变顶部无缝衔接（系统 splash 层官方仅支持纯色） -->
     <color name="brand_splash">#F8F9FA</color>
-    <!-- 系统 splash（API 31+）音符背后的圆形品牌底：同 RN BrandSplash 容器渐变起点 #4055D4 -->
+    <!-- 窗口背景渐变底部（同软件内 PageBackground 底部 pageBackgroundTop #EAF0FA）：渐变两端与系统 splash 背景同一 color 资源，三段（系统 splash→窗口背景→主界面）同源无缝 -->
+    <color name="splash_bg_bottom">#EAF0FA</color>
+    <!-- 系统 splash（API 31+）音符背后的圆形品牌底：同窗口背景容器渐变起点 #4055D4（= 桌面图标 ic_launcher_background_gradient 起点） -->
     <color name="splash_box">#4055D4</color>
 </resources>
