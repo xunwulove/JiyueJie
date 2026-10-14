@@ -98,7 +98,7 @@ export default function AddToMusicSheetDialog(
             <Dialog.Actions
                 actions={[
                     {
-                        title: t("common.cancel"),
+                        title: t("common.done"),
                         type: "normal",
                         onPress: hideDialog,
                     },

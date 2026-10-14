@@ -60,7 +60,7 @@ export default function SetFontSizeDialog(props: IProps) {
             <Dialog.Actions
                 actions={[
                     {
-                        title: i18n.t("common.cancel"),
+                        title: i18n.t("common.done"),
                         type: "normal",
                         onPress: hideDialog,
                     },
