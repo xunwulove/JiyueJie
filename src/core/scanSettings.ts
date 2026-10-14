@@ -5,9 +5,7 @@ import { ExternalStorageDirectoryPath } from "react-native-fs";
 export interface IScanSettings {
     /** 使用 Android 媒体库（fork：扫描默认目录 = 系统 Music + Download） */
     useMediaLibrary: boolean;
-    /** 启用自定义文件夹 */
-    customEnabled: boolean;
-    /** 自定义文件夹路径列表 */
+    /** 自定义文件夹路径列表（有路径即启用，无独立开关） */
     customFolders: string[];
     /** 不扫描 60 秒以下音频 */
     minDuration: boolean;
@@ -19,7 +17,6 @@ const SCAN_SETTINGS_KEY = "scan-settings";
 
 const DEFAULTS: IScanSettings = {
     useMediaLibrary: true,
-    customEnabled: false,
     customFolders: [],
     minDuration: true,
     blockedFolders: [],

@@ -59,9 +59,8 @@ export default function ScanSettings() {
             if (settings.useMediaLibrary) {
                 folders.push(...defaultScanFolders());
             }
-            if (settings.customEnabled) {
-                folders.push(...(settings.customFolders ?? []));
-            }
+            // 自定义文件夹：有路径即启用（无独立开关）
+            folders.push(...(settings.customFolders ?? []));
             if (!folders.length) {
                 Toast.warn("请先启用媒体库或添加自定义文件夹");
                 return;
@@ -218,88 +217,113 @@ export default function ScanSettings() {
                     </LinearGradient>
                 </Pressable>
 
-                {/* ===== 媒体库 ===== */}
-                <SectionTitle title="媒体库" />
-                <SettingSwitchRow
-                    icon="folder-music-outline"
-                    title="使用 Android 媒体库"
-                    subtitle="扫描系统 Music / Download 目录中的音乐"
-                    checked={settings.useMediaLibrary}
-                    onCheckedChange={v => patch({ useMediaLibrary: v })}
-                />
-                <ListDivider marginLeft={16} />
-                <SettingSwitchRow
-                    icon="folder-outline"
-                    title="自定义文件夹"
-                    subtitle="额外扫描你指定的文件夹"
-                    checked={settings.customEnabled}
-                    onCheckedChange={v => patch({ customEnabled: v })}
-                />
-                {settings.customEnabled
-                    ? settings.customFolders?.map((path: string, i: number) => (
-                          <React.Fragment key={path}>
-                              <ListDivider marginLeft={16} />
-                              <FolderRow
-                                  path={path}
-                                  onRemove={() =>
-                                      removeItem("customFolders", path)
-                                  }
-                              />
-                          </React.Fragment>
-                      ))
-                    : null}
-                {settings.customEnabled ? (
-                    <React.Fragment>
+                {/* ===== 媒体库（卡片式分组，对齐设置页/备份管理） ===== */}
+                <View style={styles.group}>
+                    <View style={styles.groupHeader}>
+                        <ThemeText
+                            fontSize="subTitle"
+                            fontColor="primary"
+                            fontWeight="bold">
+                            媒体库
+                        </ThemeText>
+                    </View>
+                    <View style={[styles.card, { backgroundColor: colors.card }]}>
+                        <SettingSwitchRow
+                            icon="folder-music-outline"
+                            title="使用 Android 媒体库"
+                            checked={settings.useMediaLibrary}
+                            onCheckedChange={v =>
+                                patch({ useMediaLibrary: v })
+                            }
+                        />
                         <ListDivider marginLeft={16} />
+                        {settings.customFolders?.map((path: string) => (
+                            <FolderRow
+                                key={path}
+                                path={path}
+                                onRemove={() =>
+                                    removeItem("customFolders", path)
+                                }
+                            />
+                        ))}
+                        {settings.customFolders?.length ? (
+                            <ListDivider marginLeft={16} />
+                        ) : null}
                         <AddRow
                             title="添加自定义文件夹"
                             onPress={() => pickFolder("customFolders")}
                         />
-                    </React.Fragment>
-                ) : null}
+                    </View>
+                </View>
 
-                {/* ===== 设置 ===== */}
-                <SectionTitle title="设置" />
-                <Pressable
-                    style={styles.permissionRow}
-                    onPress={() => Linking.openSettings()}>
-                    <Icon
-                        name="shield-keyhole-outline"
-                        size={20}
-                        color={colors.primary}
-                    />
-                    <ThemeText
-                        fontSize="content"
-                        fontWeight="medium"
-                        style={styles.permissionTitle}>
-                        管理外部存储权限
-                    </ThemeText>
-                </Pressable>
-                <ListDivider marginLeft={16} />
-                <SettingSwitchRow
-                    icon="arrow-path"
-                    title="不扫描 60 秒以下音频"
-                    subtitle="跳过时长不足 1 分钟的音频"
-                    checked={settings.minDuration}
-                    onCheckedChange={v => patch({ minDuration: v })}
-                />
-
-                {/* ===== 被屏蔽的文件夹 ===== */}
-                <SectionTitle title="被屏蔽的文件夹" />
-                {settings.blockedFolders?.map((path: string, i: number) => (
-                    <React.Fragment key={path}>
+                {/* ===== 设置（卡片式分组） ===== */}
+                <View style={styles.group}>
+                    <View style={styles.groupHeader}>
+                        <ThemeText
+                            fontSize="subTitle"
+                            fontColor="primary"
+                            fontWeight="bold">
+                            设置
+                        </ThemeText>
+                    </View>
+                    <View style={[styles.card, { backgroundColor: colors.card }]}>
+                        <Pressable
+                            style={styles.permissionRow}
+                            onPress={() => Linking.openSettings()}>
+                            <Icon
+                                name="shield-keyhole-outline"
+                                size={20}
+                                color={colors.primary}
+                            />
+                            <ThemeText
+                                fontSize="content"
+                                fontWeight="medium"
+                                style={styles.permissionTitle}>
+                                管理外部存储权限
+                            </ThemeText>
+                        </Pressable>
                         <ListDivider marginLeft={16} />
-                        <FolderRow
-                            path={path}
-                            onRemove={() => removeItem("blockedFolders", path)}
+                        <SettingSwitchRow
+                            icon="arrow-path"
+                            title="不扫描 60 秒以下音频"
+                            subtitle="跳过时长不足 1 分钟的音频"
+                            checked={settings.minDuration}
+                            onCheckedChange={v =>
+                                patch({ minDuration: v })
+                            }
                         />
-                    </React.Fragment>
-                ))}
-                <ListDivider marginLeft={16} />
-                <AddRow
-                    title="添加被屏蔽的文件夹"
-                    onPress={showAddBlockedDialog}
-                />
+                    </View>
+                </View>
+
+                {/* ===== 被屏蔽的文件夹（卡片式分组） ===== */}
+                <View style={styles.group}>
+                    <View style={styles.groupHeader}>
+                        <ThemeText
+                            fontSize="subTitle"
+                            fontColor="primary"
+                            fontWeight="bold">
+                            被屏蔽的文件夹
+                        </ThemeText>
+                    </View>
+                    <View style={[styles.card, { backgroundColor: colors.card }]}>
+                        {settings.blockedFolders?.map((path: string) => (
+                            <FolderRow
+                                key={path}
+                                path={path}
+                                onRemove={() =>
+                                    removeItem("blockedFolders", path)
+                                }
+                            />
+                        ))}
+                        {settings.blockedFolders?.length ? (
+                            <ListDivider marginLeft={16} />
+                        ) : null}
+                        <AddRow
+                            title="添加被屏蔽的文件夹"
+                            onPress={showAddBlockedDialog}
+                        />
+                    </View>
+                </View>
 
                 {/* ===== 说明 ===== */}
                 <ThemeText
@@ -316,25 +340,11 @@ export default function ScanSettings() {
     );
 }
 
-/** 分组标题（对齐 APlayer SectionTitle：14sp Bold primary） */
-function SectionTitle({ title }: { title: string }) {
-    const colors = useColors();
-    return (
-        <ThemeText
-            fontSize="subTitle"
-            fontWeight="bold"
-            color={colors.primary}
-            style={styles.sectionTitle}>
-            {title}
-        </ThemeText>
-    );
-}
-
-/** 开关设置行（对齐设置行标题 content 16/medium：20 图标 primary + 标题 16 + 副标题 12 + Switch） */
+/** 开关设置行（对齐设置行标题 content 16/medium：20 图标 primary + 标题 16 + 可选副标题 12 + Switch） */
 function SettingSwitchRow(props: {
     icon: any;
     title: string;
-    subtitle: string;
+    subtitle?: string;
     checked: boolean;
     onCheckedChange: (v: boolean) => void;
 }) {
@@ -378,7 +388,11 @@ function AddRow({
                 styles.addRow,
                 compact ? styles.addRowCompact : null,
             ]}>
-            <Icon name="plus" size={20} color={colors.primary} />
+            <Icon
+                name="folder-plus"
+                size={20}
+                color={colors.primary}
+            />
             <ThemeText
                 fontSize="content"
                 fontWeight="medium"
@@ -400,6 +414,11 @@ function FolderRow({
     const colors = useColors();
     return (
         <View style={styles.folderRow}>
+            <Icon
+                name="folder-outline"
+                size={16}
+                color={colors.textSecondary}
+            />
             <ThemeText
                 fontSize="content"
                 fontColor="textSecondary"
@@ -426,11 +445,26 @@ function FolderRow({
 
 const styles = StyleSheet.create({
     content: {
-        paddingHorizontal: 16,
         paddingBottom: 24,
+    },
+    /* 卡片式分组（对齐设置页/备份管理 backupSetting）：分组标题在外，行收进圆角卡片 */
+    group: {
+        marginTop: 8,
+    },
+    groupHeader: {
+        paddingHorizontal: 16,
+        height: 36,
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    card: {
+        marginHorizontal: 24,
+        borderRadius: 14,
+        overflow: "hidden",
     },
     scanCard: {
         width: "100%",
+        marginHorizontal: 16, // content 无水平 padding（卡片分组自留边距），扫描卡单独保持 16
         borderRadius: 14,
         padding: 16,
         flexDirection: "row",
@@ -442,10 +476,6 @@ const styles = StyleSheet.create({
     },
     scanSubtitle: {
         marginTop: 2,
-    },
-    sectionTitle: {
-        marginTop: 20,
-        marginBottom: 8,
     },
     switchRow: {
         width: "100%",
@@ -474,7 +504,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: 16,
-        paddingTop: 6,
+        paddingVertical: 10, // 与 addRow/permissionRow 垂直间距一致，保证同级行高统一
     },
     addRow: {
         width: "100%",
@@ -492,6 +522,7 @@ const styles = StyleSheet.create({
     },
     folderPath: {
         flex: 1,
+        marginLeft: 16, // 对齐 permissionTitle 文本起点
     },
     note: {
         marginTop: 16,
