@@ -2,7 +2,6 @@ import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import rpx from "@/utils/rpx";
 import { iconSizeConst } from "@/constants/uiConst";
-import { ROUTE_PATH, useNavigate } from "@/core/router";
 import ThemeText from "./themeText";
 import useColors from "@/hooks/useColors";
 import { showDialog } from "../dialogs/useDialog";
@@ -26,7 +25,6 @@ export default function (props: IProps) {
     const sheetId = musicSheet?.id;
 
     const colors = useColors();
-    const navigate = useNavigate();
     const { t } = useI18N();
 
     const starred = useSheetIsStarred(musicSheet);
@@ -93,13 +91,14 @@ export default function (props: IProps) {
                 name="pencil-square"
                 sizeType={"normal"}
                 style={style.optionButton}
-                onPress={async () => {
-                    navigate(ROUTE_PATH.MUSIC_LIST_EDITOR, {
-                        musicList: musicList,
+                onPress={() => {
+                    // 批量编辑：统一三级浮窗（MusicListEditorDialog），不再跳独立二级页
+                    showDialog("MusicListEditorDialog", {
                         musicSheet: {
                             title: sheetName,
                             id: sheetId,
                         },
+                        musicList: musicList ?? [],
                     });
                 }}
             />

@@ -299,3 +299,15 @@ src\pages\setting\settingTypes\pluginSetting\views\pluginSort.tsx
 - 未引入新的硬编码字号/颜色（仅 uiConst 新增 xlarge=32 档位 key 与播放页 hero 既有硬编码登记保留，无新增裸数字）。
 - 文档保持中文、UTF-8 无 BOM（已核验）。
 - 最小改动：仅统一少数派写法，未做无关重构；改组件基座（titleAndTag/listItem/Input/基座 BottomButton 评估）均已检查调用方渲染。
+
+---
+
+## 七、后续决策记录（2026-10-14 晚）
+
+### D1 — 歌单批量编辑入口合并（用户拍板：删三点菜单，✎ 编辑按钮改浮窗版）
+
+- **问题**：插件/API/专辑歌单详情页同时存在两个"批量编辑歌曲"入口——顶栏三点菜单"批量编辑"（MusicListEditorDialog 三级浮窗）与头部操作栏 ✎ 编辑按钮（MUSIC_LIST_EDITOR 独立二级页），功能重复（同一 MusicListEditor 编辑器两种载体；该类歌单无本地 id，删除/保存均不可用）。
+- **用户拍板**：删除三点菜单入口（连同无剩余项的三点按钮）；头部操作栏 ✎ 编辑按钮改为打开 **MusicListEditorDialog 三级浮窗**。
+- **改动**：`src/components/musicSheetPage/components/navBar.tsx`（移除 ellipsis-vertical 三点菜单，仅留搜索）；`src/components/base/playAllBar.tsx`（✎ 按钮由 navigate(MUSIC_LIST_EDITOR) 改为 showDialog("MusicListEditorDialog")，清理 useNavigate/ROUTE_PATH import）。
+- **保留**：MUSIC_LIST_EDITOR 独立二级页仍被歌手详情页"批量编辑音乐"、本地音乐页"批量编辑"使用（不在本次合并范围）；本地歌单详情页入口不受影响（原本无此两入口）。
+- **验证**：tsc 通过；备份 `E:\Temp\Deepseek\jiyuejie-sheeteditor-merge-20261014\`。
