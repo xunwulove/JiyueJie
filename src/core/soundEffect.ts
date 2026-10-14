@@ -1,4 +1,4 @@
-import { NativeModules, Platform } from "react-native";
+import { DeviceEventEmitter, NativeModules, Platform } from "react-native";
 import Config from "@/core/appConfig";
 import { errorLog, trace } from "@/utils/log";
 
@@ -19,8 +19,22 @@ let infoCache: {
     presets: string[];
     levelMin: number;
     levelMax: number;
+    /** 设备是否支持低音增强（attach 时构造成功 = 支持） */
+    bassSupported: boolean;
+    /** 设备是否支持环绕声 */
+    virtualizerSupported: boolean;
 } | null = null;
 let lastError: string | null = null;
+
+// 音频路由变化（插拔耳机/切换蓝牙）：原生已重建效果器（频段数等能力随路由变化，
+// 如扬声器 5 段 / 耳机 10 段）→ 清能力缓存（下次查询重拉）+ 重放当前配置到新效果器
+if (Platform.OS === "android" && SoundEffect) {
+    DeviceEventEmitter.addListener("SoundEffectReattached", () => {
+        infoCache = null;
+        trace("音效：音频路由变化，效果器已重建，缓存失效");
+        applyAllConfig();
+    });
+}
 
 /**
  * 内置 EQ 预设曲线（10 段，单位 millibel，约 ±12dB 内）。
@@ -71,12 +85,27 @@ export async function getSoundEffectInfo() {
     try {
         const info = await SoundEffect.getInfo();
         if (!info) return null;
+        // 设备效果支持情况（查询失败按"支持"保守处理，不阻断 UI；未 attach 时保持可滑，等播放后绑定生效）
+        let bassSupported = true;
+        let virtualizerSupported = true;
+        try {
+            const ranges = await SoundEffect.getEffectRanges();
+            if (ranges) {
+                bassSupported = ranges.bassSupported !== false;
+                virtualizerSupported =
+                    ranges.virtualizerSupported !== false;
+            }
+        } catch {
+            // 未 attach 或查询失败：走保守默认
+        }
         infoCache = {
             bands: info.bands ?? 0,
             centerFreqs: info.centerFreqs ?? [],
             presets: info.presets ?? [],
             levelMin: info.levelMin ?? -1500,
             levelMax: info.levelMax ?? 1500,
+            bassSupported,
+            virtualizerSupported,
         };
         return infoCache;
     } catch (e: any) {
@@ -129,22 +158,22 @@ export function applyEqEnabled(enabled: boolean) {
 }
 
 export function applyEqPreset(index: number) {
-    // index: -1 = 手动，>=0 = 内置预设（EQ_PRESETS[index]，0..N-1）
+    // index: -1 = 手动(自定义)，>=0 = 内置预设（EQ_PRESETS[index]，0..N-1）
     Config.setConfig("sound.eqPreset", index);
     if (attached && SoundEffect) {
-        const bands = Config.getConfig("sound.eqBands") ?? [];
         if (index >= 0) {
-            // 应用内置预设曲线（设备频段少时截取前 N 段近似）
+            // 应用内置预设曲线（设备频段少时截取前 N 段近似）。
+            // 注意：只 setBandLevel 生效、不写入 eqBands——自定义频段保持原样，
+            // 切回"自定义"时仍保留用户拖动过的值
             const p = EQ_PRESETS[index];
             if (p) {
                 p.bands.forEach((level: number, i: number) => {
-                    bands[i] = level;
                     SoundEffect.setBandLevel(i, level);
                 });
-                Config.setConfig("sound.eqBands", bands);
             }
         } else {
-            // 切回手动：按现有 bands 重放
+            // 切回自定义：按现有 eqBands 重放（用户拖动过的值）
+            const bands = Config.getConfig("sound.eqBands") ?? [];
             bands.forEach((level: number, i: number) => {
                 if (typeof level === "number") SoundEffect.setBandLevel(i, level);
             });

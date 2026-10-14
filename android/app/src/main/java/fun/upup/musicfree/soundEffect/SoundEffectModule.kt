@@ -1,5 +1,8 @@
 package `fun`.upup.musicfree.soundEffect
 
+import android.media.AudioDeviceCallback
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
 import android.media.audiofx.Virtualizer
@@ -23,6 +26,8 @@ import java.util.concurrent.CountDownLatch
  * - Equalizer/BassBoost/Virtualizer 用 priority=0 绑定该 session，attach 一次即生效；
  *   换歌不重建 player，无需重新 attach（本模块按 session 幂等）。
  * - 设备不支持某效果器时降级（try/catch，不崩溃）。
+ * - 音频路由变化（插拔耳机等）会改变系统 Equalizer 频段数（如扬声器 5 段 / 耳机 10 段），
+ *   注册 AudioDeviceCallback，路由变化时强制重建效果器并通知 RN 刷新频段 UI。
  */
 class SoundEffectModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
@@ -33,7 +38,54 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
     private var sessionId = -1
     private var lastError: String? = null
 
+    /** 音频输出路由变化（插拔耳机/切换蓝牙等）→ 重建效果器（频段数等能力随路由变化） */
+    private val audioDeviceCallback = object : AudioDeviceCallback() {
+        override fun onAudioDevicesAdded(devices: Array<AudioDeviceInfo>) {
+            rebuildOnRoutingChange()
+        }
+
+        override fun onAudioDevicesRemoved(devices: Array<AudioDeviceInfo>) {
+            rebuildOnRoutingChange()
+        }
+    }
+
+    init {
+        try {
+            val audioManager =
+                reactContext.getSystemService(AudioManager::class.java)
+            audioManager?.registerAudioDeviceCallback(
+                audioDeviceCallback,
+                Handler(Looper.getMainLooper()),
+            )
+        } catch (_: Exception) {
+        }
+    }
+
     override fun getName(): String = "SoundEffectModule"
+
+    override fun onCatalystInstanceDestroy() {
+        try {
+            val audioManager =
+                reactContext.getSystemService(AudioManager::class.java)
+            audioManager?.unregisterAudioDeviceCallback(audioDeviceCallback)
+        } catch (_: Exception) {
+        }
+        super.onCatalystInstanceDestroy()
+    }
+
+    /** 路由变化：重建效果器（保持同一 session），并通知 RN 刷新能力信息 */
+    private fun rebuildOnRoutingChange() {
+        try {
+            if (sessionId <= 0) return
+            attachEffects(sessionId)
+            // 频段数/支持情况可能已变（耳机 10 段 vs 扬声器 5 段），RN 侧清缓存并重查
+            reactContext.emitDeviceEvent(
+                "SoundEffectReattached",
+                Arguments.createMap(),
+            )
+        } catch (_: Exception) {
+        }
+    }
 
     /** 读取当前播放器 audioSessionId（须播放过一次后有效；-1 表示未分配） */
     @ReactMethod
@@ -142,6 +194,11 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
     fun attach(sessionId: Int) {
         if (sessionId <= 0) return
         if (this.sessionId == sessionId && equalizer != null) return
+        attachEffects(sessionId)
+    }
+
+    /** 实际创建并绑定三个效果器（attach 与路由变化重建共用） */
+    private fun attachEffects(sessionId: Int) {
         releaseEffects()
         // 逐个效果器独立 try：Equalizer 在个别 ROM（车机/华为）构造可能失败，
         // 不能因一个失败连坐其余；失败原因记入 lastError 供 getInfo 诊断返回
@@ -261,6 +318,23 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
             vz.setStrength(s)
             vz.enabled = s > 0
         } catch (_: Exception) {
+        }
+    }
+
+    /**
+     * 查询设备对低音增强/环绕声的支持情况（供 UI 禁用与置灰）。
+     * audiofx 无跨版本可靠的强度范围查询 API（BassBoost 无、Virtualizer 各 SDK 不一），
+     * 因此用"attach 时构造是否成功"判定：构造成功 = 设备支持；构造失败 = 不支持（对象为 null）。
+     */
+    @ReactMethod
+    fun getEffectRanges(promise: Promise) {
+        try {
+            val map = Arguments.createMap()
+            map.putBoolean("bassSupported", bassBoost != null)
+            map.putBoolean("virtualizerSupported", virtualizer != null)
+            promise.resolve(map)
+        } catch (e: Exception) {
+            promise.reject("get_ranges_error", e.message ?: "unknown")
         }
     }
 
