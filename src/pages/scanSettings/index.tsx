@@ -361,7 +361,7 @@ function SettingSwitchRow(props: {
     );
 }
 
-/** 添加行（与同级功能行统一 content 16/medium primary；加号 16 primary） */
+/** 添加行（与"管理外部存储权限"行格式一致：20 图标 primary + 标题 16 medium 正文色 + 右箭头） */
 function AddRow({
     title,
     onPress,
@@ -379,14 +379,25 @@ function AddRow({
                 styles.addRow,
                 compact ? styles.addRowCompact : null,
             ]}>
-            <Icon name="plus" size={16} color={colors.primary} />
+            <Icon name="plus" size={20} color={colors.primary} />
             <ThemeText
                 fontSize="content"
                 fontWeight="medium"
-                color={colors.primary}
                 style={styles.addText}>
                 {title}
             </ThemeText>
+            <Icon
+                name="arrow-left"
+                size={16}
+                color={
+                    colors.textSecondary
+                        ? Color(colors.textSecondary)
+                              .alpha(0.5)
+                              .toString()
+                        : undefined
+                }
+                style={styles.enterIcon}
+            />
         </Pressable>
     );
 }
@@ -480,13 +491,14 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: 16,
-        paddingTop: 10,
+        paddingVertical: 10, // 与 permissionRow 行距一致
     },
     addRowCompact: {
         paddingTop: 8,
     },
     addText: {
-        marginLeft: 8,
+        flex: 1,
+        marginLeft: 16, // 与 permissionTitle 一致
     },
     folderPath: {
         flex: 1,

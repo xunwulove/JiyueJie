@@ -168,7 +168,7 @@
 
 - **同类调查**：设置类页面行标题：content(16)+medium：basicSetting（createSwitch/createRadio/入口行/对齐颜色行多处）、backupSetting 列表行、backgroundCustom actionRow、全项目 ListItem.Content title= 调用（listItem.tsx:253-257）**绝对多数**；content(16)+regular：仅 mode.tsx:34（1 处）；body(15)+regular：scanSettings/index.tsx:265 权限行、:347 SettingSwitchRow、:381 AddRow（3 处）。
 - **多数派**：content(16)+medium（ListItem 体系）。
-- **统一动作**：**scanSettings 三个同级行标题——"管理外部存储权限"（权限行）、SettingSwitchRow 标题（如"不扫描 60 秒以下音频"）、"添加被屏蔽的文件夹"（AddRow）** 从 `body(15)+regular` 改为 `content(16)+medium(500)`，与 **basicSetting 开关行标题（ListItem.Content）** 同档同字重；三行彼此保持一致（AddRow 仍保留 primary 颜色），并同步两处行内注释。
+- **统一动作**：**scanSettings 三个同级行标题——"管理外部存储权限"（权限行）、SettingSwitchRow 标题（如"不扫描 60 秒以下音频"）、"添加被屏蔽的文件夹"（AddRow）** 从 `body(15)+regular` 改为 `content(16)+medium(500)`，与 **basicSetting 开关行标题（ListItem.Content）** 同档同字重；三行彼此保持一致（AddRow 原保留 primary 颜色，已按用户要求于 2026-10-14 晚改为与权限行**完全一致**：正文色文字 + 20 图标 primary + 右箭头 + 行距对齐），并同步行内注释。
 - **修改**：`src/pages/scanSettings/index.tsx:265、:347、:381`。
 - **tsc**：通过。
 
@@ -235,7 +235,7 @@
 | 6.4 悬浮歌词滑块 | content16/regular、行高48 | ~~标签 medium+右数值+滑块在下（C17 已统一）~~ **已回退原状（2026-10-14 晚）** |
 | 6.5 pluginItem/pluginSort | 路径缺 pluginSetting/ 层级；12/11 硬编码 | 路径修正；description/caption 档（C22 已统一） |
 | 6.6 backgroundCustom | 与 basicSetting 写法不同（见冲突 C17） | ~~已统一为该写法~~ **C17 已回退，两种写法并存（各自成文）** |
-| 6.7 scanSettings | 三行标题 body(15)（见冲突 C18） | content(16)+medium(500) |
+| 6.7 scanSettings | 三行标题 body(15)（见冲突 C18） | content(16)+medium(500)；AddRow 已与权限行格式完全对齐（2026-10-14 晚） |
 | 7.1 tabBar 平板 | fontSize="title"+inline32（见冲突 C20） | xlarge(32) 档位 |
 | 7.2/7.3/7.4 | 分组标题 content(16)+text | subTitle(14)+primary（C19 已统一） |
 | 7.3 LocalSongItem | 标题 body(15) | content(16)（C08 已统一） |
