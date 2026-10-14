@@ -574,7 +574,7 @@ export default function MineTab({
 
             {isTablet ? (
                 <>
-                    <ThemeText fontSize="subTitle" fontColor="primary" fontWeight="bold" style={styles.sectionTitle}>
+                    <ThemeText fontSize="content" fontWeight="bold" style={styles.sectionTitle}>
                         我的音乐
                     </ThemeText>
                     <View style={styles.entryRow}>
@@ -583,8 +583,7 @@ export default function MineTab({
                         )}
                     </View>
                     <ThemeText
-                        fontSize="subTitle"
-                        fontColor="primary"
+                        fontSize="content"
                         fontWeight="bold"
                         style={[styles.sectionTitle, styles.sectionTitleGap]}>
                         数据与设置
@@ -600,7 +599,7 @@ export default function MineTab({
                     <View style={styles.statRow}>
                         {statCards.map(renderMineStatCard)}
                     </View>
-                    <ThemeText fontSize="subTitle" fontColor="primary" fontWeight="bold" style={styles.sectionTitle}>
+                    <ThemeText fontSize="content" fontWeight="bold" style={styles.sectionTitle}>
                         我的音乐
                     </ThemeText>
                     <View

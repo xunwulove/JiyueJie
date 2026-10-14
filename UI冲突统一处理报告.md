@@ -13,7 +13,7 @@
 | ✅ 用户已拍板 | 5 | C09 C10 C15 C16 C21 |
 | ⏳ 待用户决策 | 1 | C14 |
 
-> **更新（2026-10-14 晚）：C17 已按用户要求恢复原状**（悬浮歌词 4 个滑块改回"标签+滑块同行、无数值"原写法），故当前**有效统一为 15 条**（C01~C08、C11、C12、C13、C18、C19、C20、C22）；C17 条目标记见第二节。
+> **更新（2026-10-14 晚）：C17 已按用户要求恢复原状**（悬浮歌词 4 个滑块改回"标签+滑块同行、无数值"原写法）；**C19 已按用户要求恢复原状**（首页推荐歌单/我的页分组标题/音乐库排序行改回 content(16)+bold 黑色，与设置页不统一）。故当前**有效统一为 13 条**（C01~C08、C11、C12、C13、C18、C20、C22）；C17/C19 条目标记见第二节。
 
 > C12/C13 为"维持现状+文档注明"型统一（无代码改动）；C22 为部分统一（3 处小标签入档+1 处头像入档，播放页 hero 大字号判定保留硬编码并登记专表）。
 
@@ -172,13 +172,12 @@
 - **修改**：`src/pages/scanSettings/index.tsx:265、:347、:381`。
 - **tsc**：通过。
 
-### C19 — 页面分组/区块标题字号与颜色不一致　✅ 已统一
+### C19 — 页面分组/区块标题字号与颜色不一致　⚠️ 已统一后按用户要求恢复原状（2026-10-14 晚）
 
 - **同类调查**：页面分组标题出现点：subTitle(14)+bold(700)+primary：basicSetting:487、backupSetting:213/263/297、background:18、mode:19、backgroundCustom:83、scanSettings:324 **7 处**；content(16)+bold+text：mineTab:577/586/602、recommendSection:205、libraryTab:383 **5 处**。
 - **多数派**：subTitle(14)+bold(700)+primary（7 vs 5）。
-- **统一动作**：**首页"推荐歌单"区块标题（recommendSection）、我的页平板/手机三处分组标题（mineTab 577/586/602）、音乐库"本地歌曲"排序行标题（libraryTab）** 共 5 处从 `content(16)+bold+text色` 改为 `subTitle(14)+bold(700)+primary`，与 **设置页/扫描设置分组标题（basicSetting:487 等）** 统一。
-- **修改**：`src/pages/home/components/mineTab.tsx`（3 处）、`src/pages/home/components/homeBody/recommendSection.tsx:204`、`src/pages/home/components/libraryTab.tsx:382`。
-- **tsc**：通过。
+- **统一动作（已执行，后回退）**：**首页"推荐歌单"区块标题（recommendSection）、我的页平板/手机三处分组标题（mineTab 577/586/602）、音乐库"本地歌曲"排序行标题（libraryTab）** 共 5 处从 `content(16)+bold+text色` 改为 `subTitle(14)+bold(700)+primary`，与 **设置页/扫描设置分组标题（basicSetting:487 等）** 统一。
+- **回退（2026-10-14 晚，用户指示 "恢复成之前的黑色，与设置页不需要统一"）**：上述 5 处改回 `content(16)+bold`（text 色），与设置页分组标题不再统一；tsc 通过。
 
 ### C20 — ThemeText fontSize prop 被 inline style 覆盖　✅ 已统一
 
@@ -237,7 +236,7 @@
 | 6.6 backgroundCustom | 与 basicSetting 写法不同（见冲突 C17） | ~~已统一为该写法~~ **C17 已回退，两种写法并存（各自成文）** |
 | 6.7 scanSettings | 三行标题 body(15)（见冲突 C18） | content(16)+medium(500)；AddRow 已与权限行格式完全对齐（2026-10-14 晚） |
 | 7.1 tabBar 平板 | fontSize="title"+inline32（见冲突 C20） | xlarge(32) 档位 |
-| 7.2/7.3/7.4 | 分组标题 content(16)+text | subTitle(14)+primary（C19 已统一） |
+| 7.2/7.3/7.4 | 分组标题 content(16)+text | ~~subTitle(14)+primary（C19 已统一）~~ **已回退原状（2026-10-14 晚）** |
 | 7.3 LocalSongItem | 标题 body(15) | content(16)（C08 已统一） |
 | 7.4 头像"极"字 | 硬编码 24 | large(22)（C22 已统一） |
 | 7.5 tabletPanel 问候 | fontSize="title"+inline32（见冲突 C20） | xlarge(32) 档位 |

@@ -380,8 +380,7 @@ export default function LibraryTab() {
                     {/* 排序行：位于卡片下方、歌曲列表上方，随列表滚动 */}
                     <View style={styles.sortRow}>
                         <ThemeText
-                            fontSize="subTitle"
-                            fontColor="primary"
+                            fontSize="content"
                             fontWeight="bold">
                             本地歌曲
                         </ThemeText>

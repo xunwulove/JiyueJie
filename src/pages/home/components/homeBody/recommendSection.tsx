@@ -202,8 +202,7 @@ export default function RecommendSection() {
         <View style={styles.container}>
             <View style={styles.sectionTitleRow}>
                 <ThemeText
-                    fontSize="subTitle"
-                    fontColor="primary"
+                    fontSize="content"
                     fontWeight="bold"
                     style={styles.sectionTitle}>
                     {t("home.recommendSheet")}
