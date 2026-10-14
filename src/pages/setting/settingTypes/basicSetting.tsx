@@ -644,15 +644,8 @@ function LyricSetting() {
                 <ListItem.Content title={openStatusBarLyric.title} />
                 {openStatusBarLyric.right}
             </ListItem>
-            <View style={lyricStyles.sliderRow}>
-                <View style={lyricStyles.sliderLabelRow}>
-                    <ThemeText fontSize="content" fontWeight="medium">
-                        {t("basicSettings.lyric.leftRightDistance")}
-                    </ThemeText>
-                    <ThemeText fontSize="content" fontColor="textSecondary">
-                        {Math.round((leftPercent ?? 0.5) * 100)}%
-                    </ThemeText>
-                </View>
+            <View style={lyricStyles.sliderContainer}>
+                <ThemeText>{t("basicSettings.lyric.leftRightDistance")}</ThemeText>
                 <Slider
                     style={lyricStyles.slider}
                     minimumTrackTintColor={colors.primary}
@@ -672,15 +665,8 @@ function LyricSetting() {
                     }}
                 />
             </View>
-            <View style={lyricStyles.sliderRow}>
-                <View style={lyricStyles.sliderLabelRow}>
-                    <ThemeText fontSize="content" fontWeight="medium">
-                        {t("basicSettings.lyric.topBottomDistance")}
-                    </ThemeText>
-                    <ThemeText fontSize="content" fontColor="textSecondary">
-                        {Math.round((topPercent ?? 0) * 100)}%
-                    </ThemeText>
-                </View>
+            <View style={lyricStyles.sliderContainer}>
+                <ThemeText>{t("basicSettings.lyric.topBottomDistance")}</ThemeText>
                 <Slider
                     style={lyricStyles.slider}
                     minimumTrackTintColor={colors.primary}
@@ -700,15 +686,8 @@ function LyricSetting() {
                     }}
                 />
             </View>
-            <View style={lyricStyles.sliderRow}>
-                <View style={lyricStyles.sliderLabelRow}>
-                    <ThemeText fontSize="content" fontWeight="medium">
-                        {t("basicSettings.lyric.width")}
-                    </ThemeText>
-                    <ThemeText fontSize="content" fontColor="textSecondary">
-                        {Math.round((widthPercent ?? 0.5) * 100)}%
-                    </ThemeText>
-                </View>
+            <View style={lyricStyles.sliderContainer}>
+                <ThemeText>{t("basicSettings.lyric.width")}</ThemeText>
                 <Slider
                     style={lyricStyles.slider}
                     minimumTrackTintColor={colors.primary}
@@ -728,15 +707,8 @@ function LyricSetting() {
                     }}
                 />
             </View>
-            <View style={lyricStyles.sliderRow}>
-                <View style={lyricStyles.sliderLabelRow}>
-                    <ThemeText fontSize="content" fontWeight="medium">
-                        {t("basicSettings.lyric.fontSize")}
-                    </ThemeText>
-                    <ThemeText fontSize="content" fontColor="textSecondary">
-                        {Math.round(fontSize ?? 20)}
-                    </ThemeText>
-                </View>
+            <View style={lyricStyles.sliderContainer}>
+                <ThemeText>{t("basicSettings.lyric.fontSize")}</ThemeText>
                 <Slider
                     style={lyricStyles.slider}
                     minimumTrackTintColor={colors.primary}
@@ -822,18 +794,15 @@ function LyricSetting() {
 }
 
 const lyricStyles = StyleSheet.create({
-    // 与主题设置 backgroundCustom 滑块行写法统一：标签行（左标签 medium / 右数值 textSecondary）在上、滑块在下
-    sliderRow: {
-        marginTop: rpx(28),
-    },
-    sliderLabelRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: rpx(8),
-    },
     slider: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    sliderContainer: {
+        height: 48, // 与 ListItem small 行高一致
         width: "100%",
-        height: rpx(36),
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16, // 与三级浮窗列表行 withHorizontalPadding 对齐
     },
 });

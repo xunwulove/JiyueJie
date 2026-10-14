@@ -13,6 +13,8 @@
 | ✅ 用户已拍板 | 5 | C09 C10 C15 C16 C21 |
 | ⏳ 待用户决策 | 1 | C14 |
 
+> **更新（2026-10-14 晚）：C17 已按用户要求恢复原状**（悬浮歌词 4 个滑块改回"标签+滑块同行、无数值"原写法），故当前**有效统一为 15 条**（C01~C08、C11、C12、C13、C18、C19、C20、C22）；C17 条目标记见第二节。
+
 > C12/C13 为"维持现状+文档注明"型统一（无代码改动）；C22 为部分统一（3 处小标签入档+1 处头像入档，播放页 hero 大字号判定保留硬编码并登记专表）。
 
 ---
@@ -154,14 +156,13 @@
 - **执行**：面板注册（panels/types/index.ts）与文件（panels/types/setFontSize.tsx）已移除；备份于 E:\Temp\Deepseek\jiyuejie-ui-conflict-backup-20261014\。
 - **tsc**：通过。
 
-### C17 — 设置页滑块标签行写法不一致　✅ 已统一（统计口径有注记）
+### C17 — 设置页滑块标签行写法不一致　⚠️ 已统一后按用户要求恢复原状（2026-10-14 晚）
 
 - **同类调查**："设置页/主题设置内标签+滑块行"出现点：写法A（basicSetting.tsx:641-704 悬浮歌词 4 个滑块：标签 content16/regular、行高 48、无数值）；写法B（backgroundCustom.tsx:118-169 背景模糊/透明度 2 个滑块：标签 content16/medium + 右数值 textSecondary 两端对齐 + 滑块在下 marginTop rpx28）。
 - **多数派**：按"滑块组"口径写法B（backgroundCustom 2 组 vs basicSetting 1 组）；且写法B 的 medium 字重与全项目设置行标题 content(16)/medium 主流一致，写法A 的 regular 是离群值。
-- **统一动作**：**basicSetting 悬浮歌词 4 个滑块（"左右边距/上下边距/宽度/字体大小"）标签行** 从"标签+滑块同行、无数值"改为与 **backgroundCustom（backgroundCustom.tsx:118-169）** 完全一致的"标签行在上（左标签 medium + 右实时数值 textSecondary）+ 滑块在下"写法（右值：左右边距/上下边距/宽度=Math.round(x×100)%、字体大小=Math.round(fontSize)）。非破坏性（仅新增实时数值显示与布局调整，Slider 各 props 原样保留）。
-- **修改**：`src/pages/setting/settingTypes/basicSetting.tsx:640-725`（4 个滑块行 + lyricStyles）。
-- **tsc**：通过。
-- **注**：若按"渲染行"口径计为 4:2 反向（basicSetting 写法反而是多数），则候选A 方向应改 backgroundCustom；本次按滑块组口径+字重主流性选候选B，**如用户倾向另一方向可指示回退（备份在）**。
+- **统一动作（已执行，后回退）**：**basicSetting 悬浮歌词 4 个滑块（"左右边距/上下边距/宽度/字体大小"）标签行** 从"标签+滑块同行、无数值"改为与 **backgroundCustom（backgroundCustom.tsx:118-169）** 完全一致的"标签行在上（左标签 medium + 右实时数值 textSecondary）+ 滑块在下"写法（右值：左右边距/上下边距/宽度=Math.round(x×100)%、字体大小=Math.round(fontSize)）。
+- **回退（2026-10-14 晚，用户指示 "C17 恢复原状"）**：basicSetting.tsx 悬浮歌词 4 个滑块行恢复为原 `lyricStyles.sliderContainer` 写法（标签+滑块同行、无数值、行高 48），lyricStyles 样式同步还原；tsc 通过。
+- **注**：若按"渲染行"口径计为 4:2 反向（basicSetting 写法反而是多数），则候选A 方向应改 backgroundCustom；本次按滑块组口径+字重主流性选候选B，用户选择恢复原状（保留写法A）。
 
 ### C18 — 设置行标题字号不一致（basicSetting content 16 vs scanSettings body 15）　✅ 已统一
 
@@ -231,9 +232,9 @@
 | 4.3 | C09/C10/C11/C13 未标状态 | 已标注（C11 已解决，C09/C10 待决策） |
 | 5.1/5.2 | C14/C15/C16 未标状态 | 已标注待决策 |
 | 6.1 AppBar | 默认 appbar(18)、**medium(500)**（**与实际不符**） | **bold(700)**（实际字重修正） |
-| 6.4 悬浮歌词滑块 | content16/regular、行高48 | 标签 medium+右数值+滑块在下（C17 已统一） |
+| 6.4 悬浮歌词滑块 | content16/regular、行高48 | ~~标签 medium+右数值+滑块在下（C17 已统一）~~ **已回退原状（2026-10-14 晚）** |
 | 6.5 pluginItem/pluginSort | 路径缺 pluginSetting/ 层级；12/11 硬编码 | 路径修正；description/caption 档（C22 已统一） |
-| 6.6 backgroundCustom | 与 basicSetting 写法不同（见冲突 C17） | 已统一为该写法 |
+| 6.6 backgroundCustom | 与 basicSetting 写法不同（见冲突 C17） | ~~已统一为该写法~~ **C17 已回退，两种写法并存（各自成文）** |
 | 6.7 scanSettings | 三行标题 body(15)（见冲突 C18） | content(16)+medium(500) |
 | 7.1 tabBar 平板 | fontSize="title"+inline32（见冲突 C20） | xlarge(32) 档位 |
 | 7.2/7.3/7.4 | 分组标题 content(16)+text | subTitle(14)+primary（C19 已统一） |
@@ -255,7 +256,7 @@
 | C16 | SetFontSize 面板版/浮窗版双载体 | 1:1 | ✅ 已拍板：下线面板版（死代码，入口确定在浮窗版） |
 | C21 | 手机版入口卡标题三档 | body15/title18/normal13 各 1 处 | ✅ 已拍板：候选C 按卡型分级（横排 title18、统计卡 13） |
 
-**附注 1（C17 统计口径）**：C17 按"滑块组"口径（backgroundCustom 2 组 vs basicSetting 1 组）统一为 backgroundCustom 写法；若按"渲染行"口径计为 4:2 反向。如倾向另一方向可回退重做（备份完整）。
+**附注 1（C17 统计口径）**：C17 按"滑块组"口径（backgroundCustom 2 组 vs basicSetting 1 组）统一为 backgroundCustom 写法；若按"渲染行"口径计为 4:2 反向。**2026-10-14 晚用户指示恢复原状**，已回退 basicSetting 悬浮歌词 4 滑块为"标签+滑块同行、无数值"原写法（备份完整）。
 **附注 2（C01 语义判定）**：C01 按"AppBar 拥有专属语义档 appbar 却错用 title"判定为离群点而统一到 appbar（像素同 18、零视觉变化）；若倾向全局统一为 title 可一键回退。
 
 ---
