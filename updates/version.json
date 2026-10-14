@@ -1,14 +1,13 @@
 {
-  "version": "0.6.2.9",
-  "changeLog": [
-    "音源订阅与软件更新仓库整合：gitee 仓库改名 jiyuejie，订阅源移入 sources/ 目录",
-    "软件更新兜底地址切至 updates/version.json（与音源目录分离）",
-    "推荐歌单来源支持「随机使用音源」：当日缓存源优先随机，失败自动切换可用率择优",
-    "内置歌单（我的喜欢/本地音乐/最近播放）保护：不再显示编辑菜单",
-    "推荐歌单独立可用率统计，自动优先使用优质音源"
-  ],
-  "download": [
-    "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-arm64-v8a-release.apk",
-    "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-universal-release.apk"
-  ]
+    "changeLog":  [
+                      "平板二级页背景错位修复：背景图/渐变按整屏几何渲染，与一级页面完全一致",
+                      "自定义背景优化：未设置时点卡片直接选图，选完自动展开面板调模糊/透明",
+                      "均衡器修复：播放时不再提示 call attach first（主线程访问修复）",
+                      "启动页系统 splash 图标 v4：白色音符+渐变圆角容器，与软件内品牌图一致"
+                  ],
+    "version":  "0.6.2.13",
+    "download":  [
+                     "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-arm64-v8a-release.apk",
+                     "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-universal-release.apk"
+                 ]
 }
