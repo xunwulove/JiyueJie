@@ -115,7 +115,8 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
                     let files: IFileItem[] = [];
                     if (
                         fileType === "folder" ||
-                        fileType === "file-and-folder"
+                        fileType === "file-and-folder" ||
+                        fileType === "file"
                     ) {
                         folders = res
                             .filter(_ => _.isDirectory())

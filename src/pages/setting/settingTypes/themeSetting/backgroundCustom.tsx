@@ -87,8 +87,13 @@ export default function BackgroundCustom() {
                 自定义背景
             </ThemeText>
 
-            {/* 当前背景预览 */}
-            <View style={style.previewWrapper}>
+            {/* 当前背景预览（点击整个预览框选择图片） */}
+            <Pressable
+                onPress={pickLocalImage}
+                style={({ pressed }) => [
+                    style.previewWrapper,
+                    pressed && { opacity: 0.8 },
+                ]}>
                 {url ? (
                     <Image uri={url} style={style.preview} />
                 ) : (
@@ -106,11 +111,16 @@ export default function BackgroundCustom() {
                     style={style.previewHint}>
                     {url ? "已设置背景" : "未设置背景"}
                 </ThemeText>
-            </View>
+                <ThemeText
+                    fontSize="caption"
+                    fontColor="textSecondary"
+                    style={style.previewTapHint}>
+                    点击选择图片
+                </ThemeText>
+            </Pressable>
 
-            {/* 选择本地图片 */}
+            {/* 清除背景 */}
             <View style={style.sectionWrapper}>
-                {actionRow("选择本地图片", pickLocalImage)}
                 {actionRow("清除背景", clearBackground, true)}
             </View>
 
@@ -191,6 +201,10 @@ const style = StyleSheet.create({
     },
     previewHint: {
         textAlign: "center",
+    },
+    previewTapHint: {
+        textAlign: "center",
+        marginTop: -4,
     },
     sectionWrapper: {
         marginTop: rpx(16),
