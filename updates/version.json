@@ -1,0 +1,1 @@
+{"changeLog":["音效页新增「设备与效果器状态」诊断区：显示当前输出设备（扬声器/耳机/蓝牙）与低音增强、环绕声是否生效，一眼确认音效真实状态","系统启动图品牌音符加大：手机端音符占比与平板/软件内一致（v8）"],"version":"0.6.2.14","download":["https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-arm64-v8a-release.apk","https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-universal-release.apk"]}
