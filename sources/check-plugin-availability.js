@@ -162,11 +162,21 @@ async function testPlugin(plugin) {
         hasSearch: false,
         hasGetMediaSource: false,
         hasLyric: false,
+        // 歌单/榜单能力
+        hasTopLists: false,
+        hasRecommendSheetTags: false,
+        hasRecommendSheets: false,
+        hasMusicSheetInfo: false,
+        topListsOk: false,
+        topListsCount: 0,
+        recommendSheetsOk: false,
+        recommendSheetsCount: 0,
         needsVars: "",
         searchOk: false,
         searchCount: 0,
         firstResult: "",
         error: "",
+        sheetError: "",
     };
 
     try {
@@ -178,33 +188,101 @@ async function testPlugin(plugin) {
         result.hasSearch = typeof instance.search === "function";
         result.hasGetMediaSource = typeof instance.getMediaSource === "function";
         result.hasLyric = typeof instance.getLyric === "function";
+        result.hasTopLists = typeof instance.getTopLists === "function";
+        result.hasRecommendSheetTags = typeof instance.getRecommendSheetTags === "function";
+        result.hasRecommendSheets = typeof instance.getRecommendSheetsByTag === "function";
+        result.hasMusicSheetInfo = typeof instance.getMusicSheetInfo === "function";
         if (instance.userVariables && instance.userVariables.length > 0) {
             result.needsVars = instance.userVariables.map((v) => v.key).join(",");
         }
 
-        if (!result.hasSearch) {
+        // 1. 搜索检测
+        if (result.hasSearch) {
+            try {
+                const r = await Promise.race([
+                    Promise.resolve().then(() => instance.search(SEARCH_QUERY, 1, "music")),
+                    new Promise((_, rej) =>
+                        setTimeout(() => rej(new Error("search timeout")), SEARCH_TIMEOUT)
+                    ),
+                ]);
+                if (r && r.data && r.data.length > 0) {
+                    result.searchOk = true;
+                    result.searchCount = r.data.length;
+                    const first = r.data[0];
+                    result.firstResult = (first.title || first.name || "").toString().substring(0, 50);
+                } else {
+                    result.error = "search returned empty";
+                }
+            } catch (e) {
+                result.error = "search failed: " + (e.message || String(e)).substring(0, 100);
+            }
+        } else {
             result.error = "no search function";
-            return result;
         }
 
-        // 实际执行搜索
-        try {
-            const r = await Promise.race([
-                Promise.resolve().then(() => instance.search(SEARCH_QUERY, 1, "music")),
-                new Promise((_, rej) =>
-                    setTimeout(() => rej(new Error("search timeout")), SEARCH_TIMEOUT)
-                ),
-            ]);
-            if (r && r.data && r.data.length > 0) {
-                result.searchOk = true;
-                result.searchCount = r.data.length;
-                const first = r.data[0];
-                result.firstResult = (first.title || first.name || "").toString().substring(0, 50);
-            } else {
-                result.error = "search returned empty";
+        // 2. 榜单检测（有 getTopLists 则实际调用）
+        if (result.hasTopLists) {
+            try {
+                const r = await Promise.race([
+                    Promise.resolve().then(() => instance.getTopLists()),
+                    new Promise((_, rej) =>
+                        setTimeout(() => rej(new Error("topLists timeout")), SEARCH_TIMEOUT)
+                    ),
+                ]);
+                if (Array.isArray(r) && r.length > 0) {
+                    // r 是 IMusicSheetGroupItem[]，每组含 title + data
+                    const total = r.reduce((sum, g) => sum + (g.data ? g.data.length : 0), 0);
+                    if (total > 0) {
+                        result.topListsOk = true;
+                        result.topListsCount = total;
+                    } else {
+                        result.sheetError = "topLists returned empty groups";
+                    }
+                } else {
+                    result.sheetError = "topLists returned empty";
+                }
+            } catch (e) {
+                result.sheetError = "topLists failed: " + (e.message || String(e)).substring(0, 80);
             }
-        } catch (e) {
-            result.error = "search failed: " + (e.message || String(e)).substring(0, 100);
+        }
+
+        // 3. 推荐歌单检测（有 getRecommendSheetTags + getRecommendSheetsByTag 则实际调用）
+        if (result.hasRecommendSheetTags && result.hasRecommendSheets) {
+            try {
+                const tags = await Promise.race([
+                    Promise.resolve().then(() => instance.getRecommendSheetTags()),
+                    new Promise((_, rej) =>
+                        setTimeout(() => rej(new Error("sheetTags timeout")), SEARCH_TIMEOUT)
+                    ),
+                ]);
+                // 取第一个可用 tag
+                let firstTag = null;
+                if (tags && tags.pinned && tags.pinned.length > 0) {
+                    firstTag = tags.pinned[0];
+                } else if (tags && tags.data && tags.data.length > 0) {
+                    const group = tags.data.find((g) => g.data && g.data.length > 0);
+                    if (group) firstTag = group.data[0];
+                }
+                if (firstTag) {
+                    const sheets = await Promise.race([
+                        Promise.resolve().then(() => instance.getRecommendSheetsByTag(firstTag, 1)),
+                        new Promise((_, rej) =>
+                            setTimeout(() => rej(new Error("sheetsByTag timeout")), SEARCH_TIMEOUT)
+                        ),
+                    ]);
+                    if (sheets && sheets.data && sheets.data.length > 0) {
+                        result.recommendSheetsOk = true;
+                        result.recommendSheetsCount = sheets.data.length;
+                    } else {
+                        result.sheetError = (result.sheetError ? result.sheetError + "; " : "") + "recommendSheets returned empty";
+                    }
+                } else {
+                    result.sheetError = (result.sheetError ? result.sheetError + "; " : "") + "no recommend sheet tag";
+                }
+            } catch (e) {
+                result.sheetError = (result.sheetError ? result.sheetError + "; " : "") +
+                    "recommendSheets failed: " + (e.message || String(e)).substring(0, 80);
+            }
         }
     } catch (e) {
         result.error = "load failed: " + (e.message || String(e)).substring(0, 100);
@@ -271,6 +349,11 @@ async function main() {
     const searchOk = results.filter((r) => r.searchOk).length;
     const needsVars = results.filter((r) => r.needsVars).length;
     const searchFailed = results.filter((r) => !r.searchOk);
+    const hasTopLists = results.filter((r) => r.hasTopLists).length;
+    const topListsOk = results.filter((r) => r.topListsOk).length;
+    const hasRecommendSheets = results.filter((r) => r.hasRecommendSheetTags && r.hasRecommendSheets).length;
+    const recommendSheetsOk = results.filter((r) => r.recommendSheetsOk).length;
+    const sheetFailed = results.filter((r) => (r.hasTopLists || (r.hasRecommendSheetTags && r.hasRecommendSheets)) && !r.topListsOk && !r.recommendSheetsOk);
 
     console.log("\n========================================");
     console.log("  检测结果汇总");
@@ -280,6 +363,9 @@ async function main() {
     console.log("含 search 函数:  " + hasSearch);
     console.log("含 getMediaSource:" + results.filter((r) => r.hasGetMediaSource).length);
     console.log("搜索实际可用:    " + searchOk + "/" + results.length + " (" + (searchOk / results.length * 100).toFixed(1) + "%)");
+    console.log("--- 歌单/榜单 ---");
+    console.log("含 getTopLists:  " + hasTopLists + "，榜单可用: " + topListsOk);
+    console.log("含推荐歌单能力:  " + hasRecommendSheets + "，推荐歌单可用: " + recommendSheetsOk);
     console.log("需要用户变量:    " + needsVars);
 
     console.log("\n--- 搜索不可用插件 (" + searchFailed.length + ") ---");
@@ -288,11 +374,22 @@ async function main() {
         console.log("  " + tag + " " + r.name + " | " + r.error);
     });
 
+    if (sheetFailed.length > 0) {
+        console.log("\n--- 歌单/榜单不可用插件 (" + sheetFailed.length + ") ---");
+        sheetFailed.forEach((r) => {
+            const parts = [];
+            if (r.hasTopLists) parts.push("榜单:" + (r.topListsOk ? "OK("+r.topListsCount+")" : "失败"));
+            if (r.hasRecommendSheetTags && r.hasRecommendSheets) parts.push("推荐歌单:" + (r.recommendSheetsOk ? "OK("+r.recommendSheetsCount+")" : "失败"));
+            console.log("  " + r.name + " | " + parts.join(" | ") + (r.sheetError ? " | " + r.sheetError : ""));
+        });
+    }
+
     if (needsVars > 0) {
         console.log("\n--- 需要用户变量(cookie/key等)的插件 (" + needsVars + ") ---");
         results.filter((r) => r.needsVars).forEach((r) => {
             console.log("  " + r.name + " -> [" + r.needsVars + "] 搜索: " +
-                (r.searchOk ? "OK(" + r.searchCount + "条)" : "失败"));
+                (r.searchOk ? "OK(" + r.searchCount + "条)" : "失败") +
+                (r.hasTopLists ? " 榜单:" + (r.topListsOk ? "OK" : "失败") : ""));
         });
     }
 
