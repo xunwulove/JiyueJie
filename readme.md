@@ -1,12 +1,18 @@
 # MusicFree
 
 > ## 极悦界（本项目 fork 说明）
-> 本项目为 **MusicFree（maotoumao）的本地 fork「极悦界」**（个人自用，不分发）：保留 MusicFree 内核（插件化音源引擎、WebView/QuickJS 双引擎），UI 全面迁移对齐盐音（APlayer）风格（平板左播放区 30%/右内容区 70%、一/二/三级页面层级规范、卡片渐变/字体档位体系），并新增软件内下载更新（gitee 更新链路）、WebDAV 备份、推荐歌单/排行榜（网易/QQ 接口兜底 + 插件两级结构）、扫描设置、卡拉OK歌词染色、白天背景微渐变 + 封面氛围取色、品牌视觉（启动页/图标，见 `brand-assets/`）等能力。
-> - 项目决策与规范：`PROJECT_DECISIONS.md`（改代码前必读）
-> - UI 对齐检查记录：`UI_ALIGNMENT_CHECK.md`
-> - 二次开发指南（面向后续接管的 AI/人）：`二次开发指南.md`
+> 本项目为 **MusicFree（maotoumao）的本地 fork「极悦界」**（个人自用，不分发）：保留 MusicFree 内核（插件化音源引擎、WebView/QuickJS 双引擎），UI 全面迁移对齐盐音（APlayer）风格（平板左播放区 30%/右内容区 70%、一/二/三级页面层级规范、卡片渐变/字体档位体系），并新增软件内下载更新（gitee 更新链路）、WebDAV 备份、推荐歌单/排行榜（网易/QQ 接口兜底 + 插件两级结构）、扫描设置、歌词当前行整行高亮 + 边缘渐隐、白天背景微渐变 + 封面氛围取色、品牌视觉（启动页/图标，见 `brand-assets/`）等能力。
+> - 项目交接文档（接手必读）：`PROJECT_HANDOVER.md`
+> - 开发知识库 / UI 规范 / 功能核查 / 避坑记录：`docs/` 目录（原 23 份文档已整合为 4 份）
 > - 极悦界版本记录：`changelog.md`（顶部段）
-> - 版本：0.6.2.9（versionCode 400020）；更新源：`gitee.com/xunwulove/jiyuejie`（latest tag 固定链路，发版流程见 PROJECT_DECISIONS.md）
+> - 版本：0.6.2.14（versionCode 400025）；更新源：`gitee.com/xunwulove/jiyuejie`（latest tag 固定链路）
+>
+> ### 音源有效性说明
+> **音源插件 URL 可下载 ≠ 实际可用。** 部分插件虽能正常下载 JS 文件，但因目标站点接口变更、需要 cookie/API key 等用户变量、或服务端限流，实际搜索可能返回空结果或报错。
+> - 内置音源订阅源：`gitee.com/xunwulove/jiyuejie` 仓库 `sources/plugins.json`（99 个插件）
+> - 可用性检测脚本：`sources/check-plugin-availability.js`（基于 MusicFree 源码插件加载逻辑，真实执行 `search()` 验证返回结果，而非仅检查 URL 可访问性）
+> - 用法：`node check-plugin-availability.js [--query=周杰伦] [--concurrency=5] [--timeout=10000]`
+> - 需用户变量（cookie/key 等）的插件，在未配置状态下搜索可能失败，属正常现象
 > 以下为上游原版说明（引擎与插件体系通用）：
 
 **中文**
