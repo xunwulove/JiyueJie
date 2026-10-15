@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 窗口背景 = 启动画面（v6，2026-10-14：渐变背景 + 白音符包裹在渐变圆角容器，品牌图与软件内一致；保留 v5 品牌名层）：
+<!-- 窗口背景 = 启动画面（v7，2026-10-15：去除品牌名层，启动页无文字，与系统 splash 一致）：
      层1 背景：软件内 PageBackground 同款浅色渐变（下 #EAF0FA → 上 #F8F9FA，angle=90；start/end 分别引用 @color/splash_bg_bottom / @color/brand_splash，
-           与系统 splash 背景同一 color 资源，同 src/core/theme.ts pageBackgroundTop/pageBackground）
+          与系统 splash 背景同一 color 资源，同 src/core/theme.ts pageBackgroundTop/pageBackground）
      层2 容器：圆角渐变容器（#4055D4→#B7CDFE 135°，同桌面图标 ic_launcher_background_gradient），边长 = 屏短边×42%（sw 六档）
      层3 音符：白色音符图（透明底，同软件内品牌图音符），居中于容器，边长 = 容器×78%（= 屏短边×33% 左右）
-     层4 品牌名：透明底黑色"极悦界"（方形画布文字在底部），中心落在容器下缘+16dp
      与系统 splash（API31+ 顶部白 #F8F9FA 底 + 圆形品牌蓝底 #4055D4 + 白音符）无缝衔接；
-     API<31 窗口背景即启动画面；API 31+ 系统 splash 退出后由本背景承接。 -->
+     API<31 窗口背景即启动画面；API 31+ 系统 splash 退出后由本背景承接。
+     v6→v7：移除层4 品牌名"极悦界"文字（用户要求启动页无文字，避免低版本设备/承接时显示品牌字） -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
@@ -36,16 +36,6 @@
         android:gravity="center">
         <bitmap
             android:src="@drawable/splashscreen_icon"
-            android:scaleType="fitCenter" />
-    </item>
-    <!-- 层4 品牌名"极悦界"：透明底黑色文字图（方形画布，文字位于画布底部），
-         gravity=center 使文字中心落在渐变容器下缘 +16dp 处（dimens 六档已定义） -->
-    <item
-        android:width="@dimen/splash_brand_text_top"
-        android:height="@dimen/splash_brand_text_top"
-        android:gravity="center">
-        <bitmap
-            android:src="@drawable/splash_brand_text"
             android:scaleType="fitCenter" />
     </item>
 </layer-list>
