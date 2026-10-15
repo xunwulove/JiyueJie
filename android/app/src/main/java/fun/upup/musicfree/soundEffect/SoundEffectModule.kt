@@ -338,6 +338,48 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
+    /**
+     * 当前音频输出设备（供音效页诊断：BassBoost/Virtualizer 主要对耳机生效，外放基本无效）。
+     * 优先级：蓝牙 A2DP > 有线耳机 > USB 音频 > 扬声器 > 其他；返回归一化类型 + 设备名。
+     */
+    @ReactMethod
+    fun getOutputDevice(promise: Promise) {
+        try {
+            val audioManager =
+                reactContext.getSystemService(AudioManager::class.java)
+            val devices = audioManager?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+            var type = "speaker"
+            var name = "Builtin Speaker"
+            if (!devices.isNullOrEmpty()) {
+                val byPriority = arrayOf(
+                    AudioDeviceInfo.TYPE_BLUETOOTH_A2DP to "bluetooth",
+                    AudioDeviceInfo.TYPE_BLUETOOTH_SCO to "bluetooth",
+                    AudioDeviceInfo.TYPE_WIRED_HEADPHONES to "headset",
+                    AudioDeviceInfo.TYPE_WIRED_HEADSET to "headset",
+                    AudioDeviceInfo.TYPE_USB_HEADSET to "usb",
+                    AudioDeviceInfo.TYPE_USB_DEVICE to "usb",
+                    AudioDeviceInfo.TYPE_USB_ACCESSORY to "usb",
+                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER to "speaker",
+                )
+                var found: AudioDeviceInfo? = null
+                for ((t, _) in byPriority) {
+                    found = devices.firstOrNull { it.type == t }
+                    if (found != null) {
+                        type = byPriority.first { it.first == t }.second
+                        break
+                    }
+                }
+                name = found?.productName?.toString() ?: "unknown"
+            }
+            val map = Arguments.createMap()
+            map.putString("type", type)
+            map.putString("name", name)
+            promise.resolve(map)
+        } catch (e: Exception) {
+            promise.reject("get_output_device_error", e.message ?: "unknown")
+        }
+    }
+
     @ReactMethod
     fun release() {
         releaseEffects()

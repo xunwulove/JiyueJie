@@ -462,5 +462,17 @@
     "soundEffect.eqWaitPlay": "播放一首歌曲后显示频段调节",
     "soundEffect.bass": "低音增强",
     "soundEffect.virtualizer": "环绕声",
-    "soundEffect.hint": "音效实时作用于当前播放，需播放过歌曲后生效；换歌不重置设置。"
+    "soundEffect.hint": "音效实时作用于当前播放，需播放过歌曲后生效；换歌不重置设置。",
+    "soundEffect.diagDeviceLabel": "输出设备",
+    "soundEffect.deviceSpeaker": "扬声器",
+    "soundEffect.deviceHeadset": "耳机（有线）",
+    "soundEffect.deviceBluetooth": "蓝牙",
+    "soundEffect.deviceUsb": "USB 音频",
+    "soundEffect.deviceUnknown": "未知",
+    "soundEffect.diagBassOk": "低音增强：生效",
+    "soundEffect.diagBassNo": "低音增强：不支持",
+    "soundEffect.diagVzOk": "环绕声：生效",
+    "soundEffect.diagVzNo": "环绕声：不支持",
+    "soundEffect.diagAttached": "效果器：已绑定",
+    "soundEffect.diagNotAttached": "效果器：未绑定（播放后生效）"
 }

@@ -564,6 +564,18 @@ export interface ILanguageData {
     "soundEffect.bass": string; // 低音增强
     "soundEffect.virtualizer": string; // 环绕声
     "soundEffect.hint": string; // 说明
+    "soundEffect.diagDeviceLabel": string; // 输出设备
+    "soundEffect.deviceSpeaker": string; // 扬声器
+    "soundEffect.deviceHeadset": string; // 耳机（有线）
+    "soundEffect.deviceBluetooth": string; // 蓝牙
+    "soundEffect.deviceUsb": string; // USB 音频
+    "soundEffect.deviceUnknown": string; // 未知
+    "soundEffect.diagBassOk": string; // 低音增强：生效
+    "soundEffect.diagBassNo": string; // 低音增强：不支持
+    "soundEffect.diagVzOk": string; // 环绕声：生效
+    "soundEffect.diagVzNo": string; // 环绕声：不支持
+    "soundEffect.diagAttached": string; // 效果器：已绑定
+    "soundEffect.diagNotAttached": string; // 效果器：未绑定（播放后生效）
 }
 
 // 语言接口定义

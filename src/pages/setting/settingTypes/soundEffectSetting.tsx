@@ -32,9 +32,11 @@ import {
     applyVirtualizer,
     ensureSoundEffectAttached,
     EQ_PRESETS,
+    getOutputDevice,
     getSoundEffectInfo,
     getSoundEffectLastError,
     initBandsIfNeeded,
+    isSoundEffectAttached,
 } from "@/core/soundEffect";
 import useColors from "@/hooks/useColors";
 import useIsTablet from "@/hooks/useIsTablet";
@@ -60,6 +62,9 @@ const CURVE_H_NARROW = rpx(110);
  *  宽屏曲线区高 220rpx → 110rpx 波动 = 50%；窄屏曲线区高 110rpx → 110rpx 波动 = 100% */
 const CURVE_RANGE_WIDE = 25;
 const CURVE_RANGE_NARROW = 50;
+/** 曲线线宽（屏幕 px）：non-scaling-stroke 下恒为恒定像素（preserveAspectRatio=none 不会再造成方向性粗细不均）；
+ *  值取 2.5 viewBox 单位 × y 拉伸系数（保持与改造前水平线视觉一致） */
+const EQ_CURVE_STROKE = (2.5 * CURVE_H) / 100;
 
 /** 竖向滑块轨道高度（rpx） */
 const EQ_SLIDER_H = rpx(220);
@@ -143,13 +148,22 @@ function EqSlider({
     // 手势回调经 ref 读取最新 props，避免 PanResponder 首次创建闭包过期
     const propsRef = useRef({ min, max, disabled, onChange });
     propsRef.current = { min, max, disabled, onChange };
+    // 容器在窗口内的全局顶部 Y（onLayout 测量）：手势用 pageY 绝对坐标计算，
+    // 避免 locationY 相对"事件目标子 view"（按在 20dp 拇指上时范围只有 0~20dp → 稍动即拉满）
+    const containerRef = useRef<View | null>(null);
+    const topRef = useRef(0);
+    const handleLayout = () => {
+        containerRef.current?.measureInWindow((_x, y) => {
+            topRef.current = y;
+        });
+    };
 
     const handlePan = (evt: any) => {
         const { min: lo, max: hi, disabled: off, onChange: cb } =
             propsRef.current;
         if (off) return; // 关闭状态不可滑动
-        const y = evt.nativeEvent.locationY; // 相对触摸容器（高 = EQ_SLIDER_H）
-        const ratio = Math.min(1, Math.max(0, 1 - y / EQ_SLIDER_H));
+        const dy = evt.nativeEvent.pageY - topRef.current; // 相对容器顶部（0 = 顶）
+        const ratio = Math.min(1, Math.max(0, 1 - dy / EQ_SLIDER_H));
         const v = lo + ratio * (hi - lo);
         cb(Math.round(v / 50) * 50); // step 50
     };
@@ -170,6 +184,8 @@ function EqSlider({
 
     return (
         <View
+            ref={containerRef}
+            onLayout={handleLayout}
             style={[
                 style.eqSliderTouch,
                 { height: EQ_SLIDER_H },
@@ -220,6 +236,11 @@ export default function SoundEffectSetting() {
     const virtualizer = useAppConfig("sound.virtualizer") ?? 0;
 
     const [info, setInfo] = useState<ISoundEffectInfo | null>(null);
+    // 当前输出设备（音效页诊断用）
+    const [outputDevice, setOutputDevice] = useState<{
+        type: string;
+        name: string;
+    } | null>(null);
 
     useEffect(() => {
         // 进入页面先尝试绑定（本会话播放过 → 立即成功；从未播放 → 暂缓）
@@ -231,6 +252,7 @@ export default function SoundEffectSetting() {
                 initBandsIfNeeded(i.bands);
             }
         })();
+        getOutputDevice().then(setOutputDevice);
         // 播放发生时 session 就绪 → 自动补绑并刷新：
         // PlaybackActiveTrackChanged 只在切歌时触发，恢复播放（暂停→播放同一首）不触发，
         // 因此同时监听 PlaybackState（paused→playing 也触发），并用轮询兜底
@@ -295,10 +317,13 @@ export default function SoundEffectSetting() {
     const presets = EQ_PRESETS.map(p => p.name);
     const levelMin = info?.levelMin ?? -1500;
     const levelMax = info?.levelMax ?? 1500;
-    // 均衡器关闭时：滑块全部归中（0 dB）、曲线为水平线；eqBands 数据保留，开启后恢复
-    const displayBands = eqEnabled
-        ? (eqBands as number[])
-        : Array.from({ length: bands }, () => 0);
+    // 均衡器关闭：滑块归中（0 dB）、曲线水平线；eqBands 数据保留，开启后恢复
+    // 开启且选中预设（eqPreset >= 0）：滑块/曲线跟随显示预设频段形状（仅显示层，不覆盖自定义 eqBands）
+    const displayBands = !eqEnabled
+        ? Array.from({ length: bands }, () => 0)
+        : eqPreset >= 0
+          ? EQ_PRESETS[eqPreset].bands.slice(0, bands)
+          : (eqBands as number[]);
     // 设备对低音增强/环绕声的支持（info 为 null = 未绑定，保守可滑，等播放后绑定生效）
     const bassUnsupported = info != null && !info.bassSupported;
     const virtualizerUnsupported =
@@ -498,10 +523,11 @@ export default function SoundEffectSetting() {
                                                         : CURVE_RANGE_NARROW,
                                                 )}
                                                 stroke={colors.primary}
-                                                strokeWidth={2.5}
+                                                strokeWidth={EQ_CURVE_STROKE}
                                                 fill="none"
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
+                                                vectorEffect="non-scaling-stroke"
                                             />
                                         </Svg>
                                     </View>
@@ -634,6 +660,50 @@ export default function SoundEffectSetting() {
                             fontSize="description"
                             fontColor="textSecondary">
                             {t("soundEffect.hint")}
+                        </ThemeText>
+                    </View>
+
+                    {/* 设备与效果器状态诊断（只读小字，宽屏一行/窄屏自动换行） */}
+                    <View style={style.diagRow}>
+                        <ThemeText
+                            fontSize="caption"
+                            fontColor="textSecondary">
+                            {`${t("soundEffect.diagDeviceLabel")}：${
+                                outputDevice?.type === "headset"
+                                    ? t("soundEffect.deviceHeadset")
+                                    : outputDevice?.type === "bluetooth"
+                                      ? t("soundEffect.deviceBluetooth")
+                                      : outputDevice?.type === "usb"
+                                        ? t("soundEffect.deviceUsb")
+                                        : outputDevice?.type === "speaker"
+                                          ? t("soundEffect.deviceSpeaker")
+                                          : t("soundEffect.deviceUnknown")
+                            }`}
+                        </ThemeText>
+                        {info ? (
+                            <>
+                                <ThemeText
+                                    fontSize="caption"
+                                    fontColor="textSecondary">
+                                    {info.bassSupported
+                                        ? t("soundEffect.diagBassOk")
+                                        : t("soundEffect.diagBassNo")}
+                                </ThemeText>
+                                <ThemeText
+                                    fontSize="caption"
+                                    fontColor="textSecondary">
+                                    {info.virtualizerSupported
+                                        ? t("soundEffect.diagVzOk")
+                                        : t("soundEffect.diagVzNo")}
+                                </ThemeText>
+                            </>
+                        ) : null}
+                        <ThemeText
+                            fontSize="caption"
+                            fontColor="textSecondary">
+                            {isSoundEffectAttached()
+                                ? t("soundEffect.diagAttached")
+                                : t("soundEffect.diagNotAttached")}
                         </ThemeText>
                     </View>
                 </ScrollView>
@@ -769,5 +839,14 @@ const style = StyleSheet.create({
     footer: {
         paddingHorizontal: rpx(24),
         paddingTop: rpx(16),
+    },
+    /* 设备与效果器状态诊断行：宽屏一行 / 窄屏自动换行，浅色小字只读 */
+    diagRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: rpx(12),
+        paddingHorizontal: rpx(24),
+        paddingTop: rpx(8),
+        paddingBottom: rpx(4),
     },
 });

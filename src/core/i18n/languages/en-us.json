@@ -462,5 +462,17 @@
     "soundEffect.eqWaitPlay": "Play a song to show band controls",
     "soundEffect.bass": "Bass Boost",
     "soundEffect.virtualizer": "Surround",
-    "soundEffect.hint": "Effects apply to the current playback in real time and need a song to be played once; settings persist across track changes."
+    "soundEffect.hint": "Effects apply to the current playback in real time and need a song to be played once; settings persist across track changes.",
+    "soundEffect.diagDeviceLabel": "Output device",
+    "soundEffect.deviceSpeaker": "Speaker",
+    "soundEffect.deviceHeadset": "Wired headset",
+    "soundEffect.deviceBluetooth": "Bluetooth",
+    "soundEffect.deviceUsb": "USB audio",
+    "soundEffect.deviceUnknown": "Unknown",
+    "soundEffect.diagBassOk": "Bass boost: active",
+    "soundEffect.diagBassNo": "Bass boost: unsupported",
+    "soundEffect.diagVzOk": "Surround: active",
+    "soundEffect.diagVzNo": "Surround: unsupported",
+    "soundEffect.diagAttached": "Effects: attached",
+    "soundEffect.diagNotAttached": "Effects: not attached (play a song)"
 }

@@ -78,6 +78,25 @@ export function getSoundEffectLastError(): string | null {
     return lastError;
 }
 
+/** 是否已绑定效果器（播放过歌曲且 attach 成功） */
+export function isSoundEffectAttached(): boolean {
+    return attached;
+}
+
+/** 当前音频输出设备（扬声器/耳机/蓝牙等，供音效页诊断） */
+export async function getOutputDevice(): Promise<{
+    type: string;
+    name: string;
+} | null> {
+    if (Platform.OS !== "android" || !SoundEffect) return null;
+    try {
+        const d = await SoundEffect.getOutputDevice();
+        return d ?? null;
+    } catch {
+        return null;
+    }
+}
+
 /** 效果器能力信息（首次成功缓存；未绑定返回 null） */
 export async function getSoundEffectInfo() {
     if (infoCache) return infoCache;
