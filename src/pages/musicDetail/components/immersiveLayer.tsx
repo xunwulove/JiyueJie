@@ -514,18 +514,9 @@ export default function ImmersiveLayer() {
                                 { height: lyricItemH },
                             ]}>
                             {index === curIndex ? (
-                                /* 当前行整体主题色（uniform：不做进度染色） */
                                 <KaraokeText
                                     text={item.lrc}
-                                    startTime={item.time}
-                                    endTime={
-                                        index + 1 < lyrics.length
-                                            ? lyrics[index + 1].time
-                                            : item.time + 15000
-                                    }
-                                    uniform
                                     sungColor={colors.primary}
-                                    unsungColor="rgba(255,255,255,0.5)"
                                     fontSize={isTablet ? 34 : 26}
                                     lineHeight={lyricItemH}
                                 />

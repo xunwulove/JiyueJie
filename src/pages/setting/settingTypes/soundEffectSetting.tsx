@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     DeviceEventEmitter,
-    PanResponder,
     Platform,
     Pressable,
+    requireNativeComponent,
     ScrollView,
     StyleSheet,
     View,
@@ -19,7 +19,7 @@ import ThemeText from "@/components/base/themeText";
 import ThemeSwitch from "@/components/base/switch";
 import VerticalSafeAreaView from "@/components/base/verticalSafeAreaView";
 import globalStyle from "@/constants/globalStyle";
-import Config, { useAppConfig } from "@/core/appConfig";
+import { useAppConfig } from "@/core/appConfig";
 import { useI18N } from "@/core/i18n";
 import ReactNativeTrackPlayer, {
     Event,
@@ -66,12 +66,8 @@ const CURVE_RANGE_NARROW = 50;
  *  值取 2.5 viewBox 单位 × y 拉伸系数（保持与改造前水平线视觉一致） */
 const EQ_CURVE_STROKE = (2.5 * CURVE_H) / 100;
 
-/** 竖向滑块轨道高度（rpx） */
+/** 竖向滑块高度（rpx） */
 const EQ_SLIDER_H = rpx(220);
-/** 拇指直径（dp，与横向 Slider / 系统 SeekBar 默认 thumb 一致） */
-const EQ_THUMB_D = 20;
-/** 轨道宽度（dp，与横向 Slider track 高度一致） */
-const EQ_TRACK_W = 4;
 /** 触摸热区宽度（dp，触控规范 44） */
 const EQ_TOUCH_W = 44;
 
@@ -127,7 +123,9 @@ function buildEqCurvePath(
     return smoothEqPath(pts);
 }
 
-/** 自绘竖向滑块：上下手势直接映射增益值（替代旋转 Slider，修复"视觉竖条但手势横向"导致的拖不动） */
+/** 原生竖向滑块（安卓 SeekBar 旋转270度）：系统级手势处理，跟手度与横向 Slider 一致 */
+const NativeVerticalSlider = requireNativeComponent<any>("RCTVerticalSlider");
+
 function EqSlider({
     value,
     min,
@@ -145,80 +143,18 @@ function EqSlider({
     disabled?: boolean;
     onChange: (v: number) => void;
 }) {
-    // 手势回调经 ref 读取最新 props，避免 PanResponder 首次创建闭包过期
-    const propsRef = useRef({ min, max, disabled, onChange });
-    propsRef.current = { min, max, disabled, onChange };
-    // 容器在窗口内的全局顶部 Y（onLayout 测量）：手势用 pageY 绝对坐标计算，
-    // 避免 locationY 相对"事件目标子 view"（按在 20dp 拇指上时范围只有 0~20dp → 稍动即拉满）
-    const containerRef = useRef<View | null>(null);
-    const topRef = useRef(0);
-    const handleLayout = () => {
-        containerRef.current?.measureInWindow((_x, y) => {
-            topRef.current = y;
-        });
-    };
-
-    const handlePan = (evt: any) => {
-        const { min: lo, max: hi, disabled: off, onChange: cb } =
-            propsRef.current;
-        if (off) return; // 关闭状态不可滑动
-        const dy = evt.nativeEvent.pageY - topRef.current; // 相对容器顶部（0 = 顶）
-        const ratio = Math.min(1, Math.max(0, 1 - dy / EQ_SLIDER_H));
-        const v = lo + ratio * (hi - lo);
-        cb(Math.round(v / 50) * 50); // step 50
-    };
-
-    const pan = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: handlePan,
-            onPanResponderMove: handlePan,
-            onPanResponderTerminationRequest: () => false,
-        }),
-    ).current;
-
-    const span = max - min || 1;
-    const ratio = Math.min(1, Math.max(0, (value - min) / span)); // 0..1，1=最高增益
-    const thumbTop = (1 - ratio) * (EQ_SLIDER_H - EQ_THUMB_D);
-
     return (
-        <View
-            ref={containerRef}
-            onLayout={handleLayout}
-            style={[
-                style.eqSliderTouch,
-                { height: EQ_SLIDER_H },
-            ]}
-            {...pan.panHandlers}>
-            <View
-                style={[
-                    style.eqSliderTrack,
-                    { backgroundColor: trackColor ?? "#E5E7EB" },
-                ]}
-            />
-            <View
-                style={[
-                    style.eqSliderFill,
-                    {
-                        backgroundColor: color ?? "#4055D4",
-                        height: ratio * EQ_SLIDER_H,
-                    },
-                ]}
-            />
-            <View
-                style={[
-                    style.eqSliderThumb,
-                    {
-                        backgroundColor: color ?? "#4055D4",
-                        width: EQ_THUMB_D,
-                        height: EQ_THUMB_D,
-                        borderRadius: EQ_THUMB_D / 2,
-                        top: thumbTop,
-                    },
-                ]}
-            />
-        </View>
+        <NativeVerticalSlider
+            style={{ width: EQ_TOUCH_W, height: EQ_SLIDER_H }}
+            value={Math.round(value)}
+            minimumValue={min}
+            maximumValue={max}
+            step={50}
+            disabled={disabled}
+            trackColor={trackColor}
+            progressColor={color}
+            onChange={(e: any) => onChange(e.nativeEvent.value)}
+        />
     );
 }
 
@@ -781,34 +717,7 @@ const style = StyleSheet.create({
         flex: 1,
         alignItems: "center",
     },
-    /* 竖向滑块（自绘，手势上下映射；视觉与横向 Slider 一致：轨道 4dp / 拇指 20dp） */
-    eqSliderTouch: {
-        width: EQ_TOUCH_W,
-        alignItems: "center",
-        justifyContent: "flex-start",
-        position: "relative",
-        marginVertical: rpx(6),
-    },
-    eqSliderTrack: {
-        position: "absolute",
-        left: (EQ_TOUCH_W - EQ_TRACK_W) / 2,
-        top: 0,
-        bottom: 0,
-        width: EQ_TRACK_W,
-        borderRadius: EQ_TRACK_W / 2,
-        overflow: "hidden",
-    },
-    eqSliderFill: {
-        position: "absolute",
-        left: (EQ_TOUCH_W - EQ_TRACK_W) / 2,
-        bottom: 0,
-        width: EQ_TRACK_W,
-        borderRadius: EQ_TRACK_W / 2,
-    },
-    eqSliderThumb: {
-        position: "absolute",
-        left: (EQ_TOUCH_W - EQ_THUMB_D) / 2,
-    },
+    /* 竖向滑块（原生 SeekBar 旋转270度） */
     /* 增益曲线区（宽屏=右列拉伸；窄屏=下方等高整行） */
     eqRight: {
         justifyContent: "center",

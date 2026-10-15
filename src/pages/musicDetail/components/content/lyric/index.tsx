@@ -311,20 +311,10 @@ export default function Lyric(props: IProps) {
                                     currentLrcItem?.index === index;
 
                                 if (isCurrent) {
-                                    // 当前行整体主题色（uniform：不做进度染色）
                                     return (
                                         <KaraokeText
                                             text={text}
-                                            startTime={item.time}
-                                            endTime={
-                                                index + 1 < lyrics.length
-                                                    ? lyrics[index + 1].time
-                                                    : item.time + 15000
-                                            }
-                                            uniform
                                             sungColor={colors.primary}
-                                            unsungColor={colors.text}
-                                            unsungOpacity={0.6}
                                             fontSize={
                                                 fontSizeStyle.fontSize + 9
                                             }

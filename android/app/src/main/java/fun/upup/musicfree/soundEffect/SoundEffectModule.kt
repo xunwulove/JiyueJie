@@ -297,26 +297,33 @@ class SoundEffectModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
-    /** 低音增强强度 0..1000（0 = 关闭） */
+    /**
+     * 低音增强强度 0..1000。
+     * 修复破音：强度为0时只 setStrength(0)，保持 enabled=true，避免效果器旁路切换产生爆音。
+     * 强度0时 BassBoost 对音频无影响，但音频处理链不切换。
+     */
     @ReactMethod
     fun setBassBoost(strength: Int) {
         val bb = bassBoost ?: return
         try {
             val s = strength.coerceIn(0, 1000).toShort()
+            bb.enabled = true
             bb.setStrength(s)
-            bb.enabled = s > 0
         } catch (_: Exception) {
         }
     }
 
-    /** 环绕声（虚拟器）强度 0..1000（0 = 关闭） */
+    /**
+     * 环绕声（虚拟器）强度 0..1000。
+     * 修复破音：同 BassBoost，强度0时保持 enabled=true，仅 setStrength(0)。
+     */
     @ReactMethod
     fun setVirtualizer(strength: Int) {
         val vz = virtualizer ?: return
         try {
             val s = strength.coerceIn(0, 1000).toShort()
+            vz.enabled = true
             vz.setStrength(s)
-            vz.enabled = s > 0
         } catch (_: Exception) {
         }
     }

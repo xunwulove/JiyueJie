@@ -170,10 +170,61 @@ export function applyAllConfig() {
     SoundEffect.setEqEnabled(enabled);
 }
 
+/** 均衡器关闭渐变定时器（避免快速切换时多个渐变竞态） */
+let eqFadeTimer: ReturnType<typeof setTimeout> | null = null;
+
 /** 开关/滑块的即改即生效入口（未绑定则只写配置，绑定后自动应用） */
 export function applyEqEnabled(enabled: boolean) {
     Config.setConfig("sound.eqEnabled", enabled);
-    if (attached && SoundEffect) SoundEffect.setEqEnabled(enabled);
+    if (!attached || !SoundEffect) return;
+    // 取消上一次未完成的渐变
+    if (eqFadeTimer) {
+        clearTimeout(eqFadeTimer);
+        eqFadeTimer = null;
+    }
+    if (enabled) {
+        // 开启：直接启用并恢复当前频段配置
+        SoundEffect.setEqEnabled(true);
+        const preset = Config.getConfig("sound.eqPreset") ?? -1;
+        const bands = Config.getConfig("sound.eqBands") ?? [];
+        if (typeof preset === "number" && preset >= 0) {
+            const p = EQ_PRESETS[preset];
+            if (p) p.bands.forEach((lv: number, i: number) => SoundEffect.setBandLevel(i, lv));
+        } else if (Array.isArray(bands)) {
+            bands.forEach((lv: number, i: number) => {
+                if (typeof lv === "number") SoundEffect.setBandLevel(i, lv);
+            });
+        }
+    } else {
+        // 关闭：先逐段渐变到0（约120ms），再关闭 enabled，避免频谱突变爆音
+        const bands = Config.getConfig("sound.eqBands") ?? [];
+        const preset = Config.getConfig("sound.eqPreset") ?? -1;
+        // 当前实际生效的频段值（预设模式取预设曲线）
+        const current =
+            typeof preset === "number" && preset >= 0
+                ? (EQ_PRESETS[preset]?.bands ?? [])
+                : Array.isArray(bands)
+                  ? bands
+                  : [];
+        const steps = 8;
+        let step = 0;
+        const fadeOut = () => {
+            step += 1;
+            const ratio = 1 - step / steps;
+            current.forEach((lv: number, i: number) => {
+                if (typeof lv === "number") {
+                    SoundEffect.setBandLevel(i, Math.round((lv * ratio) / 50) * 50);
+                }
+            });
+            if (step < steps) {
+                eqFadeTimer = setTimeout(fadeOut, 16);
+            } else {
+                SoundEffect.setEqEnabled(false);
+                eqFadeTimer = null;
+            }
+        };
+        fadeOut();
+    }
 }
 
 export function applyEqPreset(index: number) {

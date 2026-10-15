@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 背景轨道（未选中部分）：4dp 高，圆角 -->
+    <item android:id="@android:id/background">
+        <shape>
+            <solid android:color="#E5E7EB" />
+            <corners android:radius="2dp" />
+            <size android:height="4dp" />
+        </shape>
+    </item>
+    <!-- 进度条（选中部分）：4dp 高，圆角，颜色由 progressTint 染色 -->
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape>
+                <solid android:color="#4055D4" />
+                <corners android:radius="2dp" />
+                <size android:height="4dp" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>
