@@ -11,7 +11,7 @@
 |---|---|
 | 项目名 | 极悦界（JiyueJie） |
 | 性质 | MusicFree 系 二次开发 的 React Native 安卓音乐播放器（fork 上游 maotoumao/MusicFree） |
-| 当前版本 | 0.6.2.14（versionCode 400025） |
+| 当前版本 | 0.6.2.15（versionCode 400026） |
 | 包名 | fun.upup.musicfree |
 | 项目根 | `E:\xunwu\Deepseek\jiyuejie` |
 | 上游 | https://github.com/maotoumao/MusicFree（AGPL） |

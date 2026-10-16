@@ -13,7 +13,10 @@ class SoundEffectPackage : ReactPackage {
     override fun createViewManagers(
         reactContext: ReactApplicationContext
     ): MutableList<ViewManager<View, ReactShadowNode<*>>> =
-        mutableListOf(VerticalSliderManager(reactContext) as ViewManager<View, ReactShadowNode<*>>)
+        mutableListOf(
+            VerticalSliderManager(reactContext) as ViewManager<View, ReactShadowNode<*>>,
+            EqCurveManager(reactContext) as ViewManager<View, ReactShadowNode<*>>
+        )
 
     override fun createNativeModules(
         reactContext: ReactApplicationContext

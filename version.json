@@ -1,14 +1,1 @@
-{
-  "version": "0.6.2.9",
-  "changeLog": [
-    "音源订阅与软件更新仓库整合：gitee 仓库改名 jiyuejie，订阅源移入 sources/ 目录",
-    "软件更新兜底地址切至 updates/version.json（与音源目录分离）",
-    "推荐歌单来源支持「随机使用音源」：当日缓存源优先随机，失败自动切换可用率择优",
-    "内置歌单（我的喜欢/本地音乐/最近播放）保护：不再显示编辑菜单",
-    "推荐歌单独立可用率统计，自动优先使用优质音源"
-  ],
-  "download": [
-    "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-arm64-v8a-release.apk",
-    "https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-universal-release.apk"
-  ]
-}
+{"changeLog":["新增 DDC 耳机补偿：内置 5 款真实 AutoEQ 频响补偿 IR（QCY T13/AirPods Pro 2/Sony WH-1000XM4/Bose QC45/Sennheiser HD 650），与卷积混响互斥复用卷积器","新增耳机补偿预设导入：三级文件选择器导入 48kHz WAV，支持长按删除，内置 5 款不可删","混响 5 个预设替换为真实空间 IR（48kHz 立体声：小房间/音乐厅/教堂/板式/洞穴），并已消除此前仅剩的占位资源","移除英文界面，仅提供中文版","均衡器升级为单 View 参数 EQ 曲线：15 段统一绘制（网格+增益曲线+圆球+频率标签一体），拖动跟手、消除进页卡顿与开启后黑屏/残影","音效引擎切换为 JamesDSP 核心算法库：均衡器升级为 15 段（25Hz–16kHz），新增进阶音效——输出增益、动态低音、立体声增强、混响、电子管模拟、交叉馈送、卷积器(5 内置 IR)，摆脱系统均衡器随设备频段数/预设差异","均衡器竖向滑块自绘重写：拖动手感修复、消除残影与开启后黑屏问题（轨道 2dp/圆球 12dp）","音效页新增「设备与效果器状态」诊断区：显示当前输出设备（扬声器/耳机/蓝牙）与低音增强、环绕声是否生效，一眼确认音效真实状态","系统启动图品牌音符加大：手机端音符占比与平板/软件内一致（v8）"],"version":"0.6.2.15","download":["https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-arm64-v8a-release.apk","https://gitee.com/xunwulove/jiyuejie/releases/download/latest/app-universal-release.apk"]}

@@ -31,6 +31,8 @@ interface IFileSelectorDialogProps {
     fileType?: "file" | "folder" | "file-and-folder";
     multi?: boolean;
     actionText?: string;
+    /** 内容区顶部说明文字（如导入格式提示） */
+    description?: string;
     matchExtension?: (path: string) => boolean;
     /** 返回 true 表示处理完成，浮窗关闭 */
     onAction?: (selectedFiles: IFileItem[]) => boolean | Promise<boolean>;
@@ -52,6 +54,7 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
         fileType = "folder",
         multi = false,
         actionText,
+        description,
         matchExtension,
         onAction,
         onCancel,
@@ -256,6 +259,14 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
             onBackPress={onBackPress}>
             <Dialog.Title withDivider>{actionLabel}</Dialog.Title>
             <Dialog.Content needScroll>
+                {description ? (
+                    <ThemeText
+                        fontSize="caption"
+                        fontColor="textSecondary"
+                        style={styles.desc}>
+                        {description}
+                    </ThemeText>
+                ) : null}
                 <View style={styles.crumbRow}>
                     {currentPath.parent !== null ? (
                         <Pressable
@@ -436,6 +447,9 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
 }
 
 const styles = StyleSheet.create({
+    desc: {
+        marginBottom: 8,
+    },
     crumbRow: {
         flexDirection: "row",
         alignItems: "center",

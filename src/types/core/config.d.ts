@@ -111,12 +111,17 @@ export interface IAppConfigProperties {
     "jdsp.stereoMix": number;
     "jdsp.reverbEnabled": boolean;
     "jdsp.reverbPreset": number;
+    "jdsp.reverbEngine": number;
     "jdsp.tubeEnabled": boolean;
     "jdsp.tubeGain": number;
     "jdsp.crossfeedEnabled": boolean;
     "jdsp.crossfeedMode": number;
     "jdsp.convolverEnabled": boolean;
     "jdsp.convolverPreset": number;
+    "jdsp.ddcEnabled": boolean;
+    "jdsp.ddcHeadphone": number;
+    /** 用户导入的耳机补偿预设（file 为内部存储 ddc_custom/ 下的文件名） */
+    "jdsp.ddcCustom": { name: string; file: string }[];
     "jdsp.eqBands": number[];
 }
 

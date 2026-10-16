@@ -1,7 +1,10 @@
 import { DeviceEventEmitter, NativeModules, Platform } from "react-native";
+import RNFS, { exists, mkdir, copyFile, unlink } from "react-native-fs";
 import Config from "@/core/appConfig";
+import pathConst from "@/constants/pathConst";
+import { getFileName } from "@/utils/fileUtils";
 import { errorLog, trace } from "@/utils/log";
-import { setEqualizer as jdspSetEqualizer, setPostGain, setBassBoost, setStereoEnhancement, setReverb, setVacuumTube, setCrossfeed, setConvolver, loadBuiltinIR, IR_PRESETS } from "@/core/jamesdsp";
+import { setEqualizer as jdspSetEqualizer, setPostGain, setBassBoost, setStereoEnhancement, setReverb, setVacuumTube, setCrossfeed, setConvolver, loadBuiltinIR, loadIR, IR_PRESETS, DDC_HEADPHONES } from "@/core/jamesdsp";
 
 /** 将旧版 N 段毫分贝(millibel)转换为 JamesDSP 15段 dB，线性插值 */
 function toJamesDspGains(bands: number[]): number[] {
@@ -207,7 +210,28 @@ export function applyAllConfig() {
     if (Config.getConfig("jdsp.reverbEnabled")) setReverb(true, Config.getConfig("jdsp.reverbPreset") ?? 1);
     if (Config.getConfig("jdsp.tubeEnabled")) setVacuumTube(true, Config.getConfig("jdsp.tubeGain") ?? 6);
     if (Config.getConfig("jdsp.crossfeedEnabled")) setCrossfeed(true, Config.getConfig("jdsp.crossfeedMode") ?? 0);
-    if (Config.getConfig("jdsp.convolverEnabled")) {
+    // JamesDSP DDC 耳机补偿恢复（与卷积混响互斥，共用 Convolver）
+    const ddcEnabled = Config.getConfig("jdsp.ddcEnabled") ?? false;
+    if (ddcEnabled) {
+        const selection = Config.getConfig("jdsp.ddcHeadphone") ?? 0;
+        const builtins = DDC_HEADPHONES.length;
+        if (selection < builtins) {
+            const hp = DDC_HEADPHONES[selection];
+            if (hp) loadBuiltinIR(hp.file);
+            setConvolver(true);
+        } else {
+            const custom = ddcCustomList();
+            const item = custom[selection - builtins];
+            if (item) {
+                RNFS.readFile(pathConst.ddcCustomPath + item.file, "base64")
+                    .then(b64 => {
+                        if (b64) loadIR(b64);
+                        setConvolver(true);
+                    })
+                    .catch(() => setConvolver(false));
+            }
+        }
+    } else if (Config.getConfig("jdsp.convolverEnabled")) {
         const presetIdx = Config.getConfig("jdsp.convolverPreset") ?? 0;
         const preset = IR_PRESETS[presetIdx];
         if (preset) loadBuiltinIR(preset.file);
@@ -269,6 +293,127 @@ export function applyBandLevel(band: number, level: number) {
     // 直接调用 JamesDSP（15段 dB）
     if (!!Config.getConfig("sound.eqEnabled")) {
         jdspSetEqualizer(true, bands15);
+    }
+}
+
+/** 用户导入的耳机补偿预设列表（持久化于 Config jdsp.ddcCustom） */
+export function ddcCustomList(): { name: string; file: string }[] {
+    return Config.getConfig("jdsp.ddcCustom") ?? [];
+}
+
+/** 从本地 wav 导入耳机补偿预设：复制到内部存储并记录，返回是否成功 */
+export async function importDdcPreset(srcPath: string): Promise<boolean> {
+    if (!srcPath.toLowerCase().endsWith(".wav")) return false;
+    try {
+        const dir = pathConst.ddcCustomPath;
+        if (!(await exists(dir))) {
+            await mkdir(dir);
+        }
+        const base = getFileName(srcPath);
+        const name = (base.replace(/\.wav$/i, "") || "未命名").trim();
+        // 用时间戳前缀避免文件名冲突
+        const unique = `${Date.now()}_${base}`;
+        await copyFile(srcPath, dir + unique);
+        Config.setConfig("jdsp.ddcCustom", [
+            ...ddcCustomList(),
+            { name, file: unique },
+        ]);
+        return true;
+    } catch (e) {
+        errorLog("importDdcPreset", e);
+        return false;
+    }
+}
+
+/**
+ * 删除用户导入的耳机补偿预设。
+ * @param index 导入列表内的索引（非全局选中索引）
+ */
+export function deleteDdcPreset(index: number) {
+    const list = ddcCustomList();
+    const item = list[index];
+    if (!item) return;
+    const builtins = DDC_HEADPHONES.length;
+    const current = (Config.getConfig("jdsp.ddcHeadphone") as number) ?? 0;
+    const ddcOn = Config.getConfig("jdsp.ddcEnabled") ?? false;
+    // 删的正是当前正在用的导入款 → 先关闭 DDC
+    if (ddcOn && current >= builtins && current - builtins === index) {
+        Config.setConfig("jdsp.ddcEnabled", false);
+        setConvolver(false);
+    }
+    try {
+        unlink(pathConst.ddcCustomPath + item.file);
+    } catch (e) {
+        errorLog("deleteDdcPreset.unlink", e);
+    }
+    const rest = list.filter((_, i) => i !== index);
+    Config.setConfig("jdsp.ddcCustom", rest);
+    // 删除位于当前选中导入项之前的项 → 选中索引左移，保持指向同一款
+    if (ddcOn && current >= builtins) {
+        const offset = current - builtins;
+        if (offset > index) {
+            Config.setConfig("jdsp.ddcHeadphone", builtins + offset - 1);
+        }
+    }
+}
+
+/** ViPER-DDC 耳机补偿（与卷积混响互斥，共用 Convolver）。selection 为统一索引：前 N 个内置 + 其后用户导入。 */
+export async function applyDdc(enabled: boolean, selection: number) {
+    Config.setConfig("jdsp.ddcEnabled", enabled);
+    Config.setConfig("jdsp.ddcHeadphone", selection);
+    if (enabled) {
+        // 互斥：关闭卷积混响（同一 Convolver 不能同时跑两种 IR）
+        Config.setConfig("jdsp.convolverEnabled", false);
+        const builtins = DDC_HEADPHONES.length;
+        if (selection < builtins) {
+            const hp = DDC_HEADPHONES[selection];
+            if (hp) loadBuiltinIR(hp.file);
+        } else {
+            const custom = ddcCustomList();
+            const item = custom[selection - builtins];
+            if (item) {
+                const b64 = await RNFS.readFile(
+                    pathConst.ddcCustomPath + item.file,
+                    "base64",
+                );
+                if (b64) loadIR(b64);
+            }
+        }
+        setConvolver(true);
+    } else {
+        setConvolver(false);
+    }
+}
+
+/** 混响引擎（0=算法混响 Progenitor2，1=卷积混响 Convolver） */
+export const REVERB_ENGINE_ALGORITHM = 0;
+export const REVERB_ENGINE_CONVOLVER = 1;
+
+/**
+ * 合并后的混响开关：统一入口，算法混响与卷积混响二选一。
+ * @param enabled 总开关
+ * @param engine  引擎类型 0=算法 1=卷积
+ * @param preset  对应引擎的预设编号（算法→REVERB_PRESETS，卷积→IR_PRESETS）
+ */
+export function applyReverb(enabled: boolean, engine: number, preset: number) {
+    // 先全部关闭，保证互斥
+    Config.setConfig("jdsp.reverbEnabled", false);
+    Config.setConfig("jdsp.convolverEnabled", false);
+    setReverb(false, preset);
+    setConvolver(false);
+
+    if (!enabled) return;
+    Config.setConfig("jdsp.reverbEngine", engine);
+    if (engine === REVERB_ENGINE_ALGORITHM) {
+        Config.setConfig("jdsp.reverbEnabled", true);
+        setReverb(true, preset);
+    } else {
+        // 卷积与 DDC 共用 Convolver，互斥
+        Config.setConfig("jdsp.ddcEnabled", false);
+        const p = IR_PRESETS[preset];
+        if (p) loadBuiltinIR(p.file);
+        Config.setConfig("jdsp.convolverEnabled", true);
+        setConvolver(true);
     }
 }
 

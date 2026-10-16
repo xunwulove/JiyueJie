@@ -63,12 +63,12 @@ export function setStereoEnhancement(enabled: boolean, mix: number): void {
 
 // ==================== Reverb 混响 ====================
 
-/** 混响预设名称（Progenitor2，20个预设） */
+/** 混响预设名称（Progenitor2，20个预设，中文） */
 export const REVERB_PRESETS = [
-  'None', 'Small Room', 'Medium Room', 'Large Room', 'Medium Hall',
-  'Large Hall', 'Plate', 'Ambient', 'Church', 'Cathedral',
-  'Basement', 'Living Room', 'Stone Corridor', 'Carpet Hall', 'Warehouse',
-  'Forest', 'City', 'Mountains', 'Deep Cave', 'Underwater',
+  '关闭', '小房间', '中房间', '大房间', '中厅',
+  '大厅', '板式', '环境', '教堂', '大教堂',
+  '地下室', '客厅', '石廊', '地毯厅', '仓库',
+  '森林', '城市', '山脉', '深洞', '水下',
 ];
 
 /**
@@ -103,10 +103,10 @@ export function setVacuumTube(enabled: boolean, dbGain: number): void {
 
 // ==================== Crossfeed 交叉馈送 ====================
 
-/** 交叉馈送模式名称 */
+/** 交叉馈送模式名称（中文） */
 export const CROSSFEED_MODES = [
-  'BS2B Lv1', 'BS2B Lv2', 'HRTF Crossfeed',
-  'HRTF Surround 1', 'HRTF Surround 2', 'HRTF Surround 3',
+  'BS2B 一级', 'BS2B 二级', 'HRTF 交叉馈送',
+  'HRTF 环绕 1', 'HRTF 环绕 2', 'HRTF 环绕 3',
 ];
 
 /**
@@ -147,6 +147,20 @@ export const IR_PRESETS: { name: string; file: string }[] = [
   { name: "教堂", file: "ir_church.wav" },
   { name: "板式混响", file: "ir_plate.wav" },
   { name: "洞穴", file: "ir_cave.wav" },
+];
+
+// ==================== ViPER-DDC 耳机补偿 ====================
+
+/**
+ * 耳机频响补偿 IR 预设（assets/ir/ddc/ 目录，AutoEQ 最小相位补偿 IR）
+ * 与卷积混响共用 Convolver，二者互斥。
+ */
+export const DDC_HEADPHONES: { name: string; file: string }[] = [
+  { name: "QCY T13", file: "ddc/qcy_t13.wav" },
+  { name: "AirPods Pro 2", file: "ddc/airpods_pro2.wav" },
+  { name: "Sony WH-1000XM4", file: "ddc/sony_wh1000xm4.wav" },
+  { name: "Bose QC45", file: "ddc/bose_qc45.wav" },
+  { name: "Sennheiser HD 650", file: "ddc/sennheiser_hd650.wav" },
 ];
 
 // ==================== 便捷：全部关闭 ====================

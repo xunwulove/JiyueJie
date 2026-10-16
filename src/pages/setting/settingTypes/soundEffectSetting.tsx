@@ -9,14 +9,15 @@ import {
     View,
 } from "react-native";
 import Slider from "@react-native-community/slider";
-import Svg, { Path } from "react-native-svg";
 import AppBar from "@/components/base/appBar";
+import Icon from "@/components/base/icon.tsx";
 import { ListDivider } from "@/components/base/divider";
 import HorizontalSafeAreaView from "@/components/base/horizontalSafeAreaView";
 import ListItem from "@/components/base/listItem";
 import StatusBar from "@/components/base/statusBar";
 import ThemeText from "@/components/base/themeText";
 import ThemeSwitch from "@/components/base/switch";
+import { showDialog } from "@/components/dialogs/useDialog";
 import VerticalSafeAreaView from "@/components/base/verticalSafeAreaView";
 import globalStyle from "@/constants/globalStyle";
 import { useAppConfig } from "@/core/appConfig";
@@ -28,17 +29,22 @@ import ReactNativeTrackPlayer, {
 import {
     applyBandLevel,
     applyBassBoost,
+    applyDdc,
     applyDynamicsProcessing,
     applyEnvironmentalReverbPreset,
     applyEqEnabled,
     applyEqPreset,
     applyLoudnessEnhancer,
+    applyReverb,
     applyReverbPreset,
     applyVirtualizer,
+    ddcCustomList,
+    deleteDdcPreset,
     ensureSoundEffectAttached,
     EQ_PRESETS,
     getOutputDevice,
     getSoundEffectInfo,
+    importDdcPreset,
     initBandsIfNeeded,
     isSoundEffectAttached,
 } from "@/core/soundEffect";
@@ -46,21 +52,19 @@ import {
     setPostGain,
     setBassBoost as setJamesDspBass,
     setStereoEnhancement,
-    setReverb as setJamesDspReverb,
     setVacuumTube,
     setCrossfeed,
-    setConvolver,
-    loadBuiltinIR,
     resetAll as resetJamesDsp,
     REVERB_PRESETS,
     CROSSFEED_MODES,
     IR_PRESETS,
-    EQ_BANDS as JAMESDSP_EQ_FREQS,
+    DDC_HEADPHONES,
     setEqualizer as setJamesDspEqualizer,
 } from "@/core/jamesdsp";
 import useColors from "@/hooks/useColors";
 import useIsTablet from "@/hooks/useIsTablet";
 import rpx from "@/utils/rpx";
+import { iconSizeConst } from "@/constants/uiConst";
 
 interface ISoundEffectInfo {
     bands: number;
@@ -76,112 +80,12 @@ interface ISoundEffectInfo {
     dynamicsSupported: boolean;
 }
 
-/** 增益曲线带高度（rpx，宽屏与滑块等高） */
-const CURVE_H = rpx(220);
-/** 窄屏（手机）曲线带高度（rpx，独立矮条省屏） */
-const CURVE_H_NARROW = rpx(110);
-/** 曲线纵向波动范围（viewBox 百分比）：波动行程 = 竖线高度的一半（rpx(110)）
- *  宽屏曲线区高 220rpx → 110rpx 波动 = 50%；窄屏曲线区高 110rpx → 110rpx 波动 = 100% */
-const CURVE_RANGE_WIDE = 25;
-const CURVE_RANGE_NARROW = 50;
-/** 曲线线宽（屏幕 px）：non-scaling-stroke 下恒为恒定像素（preserveAspectRatio=none 不会再造成方向性粗细不均）；
- *  值取 2.5 viewBox 单位 × y 拉伸系数（保持与改造前水平线视觉一致） */
-const EQ_CURVE_STROKE = (2.5 * CURVE_H) / 100;
+/** 单 View 参数 EQ 高度：手机 ≈180dp（顶部增益+曲线区+底部频率），平板 280dp */
+const EQ_VIEW_H_PHONE = rpx(360);
+const EQ_VIEW_H_TABLET = 280;
 
-/** 竖向滑块高度：手机 rpx(300)≈150dp，平板固定 250dp */
-const EQ_SLIDER_H_PHONE = rpx(300);
-const EQ_SLIDER_H_TABLET = 250;
-/** 触摸热区宽度（dp，与原生 TOUCH_W 同步） */
-const EQ_TOUCH_W = 30;
-
-/** Catmull-Rom 平滑：折线点集 → 三次贝塞尔路径（跨过各频段增益点） */
-function smoothEqPath(points: { x: number; y: number }[]): string {
-    if (points.length < 2) return "";
-    const d: string[] = [
-        `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`,
-    ];
-    for (let i = 0; i < points.length - 1; i++) {
-        const p0 = points[Math.max(0, i - 1)];
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const p3 = points[Math.min(points.length - 1, i + 2)];
-        const c1x = p1.x + (p2.x - p0.x) / 6;
-        const c1y = p1.y + (p2.y - p0.y) / 6;
-        const c2x = p2.x - (p3.x - p1.x) / 6;
-        const c2y = p2.y - (p3.y - p1.y) / 6;
-        d.push(
-            `C ${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(
-                2,
-            )} ${c2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`,
-        );
-    }
-    return d.join(" ");
-}
-
-/** 由各频段增益值生成曲线 Path（viewBox 0-100 坐标，preserveAspectRatio=none 拉伸到实际宽度；x 在曲线区均匀分布） */
-function buildEqCurvePath(
-    eqBands: number[] | undefined,
-    bands: number,
-    levelMin: number,
-    levelMax: number,
-    range: number,
-): string {
-    const n = Math.max(1, bands);
-    const maxAbs = Math.max(
-        Math.abs(levelMin),
-        Math.abs(levelMax),
-        1500,
-    );
-    const pts = (eqBands ?? []).slice(0, n).map((lv, i) => {
-        const x = ((i + 0.5) / n) * 100;
-        const y = 50 - (lv / maxAbs) * range;
-        return { x, y };
-    });
-    // 少于 2 个点时退回直线/单点
-    if (pts.length < 2) {
-        return pts.length === 1
-            ? `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`
-            : "";
-    }
-    return smoothEqPath(pts);
-}
-
-/** 原生竖向滑块（安卓 SeekBar 旋转270度）：系统级手势处理，跟手度与横向 Slider 一致 */
-const NativeVerticalSlider = requireNativeComponent<any>("RCTVerticalSlider");
-
-function EqSlider({
-    value,
-    min,
-    max,
-    color,
-    trackColor,
-    disabled,
-    onChange,
-}: {
-    value: number;
-    min: number;
-    max: number;
-    color?: string;
-    trackColor?: string;
-    disabled?: boolean;
-    onChange: (v: number) => void;
-}) {
-    const isWide = useIsTablet();
-    const sliderH = isWide ? EQ_SLIDER_H_TABLET : EQ_SLIDER_H_PHONE;
-    return (
-        <NativeVerticalSlider
-            style={{ width: EQ_TOUCH_W, height: sliderH }}
-            value={Math.round(value)}
-            minimumValue={min}
-            maximumValue={max}
-            step={50}
-            disabled={disabled}
-            trackColor={trackColor}
-            progressColor={color}
-            onChange={(e: any) => onChange(e.nativeEvent.value)}
-        />
-    );
-}
+/** 单 View 参数 EQ（原生：网格+曲线+圆球+标签一体，setLayerType 软件层防卡顿） */
+const NativeEqCurve = requireNativeComponent<any>("RCTEqCurve");
 
 /** 音效设置（均衡器/低音增强/环绕声）——独立二级页，即改即生效 */
 export default function SoundEffectSetting() {
@@ -215,12 +119,56 @@ export default function SoundEffectSetting() {
     const jdspStereoMix = useAppConfig("jdsp.stereoMix") ?? 0.3;
     const jdspReverbEnabled = useAppConfig("jdsp.reverbEnabled") ?? false;
     const jdspReverbPreset = useAppConfig("jdsp.reverbPreset") ?? 1;
+    const jdspReverbEngine = useAppConfig("jdsp.reverbEngine") ?? 0;
     const jdspTubeEnabled = useAppConfig("jdsp.tubeEnabled") ?? false;
     const jdspTubeGain = useAppConfig("jdsp.tubeGain") ?? 6;
     const jdspCrossfeedEnabled = useAppConfig("jdsp.crossfeedEnabled") ?? false;
     const jdspCrossfeedMode = useAppConfig("jdsp.crossfeedMode") ?? 0;
     const jdspConvolverEnabled = useAppConfig("jdsp.convolverEnabled") ?? false;
     const jdspConvolverPreset = useAppConfig("jdsp.convolverPreset") ?? 0;
+    const jdspDdcEnabled = useAppConfig("jdsp.ddcEnabled") ?? false;
+    const jdspDdcHeadphone = useAppConfig("jdsp.ddcHeadphone") ?? 0;
+    const jdspDdcCustom = useAppConfig("jdsp.ddcCustom") ?? [];
+
+    /** 打开文件选择器导入耳机补偿 IR（三级浮窗 + 说明文字） */
+    const onImportDdc = () => {
+        showDialog("FileSelectorDialog", {
+            fileType: "file",
+            multi: false,
+            actionText: "导入",
+            description:
+                "请导入 48kHz 采样率的 WAV 脉冲响应（IR）文件作为耳机频响补偿。非 48kHz 文件可能加载失败或效果异常。",
+            matchExtension: p => p.toLowerCase().endsWith(".wav"),
+            async onAction(selected) {
+                const path = selected[0]?.path;
+                if (path) {
+                    const ok = await importDdcPreset(path);
+                    if (ok) {
+                        // 导入成功：自动选中并生效（最后一项）
+                        const idx =
+                            DDC_HEADPHONES.length + ddcCustomList().length - 1;
+                        applyDdc(true, idx);
+                    } else {
+                        showDialog("SimpleDialog", {
+                            title: "导入失败",
+                            content: "导入失败：请确认选择的是 WAV 文件。",
+                        });
+                    }
+                }
+                return true;
+            },
+        });
+    };
+
+    /** 长按导入款 → 确认删除 */
+    const onDeleteDdcCustom = (ci: number) => {
+        const item = jdspDdcCustom[ci];
+        showDialog("SimpleDialog", {
+            title: "删除耳机预设",
+            content: `确定删除「${item?.name ?? ""}」？该文件将从应用内移除。`,
+            onOk: () => deleteDdcPreset(ci),
+        });
+    };
 
     useEffect(() => {
         // 进入页面先尝试绑定（本会话播放过 → 立即成功；从未播放 → 暂缓）
@@ -346,37 +294,6 @@ export default function SoundEffectSetting() {
     const envReverbUnsupported = info != null && !info.envReverbSupported;
     const dynamicsUnsupported = info != null && !info.dynamicsSupported;
 
-    // 渲染 15 段 EQ 滑块
-    const renderEqSliders = () =>
-        Array.from({ length: bands }).map((_, i) => {
-            const freq = JAMESDSP_EQ_FREQS[i] ?? 0;
-            const raw = (displayBands as number[])?.[i];
-            const level = typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
-            return (
-                <View key={i} style={style.eqColumn}>
-                    <ThemeText
-                        fontSize="caption"
-                        fontColor={level === 0 ? "textSecondary" : "text"}>
-                        {level > 0
-                            ? `+${(level / 100).toFixed(1)}`
-                            : (level / 100).toFixed(1)}
-                    </ThemeText>
-                    <EqSlider
-                        value={level}
-                        min={levelMin}
-                        max={levelMax}
-                        color={colors.primary}
-                        trackColor={colors.divider}
-                        disabled={!eqEnabled}
-                        onChange={v => applyBandLevel(i, v)}
-                    />
-                    <ThemeText fontSize="caption" fontColor="textSecondary">
-                        {freq >= 1000 ? `${(freq / 1000).toFixed(1)}k` : `${freq}`}
-                    </ThemeText>
-                </View>
-            );
-        });
-
     return (
         <VerticalSafeAreaView style={globalStyle.fwflex1}>
             <StatusBar />
@@ -463,57 +380,49 @@ export default function SoundEffectSetting() {
                             </View>
                             <ListDivider marginLeft={16} />
 
-                            {/* EQ 频段：上下布局（滑块居中 + 下方同宽曲线）；手机端滑块横向滚动 */}
+                            {/* EQ 频段：单 View 参数 EQ（网格+曲线+圆球+标签一体）；平板 450dp 居中全显示，手机全宽 */}
                             {bands > 0 ? (
                                 <View style={[style.eqBody, style.eqBodyColumn]}>
-                                    {/* 上块：竖向滑块（数值在上 / 滑块 / 频段在下）；平板居中缩小，手机横向滚动 */}
                                     {isWide ? (
-                                        <View style={[style.eqLeft, style.eqLeftWide]}>
-                                            {renderEqSliders()}
-                                        </View>
+                                        <NativeEqCurve
+                                            style={{
+                                                width: 450,
+                                                height: EQ_VIEW_H_TABLET,
+                                                alignSelf: "center",
+                                            }}
+                                            values={displayBands}
+                                            minimumValue={levelMin}
+                                            maximumValue={levelMax}
+                                            progressColor={colors.primary}
+                                            trackColor={colors.divider}
+                                            disabled={!eqEnabled}
+                                            onUserValue={(e: any) =>
+                                                applyBandLevel(
+                                                    e.nativeEvent.index,
+                                                    e.nativeEvent.value,
+                                                )
+                                            }
+                                        />
                                     ) : (
-                                        <ScrollView
-                                            horizontal
-                                            showsHorizontalScrollIndicator={false}
-                                            style={style.eqLeft}
-                                            contentContainerStyle={{ flexGrow: 1, gap: rpx(4) }}>
-                                            {renderEqSliders()}
-                                        </ScrollView>
+                                        <NativeEqCurve
+                                            style={{
+                                                width: "100%",
+                                                height: EQ_VIEW_H_PHONE,
+                                            }}
+                                            values={displayBands}
+                                            minimumValue={levelMin}
+                                            maximumValue={levelMax}
+                                            progressColor={colors.primary}
+                                            trackColor={colors.divider}
+                                            disabled={!eqEnabled}
+                                            onUserValue={(e: any) =>
+                                                applyBandLevel(
+                                                    e.nativeEvent.index,
+                                                    e.nativeEvent.value,
+                                                )
+                                            }
+                                        />
                                     )}
-                                    {/* 下块：增益曲线（与滑块区同宽，实时联动） */}
-                                    <View
-                                        style={[
-                                            style.eqRight,
-                                            isWide ? style.eqRightWide : { height: CURVE_H_NARROW },
-                                            {
-                                                borderTopWidth: StyleSheet.hairlineWidth,
-                                                borderTopColor: colors.divider,
-                                            },
-                                        ]}>
-                                        <Svg
-                                            width="100%"
-                                            height={CURVE_H_NARROW}
-                                            viewBox="0 0 100 100"
-                                            preserveAspectRatio="none">
-                                            <Path
-                                                d={buildEqCurvePath(
-                                                    displayBands as number[],
-                                                    bands,
-                                                    levelMin,
-                                                    levelMax,
-                                                    isWide
-                                                        ? CURVE_RANGE_WIDE
-                                                        : CURVE_RANGE_NARROW,
-                                                )}
-                                                stroke={colors.primary}
-                                                strokeWidth={EQ_CURVE_STROKE}
-                                                fill="none"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                vectorEffect="non-scaling-stroke"
-                                            />
-                                        </Svg>
-                                    </View>
                                 </View>
                             ) : (
                                 <View style={style.eqGridHint}>
@@ -616,33 +525,85 @@ export default function SoundEffectSetting() {
                                 </>
                             )}
                             <ListDivider marginLeft={16} />
-                            {/* 混响 */}
+                            {/* 混响（算法 Progenitor2 与卷积 Convolver 合并为单一入口，段内二选一） */}
                             <ListItem withHorizontalPadding heightType="small">
-                                <ListItem.Content title="混响 (Progenitor2)" />
+                                <ListItem.Content title="混响" />
                                 <ThemeSwitch
-                                    value={jdspReverbEnabled}
-                                    onValueChange={v => { Config.setConfig("jdsp.reverbEnabled", v); setJamesDspReverb(v, jdspReverbPreset); }}
+                                    value={jdspReverbEnabled || jdspConvolverEnabled}
+                                    onValueChange={v => applyReverb(
+                                        v,
+                                        jdspReverbEngine,
+                                        jdspReverbEngine === 0 ? jdspReverbPreset : jdspConvolverPreset,
+                                    )}
                                 />
                             </ListItem>
-                            {jdspReverbEnabled && (
+                            {(jdspReverbEnabled || jdspConvolverEnabled) && (
                                 <>
                                     <ListDivider marginLeft={16} />
+                                    {/* 引擎类型分段：算法混响 | 卷积混响 */}
                                     <ScrollView
                                         horizontal
                                         showsHorizontalScrollIndicator={false}
                                         style={{ paddingHorizontal: rpx(16), paddingVertical: rpx(8) }}
                                         contentContainerStyle={{ gap: rpx(8) }}>
-                                        {REVERB_PRESETS.map((name, idx) => (
-                                            <Pressable
-                                                key={idx}
-                                                onPress={() => { Config.setConfig("jdsp.reverbPreset", idx); setJamesDspReverb(true, idx); }}
-                                                style={[style.chip, { backgroundColor: jdspReverbPreset === idx ? colors.primary : colors.background }]}>
-                                                <ThemeText fontSize="caption" fontColor={jdspReverbPreset === idx ? "text" : "textSecondary"}>
-                                                    {name}
-                                                </ThemeText>
-                                            </Pressable>
-                                        ))}
+                                        <Pressable
+                                            onPress={() => applyReverb(true, 0, jdspReverbPreset)}
+                                            style={[style.chip, { backgroundColor: jdspReverbEngine === 0 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
+                                            <ThemeText fontSize="caption" fontWeight={jdspReverbEngine === 0 ? "medium" : "regular"} color={jdspReverbEngine === 0 ? "#FFFFFF" : (colors as any).onSurfaceVariant ?? colors.textSecondary}>
+                                                算法混响
+                                            </ThemeText>
+                                        </Pressable>
+                                        <Pressable
+                                            onPress={() => applyReverb(true, 1, jdspConvolverPreset)}
+                                            style={[style.chip, { backgroundColor: jdspReverbEngine === 1 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
+                                            <ThemeText fontSize="caption" fontWeight={jdspReverbEngine === 1 ? "medium" : "regular"} color={jdspReverbEngine === 1 ? "#FFFFFF" : (colors as any).onSurfaceVariant ?? colors.textSecondary}>
+                                                卷积混响
+                                            </ThemeText>
+                                        </Pressable>
                                     </ScrollView>
+                                    <ListDivider marginLeft={16} />
+                                    {jdspReverbEngine === 0 ? (
+                                        /* 算法混响预设 */
+                                        <ScrollView
+                                            horizontal
+                                            showsHorizontalScrollIndicator={false}
+                                            style={{ paddingHorizontal: rpx(16), paddingVertical: rpx(8) }}
+                                            contentContainerStyle={{ gap: rpx(8) }}>
+                                            {REVERB_PRESETS.map((name, idx) => (
+                                                <Pressable
+                                                    key={idx}
+                                                    onPress={() => applyReverb(true, 0, idx)}
+                                                    style={[style.chip, { backgroundColor: jdspReverbEnabled && jdspReverbPreset === idx ? colors.primary : colors.background }]}>
+                                                    <ThemeText fontSize="caption" fontColor={jdspReverbEnabled && jdspReverbPreset === idx ? "text" : "textSecondary"}>
+                                                        {name}
+                                                    </ThemeText>
+                                                </Pressable>
+                                            ))}
+                                        </ScrollView>
+                                    ) : (
+                                        /* 卷积混响预设（真实录音 IR） */
+                                        <View>
+                                            <ScrollView
+                                                horizontal
+                                                showsHorizontalScrollIndicator={false}
+                                                style={{ paddingHorizontal: rpx(16), paddingVertical: rpx(8) }}
+                                                contentContainerStyle={{ gap: rpx(8) }}>
+                                                {IR_PRESETS.map((preset, idx) => (
+                                                    <Pressable
+                                                        key={idx}
+                                                        onPress={() => applyReverb(true, 1, idx)}
+                                                        style={[style.chip, { backgroundColor: jdspConvolverEnabled && jdspConvolverPreset === idx ? colors.primary : colors.background }]}>
+                                                        <ThemeText fontSize="caption" fontColor={jdspConvolverEnabled && jdspConvolverPreset === idx ? "text" : "textSecondary"}>
+                                                            {preset.name}
+                                                        </ThemeText>
+                                                    </Pressable>
+                                                ))}
+                                            </ScrollView>
+                                            <ThemeText fontSize="caption" fontColor="textSecondary" style={{ paddingHorizontal: rpx(24), paddingBottom: rpx(8) }}>
+                                                真实空间录音
+                                            </ThemeText>
+                                        </View>
+                                    )}
                                 </>
                             )}
                             <ListDivider marginLeft={16} />
@@ -707,22 +668,15 @@ export default function SoundEffectSetting() {
                                 </>
                             )}
                             <ListDivider marginLeft={16} />
-                            {/* 卷积混响（Convolver） */}
+                            {/* ViPER-DDC 耳机补偿（与卷积混响互斥，共用 Convolver） */}
                             <ListItem withHorizontalPadding heightType="small">
-                                <ListItem.Content title="卷积混响" />
+                                <ListItem.Content title="ViPER-DDC 耳机补偿" />
                                 <ThemeSwitch
-                                    value={jdspConvolverEnabled}
-                                    onValueChange={v => {
-                                        Config.setConfig("jdsp.convolverEnabled", v);
-                                        setConvolver(v);
-                                        if (v) {
-                                            const preset = IR_PRESETS[jdspConvolverPreset];
-                                            if (preset) loadBuiltinIR(preset.file);
-                                        }
-                                    }}
+                                    value={jdspDdcEnabled}
+                                    onValueChange={v => applyDdc(v, jdspDdcHeadphone as number)}
                                 />
                             </ListItem>
-                            {jdspConvolverEnabled && (
+                            {jdspDdcEnabled && (
                                 <>
                                     <ListDivider marginLeft={16} />
                                     <ScrollView
@@ -730,20 +684,38 @@ export default function SoundEffectSetting() {
                                         showsHorizontalScrollIndicator={false}
                                         style={{ paddingHorizontal: rpx(16), paddingVertical: rpx(8) }}
                                         contentContainerStyle={{ gap: rpx(8) }}>
-                                        {IR_PRESETS.map((preset, idx) => (
+                                        {DDC_HEADPHONES.map((hp, idx) => (
                                             <Pressable
-                                                key={idx}
-                                                onPress={() => {
-                                                    Config.setConfig("jdsp.convolverPreset", idx);
-                                                    loadBuiltinIR(preset.file);
-                                                    setConvolver(true);
-                                                }}
-                                                style={[style.chip, { backgroundColor: jdspConvolverPreset === idx ? colors.primary : colors.background }]}>
-                                                <ThemeText fontSize="caption" fontColor={jdspConvolverPreset === idx ? "text" : "textSecondary"}>
-                                                    {preset.name}
+                                                key={`builtin-${idx}`}
+                                                onPress={() => applyDdc(true, idx)}
+                                                style={[style.chip, { backgroundColor: jdspDdcHeadphone === idx ? colors.primary : colors.background }]}>
+                                                <ThemeText fontSize="caption" fontColor={jdspDdcHeadphone === idx ? "text" : "textSecondary"}>
+                                                    {hp.name}
                                                 </ThemeText>
                                             </Pressable>
                                         ))}
+                                        {jdspDdcCustom.map((item, ci) => {
+                                            const globalIdx = DDC_HEADPHONES.length + ci;
+                                            return (
+                                                <Pressable
+                                                    key={`custom-${ci}`}
+                                                    onPress={() => applyDdc(true, globalIdx)}
+                                                    onLongPress={() => onDeleteDdcCustom(ci)}
+                                                    style={[style.chip, { backgroundColor: jdspDdcHeadphone === globalIdx ? colors.primary : colors.background }]}>
+                                                    <ThemeText fontSize="caption" fontColor={jdspDdcHeadphone === globalIdx ? "text" : "textSecondary"}>
+                                                        {item.name}
+                                                    </ThemeText>
+                                                </Pressable>
+                                            );
+                                        })}
+                                        <Pressable
+                                            onPress={onImportDdc}
+                                            style={[style.chip, style.importChip, { borderColor: colors.primary }]}>
+                                            <Icon name="plus" size={iconSizeConst.light} color={colors.primary} />
+                                            <ThemeText fontSize="caption" fontColor="primary">
+                                                导入
+                                            </ThemeText>
+                                        </Pressable>
                                     </ScrollView>
                                 </>
                             )}
@@ -757,10 +729,11 @@ export default function SoundEffectSetting() {
                                 Config.setConfig("jdsp.tubeEnabled", false);
                                 Config.setConfig("jdsp.crossfeedEnabled", false);
                                 Config.setConfig("jdsp.convolverEnabled", false);
+                                Config.setConfig("jdsp.ddcEnabled", false);
                                 resetJamesDsp();
                             }}>
                                 <ListItem.Content title="重置全部 JamesDSP" />
-                                <ThemeText fontSize="caption" fontColor="primary">重置</ThemeText>
+                                <ThemeText fontSize="content" fontColor="primary">重置</ThemeText>
                             </ListItem>
                         </View>
                     </View>
@@ -841,6 +814,12 @@ const style = StyleSheet.create({
         borderRadius: rpx(22),
         alignItems: "center",
         justifyContent: "center",
+    },
+    importChip: {
+        borderWidth: rpx(1.5),
+        borderStyle: "dashed",
+        flexDirection: "row",
+        gap: rpx(4),
     },
     chipTextActive: {
         color: "#FFFFFF",

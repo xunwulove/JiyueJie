@@ -4,7 +4,14 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_DECISIONS.md。
 
-`2026.10.16 0.6.2.14+（JamesDSP 音效引擎，未发版）`
+`2026.10.17 0.6.2.15（已发版）`
+1. 【功能】DDC 耳机补偿：内置 5 款真实 AutoEQ 频响补偿 IR（QCY T13 / AirPods Pro 2 / Sony WH-1000XM4 / Bose QC45 / Sennheiser HD 650），与卷积混响互斥、复用卷积器
+2. 【功能】耳机补偿预设**导入**：三级文件选择器导入 48kHz WAV，支持长按删除，内置款不可删；启动恢复兼容内置/导入款
+3. 【功能】混响 5 预设替换为**真实空间 IR**（48kHz 立体声：小房间/音乐厅/教堂/板式/洞穴），消除剩余全部占位资源
+4. 【变更】移除英文界面，仅提供中文版
+5. 【修复】补全启动恢复 DDC（applyAllConfig）
+
+`2026.10.16 0.6.2.14（JamesDSP 音效引擎，已发版）`
 1. 【功能】音效引擎从系统 AudioEffect 切换为 **JamesDSP 核心算法库**（NDK 编译 `libjiyuejie_dsp`，ExoPlayer AudioProcessor 注入）：均衡器升级为 **15 段**（标准频率点 25Hz–16kHz），并新增进阶音效：输出增益、限幅器、动态低音(DBB)、立体声增强、混响(Progenitor2)、电子管模拟、交叉馈送(Crossfeed)、卷积器(5 内置 IR 预设)
 2. 【功能】均衡器 15 段竖向滑块**自绘重写**（弃用系统 SeekBar）：轨道 2dp / 圆球 12dp，竖直 y→value 触摸映射，saveLayer 隔离防残影与黑屏
 3. 【修复】均衡器滑块整块消失、轨道过粗/不能拖动、拖动残影、开启均衡器整窗变黑 等系列 bug；进阶音效滑块圆球统一主题色（不再系统默认绿）
