@@ -300,9 +300,26 @@ export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecomme
         // 随机全失败 → 落入下方择优循环兜底
     }
 
+    // 自动择优：先复用"上次择优选中的源"的当日缓存（保持离开时的歌单，不重新择优换源）；
+    // 缓存源已失效/被禁用 → 回退下方可用率择优重新选源。
+    // 注：择优持久化用独立键 plugin.recommendSourceCache，不写 plugin.recommendSource，
+    // 因此不会把"自动择优"变成"手动指定"（来源浮窗始终显示自动择优）。
+    const cacheHash = Config.getConfig("plugin.recommendSourceCache");
+    if (cacheHash) {
+        const cachedPlugin = plugins.find(p => p.hash === cacheHash);
+        if (cachedPlugin) {
+            const cachedData = await getCachedPluginRecommend(cacheHash, {
+                allowStaleFallback: false,
+            });
+            if (cachedData) {
+                return cachedData;
+            }
+        }
+    }
+
     // 自动择优：可用率并列最高的源池内随机首选（不再固定排序第一个），
     // 随机到的失败 → 回退次高可用率源 → 最终按可用率序兜底。
-    // 成功后把该源持久化为"当前歌单来源"：下次进软件（一天内）优先读它的缓存，保持离开时的歌单。
+    // 成功后把该源持久化为"择优当前歌单来源"：下次进软件（一天内）优先读它的缓存，保持离开时的歌单。
     const topRel = plugins.length
         ? getRecommendReliabilitySync(plugins[0].instance.platform)
         : 0;
@@ -323,8 +340,8 @@ export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecomme
             allowStaleFallback: false,
         });
         if (data) {
-            // 持久化当前歌单来源：换歌单后写入，下次进软件（一天内）仍显示本歌单
-            Config.setConfig("plugin.recommendSource", plugin.hash);
+            // 持久化择优当前歌单来源（独立键，不影响"手动指定/自动择优"语义）
+            Config.setConfig("plugin.recommendSourceCache", plugin.hash);
             // 选优成功后：后台每日勘探（不阻塞本次返回）
             void exploreBackupSources(plugins, plugin.hash);
             return data;
@@ -363,6 +380,17 @@ export function getCachedPluginRecommendSyncFirst(): IPluginRecommendSheets | nu
             const manual = plugins.find(p => p.hash === manualHash);
             if (manual) {
                 const c = readCache(manual.hash);
+                if (c && sameDay(c.fetchedAt, now)) {
+                    return c.data;
+                }
+            }
+        }
+        // 其次：自动择优持久化的歌单来源（plugin.recommendSourceCache）——保持离开时歌单
+        const cacheHash = Config.getConfig("plugin.recommendSourceCache");
+        if (cacheHash) {
+            const cachedPlugin = plugins.find(p => p.hash === cacheHash);
+            if (cachedPlugin) {
+                const c = readCache(cachedPlugin.hash);
                 if (c && sameDay(c.fetchedAt, now)) {
                     return c.data;
                 }

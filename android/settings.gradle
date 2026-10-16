@@ -15,6 +15,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension){ ex ->
 }
 rootProject.name = 'MusicFree'
 include ':app'
+include ':kotlinaudio'
 includeBuild('../node_modules/@react-native/gradle-plugin')
 
 apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle")

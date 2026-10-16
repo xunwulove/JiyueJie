@@ -24,8 +24,8 @@ react {
     /* Variants */
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
-    //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    // debuggableVariants = ["liteDebug", "prodDebug"]
+    //   设为空列表，让 debug 版也打包 JS bundle，无需连接 Metro 即可独立运行
+    debuggableVariants = []
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
@@ -136,6 +136,17 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode appVersionCode
         versionName appVersion
+
+        // JamesDSP 原生库编译配置
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_static", "-DANDROID_PLATFORM=android-24"
+                cppFlags "-std=c++17"
+            }
+        }
+        ndk {
+            abiFilters "arm64-v8a", "armeabi-v7a"
+        }
     }
     signingConfigs {
         debug {
@@ -157,8 +168,8 @@ android {
                 reset()
                 enable true
                 universalApk true
-                // 2026-10-14（临时）：用户要求全量打包（universal 全 ABI），打包完成后还原为 arm64 单包
-                include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                // 与 ndk.abiFilters 一致，仅编译 arm 两个 ABI（含 JamesDSP native 库）
+                include "armeabi-v7a", "arm64-v8a"
             }
     }
 
@@ -174,6 +185,14 @@ android {
             signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+
+    // JamesDSP 原生库 CMake 构建入口
+    externalNativeBuild {
+        cmake {
+            path file("src/main/cpp/CMakeLists.txt")
+            version "3.22.1"
         }
     }
 }

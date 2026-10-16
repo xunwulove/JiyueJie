@@ -1,0 +1,165 @@
+import { NativeModules } from 'react-native';
+
+const { JamesDSPModule } = NativeModules;
+
+/**
+ * JamesDSP JS 层封装
+ *
+ * 对应原生 JamesDSPModule，所有方法异步无返回（fire-and-forget）。
+ * 效果器参数范围见各方法注释。
+ */
+
+// ==================== PostGain 输出增益 ====================
+
+/** 输出增益 dB，范围 -12..+12，0=直通 */
+export function setPostGain(gainDb: number): void {
+  JamesDSPModule?.setPostGain(gainDb);
+}
+
+// ==================== Limiter 限幅器 ====================
+
+/**
+ * @param thresholdDb 阈值 dB，建议 -3..0，0=不限制
+ * @param releaseMs   释放时间 ms，建议 50..300
+ */
+export function setLimiter(thresholdDb: number, releaseMs: number): void {
+  JamesDSPModule?.setLimiter(thresholdDb, releaseMs);
+}
+
+// ==================== Equalizer 15段 ====================
+
+/** 15段均衡器标准频率点（Hz） */
+export const EQ_BANDS = [25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000];
+
+/**
+ * @param enabled 是否启用
+ * @param gains   15个频段增益 dB，顺序对应 EQ_BANDS
+ */
+export function setEqualizer(enabled: boolean, gains: number[]): void {
+  const padded = [...gains];
+  while (padded.length < 15) padded.push(0);
+  JamesDSPModule?.setEqualizer(enabled, padded.slice(0, 15));
+}
+
+// ==================== BassBoost 动态低音 ====================
+
+/**
+ * @param enabled   是否启用
+ * @param maxGainDb 最大低音增益 dB，范围 0..15
+ */
+export function setBassBoost(enabled: boolean, maxGainDb: number): void {
+  JamesDSPModule?.setBassBoost(enabled, maxGainDb);
+}
+
+// ==================== StereoEnhancement 立体声增强 ====================
+
+/**
+ * @param enabled 是否启用
+ * @param mix     混合比例 0..1，0=原音，1=最大增强
+ */
+export function setStereoEnhancement(enabled: boolean, mix: number): void {
+  JamesDSPModule?.setStereoEnhancement(enabled, mix);
+}
+
+// ==================== Reverb 混响 ====================
+
+/** 混响预设名称（Progenitor2，20个预设） */
+export const REVERB_PRESETS = [
+  'None', 'Small Room', 'Medium Room', 'Large Room', 'Medium Hall',
+  'Large Hall', 'Plate', 'Ambient', 'Church', 'Cathedral',
+  'Basement', 'Living Room', 'Stone Corridor', 'Carpet Hall', 'Warehouse',
+  'Forest', 'City', 'Mountains', 'Deep Cave', 'Underwater',
+];
+
+/**
+ * @param enabled 是否启用
+ * @param preset  预设编号 0..19，0=None
+ */
+export function setReverb(enabled: boolean, preset: number): void {
+  JamesDSPModule?.setReverb(enabled, preset);
+}
+
+// ==================== Compressor 压缩器 ====================
+
+/**
+ * @param enabled      是否启用
+ * @param fgtFacT      前向增益跟踪系数，建议 0.01..0.5
+ * @param granularity  频域粒度，建议 4..8
+ * @param tfResolution 时频分辨率，建议 2..6
+ */
+export function setCompressor(enabled: boolean, fgtFacT: number, granularity: number, tfResolution: number): void {
+  JamesDSPModule?.setCompressor(enabled, fgtFacT, granularity, tfResolution);
+}
+
+// ==================== VacuumTube 电子管 ====================
+
+/**
+ * @param enabled 是否启用
+ * @param dbGain  驱动增益 dB，范围 0..24，越大越暖
+ */
+export function setVacuumTube(enabled: boolean, dbGain: number): void {
+  JamesDSPModule?.setVacuumTube(enabled, dbGain);
+}
+
+// ==================== Crossfeed 交叉馈送 ====================
+
+/** 交叉馈送模式名称 */
+export const CROSSFEED_MODES = [
+  'BS2B Lv1', 'BS2B Lv2', 'HRTF Crossfeed',
+  'HRTF Surround 1', 'HRTF Surround 2', 'HRTF Surround 3',
+];
+
+/**
+ * @param enabled 是否启用
+ * @param mode    模式 0..5
+ */
+export function setCrossfeed(enabled: boolean, mode: number): void {
+  JamesDSPModule?.setCrossfeed(enabled, mode);
+}
+
+// ==================== Convolver 卷积器 ====================
+
+/** @param enabled 是否启用 */
+export function setConvolver(enabled: boolean): void {
+  JamesDSPModule?.setConvolver(enabled);
+}
+
+/**
+ * 从 WAV 文件加载 IR（脉冲响应）到卷积器
+ * @param wavBase64 WAV 文件的 Base64 编码
+ */
+export function loadIR(wavBase64: string): void {
+  JamesDSPModule?.loadIR(wavBase64);
+}
+
+/**
+ * 加载内置 IR 预设（assets/ir/ 目录）
+ * @param assetName 文件名，如 "ir_church.wav"
+ */
+export function loadBuiltinIR(assetName: string): void {
+  JamesDSPModule?.loadBuiltinIR(assetName);
+}
+
+/** 内置卷积混响 IR 预设（中文名称） */
+export const IR_PRESETS: { name: string; file: string }[] = [
+  { name: "小房间", file: "ir_small_room.wav" },
+  { name: "音乐厅", file: "ir_medium_hall.wav" },
+  { name: "教堂", file: "ir_church.wav" },
+  { name: "板式混响", file: "ir_plate.wav" },
+  { name: "洞穴", file: "ir_cave.wav" },
+];
+
+// ==================== 便捷：全部关闭 ====================
+
+/** 关闭所有 JamesDSP 效果器（恢复直通） */
+export function resetAll(): void {
+  setPostGain(0);
+  setEqualizer(false, new Array(15).fill(0));
+  setBassBoost(false, 0);
+  setStereoEnhancement(false, 0);
+  setReverb(false, 0);
+  setCompressor(false, 0, 0, 0);
+  setVacuumTube(false, 0);
+  setCrossfeed(false, 0);
+  setConvolver(false);
+}

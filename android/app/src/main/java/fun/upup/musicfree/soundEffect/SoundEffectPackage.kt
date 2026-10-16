@@ -6,6 +6,7 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ReactShadowNode
 import com.facebook.react.uimanager.ViewManager
+import `fun`.upup.musicfree.jamesdsp.JamesDSPModule
 
 class SoundEffectPackage : ReactPackage {
 
@@ -16,5 +17,8 @@ class SoundEffectPackage : ReactPackage {
 
     override fun createNativeModules(
         reactContext: ReactApplicationContext
-    ): MutableList<NativeModule> = listOf(SoundEffectModule(reactContext)).toMutableList()
+    ): MutableList<NativeModule> = listOf(
+        SoundEffectModule(reactContext),
+        JamesDSPModule(reactContext)
+    ).toMutableList()
 }

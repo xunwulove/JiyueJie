@@ -1,6 +1,36 @@
 import { DeviceEventEmitter, NativeModules, Platform } from "react-native";
 import Config from "@/core/appConfig";
 import { errorLog, trace } from "@/utils/log";
+import { setEqualizer as jdspSetEqualizer, setPostGain, setBassBoost, setStereoEnhancement, setReverb, setVacuumTube, setCrossfeed, setConvolver, loadBuiltinIR, IR_PRESETS } from "@/core/jamesdsp";
+
+/** 将旧版 N 段毫分贝(millibel)转换为 JamesDSP 15段 dB，线性插值 */
+function toJamesDspGains(bands: number[]): number[] {
+    const result = new Array(15).fill(0);
+    if (!bands || bands.length === 0) return result;
+    for (let i = 0; i < 15; i++) {
+        const pos = (i / 14) * (bands.length - 1);
+        const idx = Math.floor(pos);
+        const frac = pos - idx;
+        const v0 = (bands[idx] ?? 0) / 100;
+        const v1 = (bands[Math.min(idx + 1, bands.length - 1)] ?? 0) / 100;
+        result[i] = v0 + (v1 - v0) * frac;
+    }
+    return result;
+}
+
+/** 应用 EQ 到 JamesDSP（统一入口） */
+function applyEqToJamesDsp(enabled: boolean) {
+    const preset = Config.getConfig("sound.eqPreset") ?? -1;
+    const bands = Config.getConfig("sound.eqBands") ?? [];
+    let srcBands: number[] = [];
+    if (typeof preset === "number" && preset >= 0) {
+        const p = EQ_PRESETS[preset];
+        if (p) srcBands = p.bands;
+    } else if (Array.isArray(bands)) {
+        srcBands = bands;
+    }
+    jdspSetEqualizer(enabled, toJamesDspGains(srcBands));
+}
 
 /**
  * 音效服务（均衡器/低音增强/环绕声）——2026-10-14 新增。
@@ -19,10 +49,12 @@ let infoCache: {
     presets: string[];
     levelMin: number;
     levelMax: number;
-    /** 设备是否支持低音增强（attach 时构造成功 = 支持） */
     bassSupported: boolean;
-    /** 设备是否支持环绕声 */
     virtualizerSupported: boolean;
+    loudnessSupported: boolean;
+    presetReverbSupported: boolean;
+    envReverbSupported: boolean;
+    dynamicsSupported: boolean;
 } | null = null;
 let lastError: string | null = null;
 
@@ -104,15 +136,22 @@ export async function getSoundEffectInfo() {
     try {
         const info = await SoundEffect.getInfo();
         if (!info) return null;
-        // 设备效果支持情况（查询失败按"支持"保守处理，不阻断 UI；未 attach 时保持可滑，等播放后绑定生效）
+        // 设备效果支持情况（查询失败按"支持"保守处理，不阻断 UI）
         let bassSupported = true;
         let virtualizerSupported = true;
+        let loudnessSupported = true;
+        let presetReverbSupported = true;
+        let envReverbSupported = true;
+        let dynamicsSupported = true;
         try {
             const ranges = await SoundEffect.getEffectRanges();
             if (ranges) {
                 bassSupported = ranges.bassSupported !== false;
-                virtualizerSupported =
-                    ranges.virtualizerSupported !== false;
+                virtualizerSupported = ranges.virtualizerSupported !== false;
+                loudnessSupported = ranges.loudnessSupported !== false;
+                presetReverbSupported = ranges.presetReverbSupported !== false;
+                envReverbSupported = ranges.envReverbSupported !== false;
+                dynamicsSupported = ranges.dynamicsSupported !== false;
             }
         } catch {
             // 未 attach 或查询失败：走保守默认
@@ -125,6 +164,10 @@ export async function getSoundEffectInfo() {
             levelMax: info.levelMax ?? 1500,
             bassSupported,
             virtualizerSupported,
+            loudnessSupported,
+            presetReverbSupported,
+            envReverbSupported,
+            dynamicsSupported,
         };
         return infoCache;
     } catch (e: any) {
@@ -140,34 +183,36 @@ export async function getSoundEffectInfo() {
 
 /** 将当前配置一次性应用到原生（绑定后调用；开关/滑块即改即生效也走各自 setter） */
 export function applyAllConfig() {
-    if (Platform.OS !== "android" || !SoundEffect) return;
+    if (Platform.OS !== "android") return;
     const enabled = !!Config.getConfig("sound.eqEnabled");
     const preset = Config.getConfig("sound.eqPreset") ?? -1;
-    const bands = Config.getConfig("sound.eqBands") ?? [];
-    const bass = Config.getConfig("sound.bassBoost") ?? 0;
-    const virtualizer = Config.getConfig("sound.virtualizer") ?? 0;
 
+    // JamesDSP EQ 恢复（15段 dB）
     if (enabled) {
         if (typeof preset === "number" && preset >= 0) {
-            // 内置预设：逐段应用预设曲线
             const p = EQ_PRESETS[preset];
-            if (p) {
-                p.bands.forEach((level: number, i: number) => {
-                    SoundEffect.setBandLevel(i, level);
-                });
-            }
-        } else if (Array.isArray(bands) && bands.length > 0) {
-            // 手动：应用用户拖动的频段
-            bands.forEach((level: number, i: number) => {
-                if (typeof level === "number") {
-                    SoundEffect.setBandLevel(i, level);
-                }
-            });
+            if (p) jdspSetEqualizer(true, toJamesDspGains(p.bands));
+        } else {
+            const bands15 = Config.getConfig("jdsp.eqBands") ?? new Array(15).fill(0);
+            jdspSetEqualizer(true, bands15);
         }
+    } else {
+        jdspSetEqualizer(false, new Array(15).fill(0));
     }
-    SoundEffect.setBassBoost(bass);
-    SoundEffect.setVirtualizer(virtualizer);
-    SoundEffect.setEqEnabled(enabled);
+    // JamesDSP 进阶音效恢复
+    const jdspPostGain = Config.getConfig("jdsp.postGain") ?? 0;
+    if (jdspPostGain !== 0) setPostGain(jdspPostGain);
+    if (Config.getConfig("jdsp.bassEnabled")) setBassBoost(true, Config.getConfig("jdsp.bassGain") ?? 6);
+    if (Config.getConfig("jdsp.stereoEnabled")) setStereoEnhancement(true, Config.getConfig("jdsp.stereoMix") ?? 0.3);
+    if (Config.getConfig("jdsp.reverbEnabled")) setReverb(true, Config.getConfig("jdsp.reverbPreset") ?? 1);
+    if (Config.getConfig("jdsp.tubeEnabled")) setVacuumTube(true, Config.getConfig("jdsp.tubeGain") ?? 6);
+    if (Config.getConfig("jdsp.crossfeedEnabled")) setCrossfeed(true, Config.getConfig("jdsp.crossfeedMode") ?? 0);
+    if (Config.getConfig("jdsp.convolverEnabled")) {
+        const presetIdx = Config.getConfig("jdsp.convolverPreset") ?? 0;
+        const preset = IR_PRESETS[presetIdx];
+        if (preset) loadBuiltinIR(preset.file);
+        setConvolver(true);
+    }
 }
 
 /** 均衡器关闭渐变定时器（避免快速切换时多个渐变竞态） */
@@ -176,87 +221,55 @@ let eqFadeTimer: ReturnType<typeof setTimeout> | null = null;
 /** 开关/滑块的即改即生效入口（未绑定则只写配置，绑定后自动应用） */
 export function applyEqEnabled(enabled: boolean) {
     Config.setConfig("sound.eqEnabled", enabled);
-    if (!attached || !SoundEffect) return;
     // 取消上一次未完成的渐变
     if (eqFadeTimer) {
         clearTimeout(eqFadeTimer);
         eqFadeTimer = null;
     }
     if (enabled) {
-        // 开启：直接启用并恢复当前频段配置
-        SoundEffect.setEqEnabled(true);
         const preset = Config.getConfig("sound.eqPreset") ?? -1;
-        const bands = Config.getConfig("sound.eqBands") ?? [];
         if (typeof preset === "number" && preset >= 0) {
             const p = EQ_PRESETS[preset];
-            if (p) p.bands.forEach((lv: number, i: number) => SoundEffect.setBandLevel(i, lv));
-        } else if (Array.isArray(bands)) {
-            bands.forEach((lv: number, i: number) => {
-                if (typeof lv === "number") SoundEffect.setBandLevel(i, lv);
-            });
+            if (p) jdspSetEqualizer(true, toJamesDspGains(p.bands));
+        } else {
+            const bands15 = Config.getConfig("jdsp.eqBands") ?? new Array(15).fill(0);
+            jdspSetEqualizer(true, bands15);
         }
     } else {
-        // 关闭：先逐段渐变到0（约120ms），再关闭 enabled，避免频谱突变爆音
-        const bands = Config.getConfig("sound.eqBands") ?? [];
-        const preset = Config.getConfig("sound.eqPreset") ?? -1;
-        // 当前实际生效的频段值（预设模式取预设曲线）
-        const current =
-            typeof preset === "number" && preset >= 0
-                ? (EQ_PRESETS[preset]?.bands ?? [])
-                : Array.isArray(bands)
-                  ? bands
-                  : [];
-        const steps = 8;
-        let step = 0;
-        const fadeOut = () => {
-            step += 1;
-            const ratio = 1 - step / steps;
-            current.forEach((lv: number, i: number) => {
-                if (typeof lv === "number") {
-                    SoundEffect.setBandLevel(i, Math.round((lv * ratio) / 50) * 50);
-                }
-            });
-            if (step < steps) {
-                eqFadeTimer = setTimeout(fadeOut, 16);
-            } else {
-                SoundEffect.setEqEnabled(false);
-                eqFadeTimer = null;
-            }
-        };
-        fadeOut();
+        jdspSetEqualizer(false, new Array(15).fill(0));
     }
 }
 
 export function applyEqPreset(index: number) {
     // index: -1 = 手动(自定义)，>=0 = 内置预设（EQ_PRESETS[index]，0..N-1）
     Config.setConfig("sound.eqPreset", index);
-    if (attached && SoundEffect) {
+    if (!!Config.getConfig("sound.eqEnabled")) {
         if (index >= 0) {
-            // 应用内置预设曲线（设备频段少时截取前 N 段近似）。
-            // 注意：只 setBandLevel 生效、不写入 eqBands——自定义频段保持原样，
-            // 切回"自定义"时仍保留用户拖动过的值
+            // 应用内置预设：旧 10 段毫分贝 → 15 段 dB（线性插值）
             const p = EQ_PRESETS[index];
             if (p) {
-                p.bands.forEach((level: number, i: number) => {
-                    SoundEffect.setBandLevel(i, level);
-                });
+                const bands15 = toJamesDspGains(p.bands);
+                jdspSetEqualizer(true, bands15);
             }
         } else {
-            // 切回自定义：按现有 eqBands 重放（用户拖动过的值）
-            const bands = Config.getConfig("sound.eqBands") ?? [];
-            bands.forEach((level: number, i: number) => {
-                if (typeof level === "number") SoundEffect.setBandLevel(i, level);
-            });
+            // 切回自定义：按 jdsp.eqBands 重放
+            const bands15 = Config.getConfig("jdsp.eqBands") ?? new Array(15).fill(0);
+            jdspSetEqualizer(true, bands15);
         }
-        SoundEffect.setEqEnabled(!!Config.getConfig("sound.eqEnabled"));
     }
 }
 
 export function applyBandLevel(band: number, level: number) {
-    const bands = Config.getConfig("sound.eqBands") ?? [];
-    bands[band] = level;
-    Config.setConfig("sound.eqBands", bands);
-    if (attached && SoundEffect) SoundEffect.setBandLevel(band, level);
+    // level 是毫分贝（滑块值），转换为 dB 存储
+    const bands15 = Config.getConfig("jdsp.eqBands") ?? new Array(15).fill(0);
+    bands15[band] = level / 100;
+    Config.setConfig("jdsp.eqBands", bands15);
+    // 切到自定义模式
+    Config.setConfig("sound.eqPreset", -1);
+    // 直接调用 JamesDSP（15段 dB）
+    if (!!Config.getConfig("sound.eqEnabled")) {
+        jdspSetEqualizer(true, bands15);
+    }
 }
 
 export function applyBassBoost(strength: number) {
@@ -267,6 +280,30 @@ export function applyBassBoost(strength: number) {
 export function applyVirtualizer(strength: number) {
     Config.setConfig("sound.virtualizer", strength);
     if (attached && SoundEffect) SoundEffect.setVirtualizer(strength);
+}
+
+/** 响度增强 0..1000（0=关闭） */
+export function applyLoudnessEnhancer(strength: number) {
+    Config.setConfig("sound.loudnessEnhancer", strength);
+    if (attached && SoundEffect) SoundEffect.setLoudnessEnhancer(strength);
+}
+
+/** 预设混响 0=关闭,1=小房间,2=中房间,3=大房间,4=中厅,5=大厅,6=板式 */
+export function applyReverbPreset(preset: number) {
+    Config.setConfig("sound.reverbPreset", preset);
+    if (attached && SoundEffect) SoundEffect.setReverbPreset(preset);
+}
+
+/** 环境混响预设 0=关闭,1=小房间,2=中房间,3=大厅,4=教堂,5=洞穴,6=录音棚 */
+export function applyEnvironmentalReverbPreset(preset: number) {
+    Config.setConfig("sound.envReverbPreset", preset);
+    if (attached && SoundEffect) SoundEffect.setEnvironmentalReverbPreset(preset);
+}
+
+/** 动态处理强度 0..1000（0=关闭，API 28+） */
+export function applyDynamicsProcessing(strength: number) {
+    Config.setConfig("sound.dynamicsProcessing", strength);
+    if (attached && SoundEffect) SoundEffect.setDynamicsProcessing(strength);
 }
 
 /** 手动模式下默认 bands（与设备频段数对齐，全 0） */

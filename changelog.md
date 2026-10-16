@@ -4,6 +4,11 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_DECISIONS.md。
 
+`2026.10.16 0.6.2.14+（JamesDSP 音效引擎，未发版）`
+1. 【功能】音效引擎从系统 AudioEffect 切换为 **JamesDSP 核心算法库**（NDK 编译 `libjiyuejie_dsp`，ExoPlayer AudioProcessor 注入）：均衡器升级为 **15 段**（标准频率点 25Hz–16kHz），并新增进阶音效：输出增益、限幅器、动态低音(DBB)、立体声增强、混响(Progenitor2)、电子管模拟、交叉馈送(Crossfeed)、卷积器(5 内置 IR 预设)
+2. 【功能】均衡器 15 段竖向滑块**自绘重写**（弃用系统 SeekBar）：轨道 2dp / 圆球 12dp，竖直 y→value 触摸映射，saveLayer 隔离防残影与黑屏
+3. 【修复】均衡器滑块整块消失、轨道过粗/不能拖动、拖动残影、开启均衡器整窗变黑 等系列 bug；进阶音效滑块圆球统一主题色（不再系统默认绿）
+
 `2026.10.11 0.6.2.9+（未发版改动）`
 1. 【功能】三处歌词区（全屏/沉浸/左侧播放区）卡拉OK进度染色（逐字已唱段/未唱段双色）+ 歌词边缘渐隐滚动（FlatList fadingEdgeLength）
 2. 【功能】白天背景微渐变（方案A：顶部品牌蓝 `#F2F5FC` → 底部 `#F8F9FA`）+ 播放封面氛围取色（方案B：跟随当前播放封面主色 α0.05 极浅着色，失败回退 A；深色模式不受影响）

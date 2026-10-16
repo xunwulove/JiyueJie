@@ -84,3 +84,4 @@ https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.j
 - **2026-10-13**：音源订阅从 `jishijie-release` 迁移至本仓库，全部音源验证有效。
 - **2026-10-13**：整合 hebijunge 订阅站 + 聚合器补充插件，移除不稳定音源。
 - **2026-10-15**：补录 hebijunge 新增「聚合」音源；移除 `probe_plugin.js` / `package.json`（验证脚本已废弃，不再维护）；订阅清单数量不再单独声明。
+- **2026-10-16**：软件音效引擎切换为 **JamesDSP 核心算法库**（均衡器 15 段 + 输出增益/动态低音/立体声增强/混响/电子管/交叉馈送/卷积器等进阶音效），替换系统 AudioEffect；对应更新日志见 `updates/version.json` 的 `changeLog`。

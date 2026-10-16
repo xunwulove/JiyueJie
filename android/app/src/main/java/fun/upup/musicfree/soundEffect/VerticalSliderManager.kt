@@ -1,6 +1,5 @@
 package `fun`.upup.musicfree.soundEffect
 
-import android.os.Build
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.WritableMap
@@ -11,7 +10,7 @@ import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.uimanager.events.RCTEventEmitter
 
 /**
- * 竖向滑块 ViewManager。
+ * 竖向滑块 ViewManager（自绘版，无 SeekBar）。
  *
  * Props:
  * - value: 当前值（Int）
@@ -24,9 +23,6 @@ import com.facebook.react.uimanager.events.RCTEventEmitter
  *
  * Events:
  * - onChange: 值变化时触发，payload { value: Int }
- *
- * 兼容性：minSdk=24，SeekBar.setMin 需 API 26+。
- * 低版本（24/25）用 offset 映射：内部 progress = value - minValue，0..(max-min)。
  */
 class VerticalSliderManager(
     private val reactContext: ReactApplicationContext
@@ -37,66 +33,40 @@ class VerticalSliderManager(
         const val EVENT_CHANGE = "topChange"
     }
 
-    // 每个 view 维护自己的 min/step（低版本 offset 映射用）
-    private val minMap = mutableMapOf<Int, Int>()
-    private val stepMap = mutableMapOf<Int, Int>()
-
     override fun getName(): String = REACT_CLASS
 
     override fun createViewInstance(reactContext: ThemedReactContext): VerticalSliderView {
         val view = VerticalSliderView(reactContext)
-        view.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(
-                seekBar: android.widget.SeekBar?,
-                progress: Int,
-                fromUser: Boolean
-            ) {
-                if (!fromUser) return
-                val id = view.id
-                val min = minMap[id] ?: 0
-                val step = (stepMap[id] ?: 1).coerceAtLeast(1)
-                // 低版本 offset 还原 + step 取整
-                var value = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) progress else progress + min
-                value = Math.round(value.toFloat() / step) * step
-                val event: WritableMap = Arguments.createMap()
-                event.putInt("value", value)
-                reactContext.getJSModule(RCTEventEmitter::class.java)
-                    .receiveEvent(id, EVENT_CHANGE, event)
-            }
-
-            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
-        })
+        // 触摸由 VerticalSliderView 自处理（竖直 y → value），拖动时回调转发到 JS
+        view.onUserValue = { value ->
+            val event: WritableMap = Arguments.createMap()
+            event.putInt("value", value)
+            reactContext.getJSModule(RCTEventEmitter::class.java)
+                .receiveEvent(view.id, EVENT_CHANGE, event)
+        }
         return view
     }
 
     @ReactProp(name = "value")
     fun setValue(view: VerticalSliderView, value: Int) {
-        val min = minMap[view.id] ?: 0
-        val progress = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) value else value - min
-        if (view.progress != progress) {
-            view.progress = progress
-        }
+        view.setValue(value)
     }
 
     @ReactProp(name = "minimumValue")
     fun setMinimumValue(view: VerticalSliderView, value: Int) {
-        minMap[view.id] = value
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            view.min = value
-        }
+        view.minValue = value
+        view.setValue(view.currentValue)
     }
 
     @ReactProp(name = "maximumValue")
     fun setMaximumValue(view: VerticalSliderView, value: Int) {
-        val min = minMap[view.id] ?: 0
-        val max = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) value else value - min
-        view.max = max
+        view.maxValue = value
+        view.setValue(view.currentValue)
     }
 
     @ReactProp(name = "step")
     fun setStep(view: VerticalSliderView, value: Int) {
-        stepMap[view.id] = value.coerceAtLeast(1)
+        view.stepValue = value.coerceAtLeast(1)
     }
 
     @ReactProp(name = "disabled")

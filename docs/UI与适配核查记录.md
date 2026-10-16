@@ -198,8 +198,8 @@ fork 备份原在设置页体系。**后于 #49 迁出为独立二级页 `backup
 
 #### 6.9 扫描设置 SCAN_SETTINGS ✅（原差异→#41 已实现，见 1.7）
 
-#### 6.10 均衡器 EQ 📝
-fork 无均衡器功能（expo-audio 无内置均衡器）。如需实现需系统 AudioEffect 桥接（band0..N 持久化），工作量大，列为迁移待办 #15。
+#### 6.10 均衡器 EQ ✅（JamesDSP 音效引擎已实现，替代早期 AudioEffect 待办 #15）
+原 fork 无均衡器（expo-audio 无内置），早期方案为系统 AudioEffect 桥接（已弃）。现已切换为 **JamesDSP 核心算法库**（NDK `libjiyuejie_dsp` + ExoPlayer AudioProcessor 注入），音效页 `soundEffectSetting.tsx` 提供：**15 段均衡器**（自绘竖向滑块，轨道 2dp/圆球 12dp，平板全显、手机横向滚动）+ 进阶音效（输出增益/动态低音/立体声增强/混响/电子管/交叉馈送/卷积器 IR）。详见 `docs/问题排查与避坑记录.md` §2.7。
 
 #### 6.11 排行详情 TOP_LIST_DETAIL ✅（重写 `pages/topListDetail/index.tsx`）
 AppBar 标题改榜单名；自绘封面行：行 padding 16/8、序号宽 32/normal13、封面 44→48（F6 修后）圆角 8、歌名 14 Medium（后 F6 改 body15，见第3章）；点击 playWithReplacePlayList；保留 fork 分页 loadMore（功能增强）。
@@ -285,7 +285,7 @@ albumDetail、artistDetail、pluginSheetDetail、recommendSheets、searchMusicLi
 
 - [x] 装机验证：0.6.2.1 起分批发版打包装机（2026-10-09）。
 - [x] #50 待决策清单拍板：手机设置齿轮/全屏定时关闭/弹窗 i18n/checkUpdate gitee/albumDetail 标题均已修；HomeDrawer 死代码已删。
-- [ ] 功能迁移剩余：均衡器（需 AudioEffect 原生桥）、标签编辑 v2 封面写入（Kotlin setArtwork+选图源，待决策）。
+- [x] 功能迁移：均衡器已切换 JamesDSP 音效引擎完成（15 段自绘滑块 + 进阶音效）；标签编辑 v2 封面写入（Kotlin setArtwork+选图源）仍待决策。
 - [ ] GitHub 自动推送源码与包：token 只读（push 403），需写权限 token。
 
 ### 1.13 UI 冲突统一处理总览（2026-10-14）
