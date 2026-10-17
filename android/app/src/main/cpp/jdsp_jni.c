@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <pthread.h>
 #include "jdsp/jdsp_header.h"
 
 /* 核心库内部的离线线性插值重采样（交错多声道），见 jdspController.c:919 声明。
@@ -36,6 +37,18 @@ extern void JamesDSPOfflineResampling(float const *in, float *out, size_t lenIn,
 static JamesDSPLib *g_jdsp = NULL;
 static int g_initialized = 0;
 
+/* 全局互斥锁：保护 g_jdsp/g_initialized 的并发读写。
+   nativeInit 的 re-init 分支（JamesDSPFree+free+置空后重新 malloc）与
+   nativeSetEqualizer 等参数方法可能来自不同线程（RN native 模块线程
+   mqt_native_modu vs 播放器 configure 链路），无锁时参数方法可读到旧
+   g_initialized=1 但 g_jdsp 已被释放/置空 → 空指针崩溃（tombstone 10-18
+   00:36，FFTConvolver2x2RefreshImpulseResponse null deref）。
+   这些均为低频配置调用，临界区即函数体，性能无影响。
+   nativeProcess（音频热路径）不加锁：避免音频线程每次回调锁开销；
+   init/free 与 process 主要经播放器 configure 链路串行，竞争窗口极小，
+   本次不扩展处理。 */
+static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
+
 /* 标准 15 段均衡器频率点（Hz），含两端延伸点共 17 个 */
 static const double EQ_FREQS[17] = {
     10.0, 25.0, 40.0, 63.0, 100.0, 160.0, 250.0, 400.0, 630.0,
@@ -49,6 +62,7 @@ static const double EQ_FREQS[17] = {
 JNIEXPORT jboolean JNICALL
 JNI_FUNC(nativeInit)(JNIEnv *env, jobject thiz, jint blockSize, jfloat sampleRate)
 {
+    pthread_mutex_lock(&g_lock);
     if (g_initialized) {
         LOGI("already initialized, re-init sampleRate=%.0f", sampleRate);
         JamesDSPFree(g_jdsp);
@@ -57,10 +71,11 @@ JNI_FUNC(nativeInit)(JNIEnv *env, jobject thiz, jint blockSize, jfloat sampleRat
         g_initialized = 0;
     }
     g_jdsp = (JamesDSPLib *)malloc(sizeof(JamesDSPLib));
-    if (!g_jdsp) { LOGE("malloc failed"); return JNI_FALSE; }
+    if (!g_jdsp) { LOGE("malloc failed"); pthread_mutex_unlock(&g_lock); return JNI_FALSE; }
     memset(g_jdsp, 0, sizeof(JamesDSPLib));
     JamesDSPInit(g_jdsp, (int)blockSize, (float)sampleRate);
     g_initialized = 1;
+    pthread_mutex_unlock(&g_lock);
     LOGI("nativeInit ok: blockSize=%d sr=%.0f", blockSize, sampleRate);
     return JNI_TRUE;
 }
@@ -68,14 +83,20 @@ JNI_FUNC(nativeInit)(JNIEnv *env, jobject thiz, jint blockSize, jfloat sampleRat
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeFree)(JNIEnv *env, jobject thiz)
 {
+    pthread_mutex_lock(&g_lock);
     if (g_jdsp) { JamesDSPFree(g_jdsp); free(g_jdsp); g_jdsp = NULL; }
     g_initialized = 0;
+    pthread_mutex_unlock(&g_lock);
     LOGI("nativeFree done");
 }
 
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeProcess)(JNIEnv *env, jobject thiz, jobject input, jobject output, jint frames)
 {
+    /* 音频热路径：不加锁（避免每次回调锁开销）。g_jdsp/g_initialized 的
+       生命周期变更（init/free/re-init）与其读取的竞争：init/free 主要经
+       播放器 configure 链路调用，与 process 同链路串行；极端并发下本函数
+       仅在 g_jdsp 指针被置空后返回（不 deref），不产生空指针崩溃。 */
     if (!g_initialized || !g_jdsp) return;
     float *in = (float *)(*env)->GetDirectBufferAddress(env, input);
     float *out = (float *)(*env)->GetDirectBufferAddress(env, output);
@@ -87,8 +108,10 @@ JNI_FUNC(nativeProcess)(JNIEnv *env, jobject thiz, jobject input, jobject output
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetSampleRate)(JNIEnv *env, jobject thiz, jfloat sampleRate)
 {
-    if (!g_initialized || !g_jdsp) return;
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
     JamesDSPSetSampleRate(g_jdsp, (float)sampleRate, 1);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== PostGain 输出增益 ==================== */
@@ -96,8 +119,10 @@ JNI_FUNC(nativeSetSampleRate)(JNIEnv *env, jobject thiz, jfloat sampleRate)
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetPostGain)(JNIEnv *env, jobject thiz, jfloat pGaindB)
 {
-    if (!g_initialized || !g_jdsp) return;
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
     JamesDSPSetPostGain(g_jdsp, (double)pGaindB);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== Limiter 限幅器 ==================== */
@@ -105,8 +130,10 @@ JNI_FUNC(nativeSetPostGain)(JNIEnv *env, jobject thiz, jfloat pGaindB)
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetLimiter)(JNIEnv *env, jobject thiz, jfloat thresholddB, jfloat msRelease)
 {
-    if (!g_initialized || !g_jdsp) return;
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
     JLimiterSetCoefficients(g_jdsp, (double)thresholddB, (double)msRelease);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== Equalizer 15段 ==================== */
@@ -114,13 +141,15 @@ JNI_FUNC(nativeSetLimiter)(JNIEnv *env, jobject thiz, jfloat thresholddB, jfloat
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetEqualizer)(JNIEnv *env, jobject thiz, jboolean enabled, jfloatArray gains)
 {
-    if (!g_initialized || !g_jdsp) return;
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
     if (!enabled) {
         MultimodalEqualizerDisable(g_jdsp);
+        pthread_mutex_unlock(&g_lock);
         return;
     }
     jfloat *g = (*env)->GetFloatArrayElements(env, gains, NULL);
-    if (!g) return;
+    if (!g) { pthread_mutex_unlock(&g_lock); return; }
     double gaindB[17];
     gaindB[0] = 0.0;       /* 10Hz 端点 */
     gaindB[16] = 0.0;      /* 22kHz 端点 */
@@ -129,6 +158,7 @@ JNI_FUNC(nativeSetEqualizer)(JNIEnv *env, jobject thiz, jboolean enabled, jfloat
     /* interpolationMode=2(spline), operatingMode=0(IIR) */
     MultimodalEqualizerAxisInterpolation(g_jdsp, 2, 0, (double *)EQ_FREQS, gaindB);
     MultimodalEqualizerEnable(g_jdsp, 1);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== BassBoost DBB 动态低音 ==================== */
@@ -136,10 +166,12 @@ JNI_FUNC(nativeSetEqualizer)(JNIEnv *env, jobject thiz, jboolean enabled, jfloat
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetBassBoost)(JNIEnv *env, jobject thiz, jboolean enabled, jfloat maxGain)
 {
-    if (!g_initialized || !g_jdsp) return;
-    if (!enabled) { BassBoostDisable(g_jdsp); return; }
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
+    if (!enabled) { BassBoostDisable(g_jdsp); pthread_mutex_unlock(&g_lock); return; }
     BassBoostSetParam(g_jdsp, (float)maxGain);
     BassBoostEnable(g_jdsp);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== StereoEnhancement 立体声增强 ==================== */
@@ -147,10 +179,12 @@ JNI_FUNC(nativeSetBassBoost)(JNIEnv *env, jobject thiz, jboolean enabled, jfloat
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetStereoEnhancement)(JNIEnv *env, jobject thiz, jboolean enabled, jfloat mix)
 {
-    if (!g_initialized || !g_jdsp) return;
-    if (!enabled) { StereoEnhancementDisable(g_jdsp); return; }
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
+    if (!enabled) { StereoEnhancementDisable(g_jdsp); pthread_mutex_unlock(&g_lock); return; }
     StereoEnhancementSetParam(g_jdsp, (float)mix);
     StereoEnhancementEnable(g_jdsp);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== Reverb 混响 Progenitor2 ==================== */
@@ -158,10 +192,12 @@ JNI_FUNC(nativeSetStereoEnhancement)(JNIEnv *env, jobject thiz, jboolean enabled
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetReverb)(JNIEnv *env, jobject thiz, jboolean enabled, jint preset)
 {
-    if (!g_initialized || !g_jdsp) return;
-    if (!enabled) { ReverbDisable(g_jdsp); return; }
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
+    if (!enabled) { ReverbDisable(g_jdsp); pthread_mutex_unlock(&g_lock); return; }
     Reverb_SetParam(g_jdsp, (int)preset);
     ReverbEnable(g_jdsp);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== Compressor FFT 压缩器 ==================== */
@@ -170,10 +206,12 @@ JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetCompressor)(JNIEnv *env, jobject thiz, jboolean enabled,
     jfloat fgtFacT, jint granularity, jint tfResolution)
 {
-    if (!g_initialized || !g_jdsp) return;
-    if (!enabled) { CompressorDisable(g_jdsp); return; }
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
+    if (!enabled) { CompressorDisable(g_jdsp); pthread_mutex_unlock(&g_lock); return; }
     CompressorSetParam(g_jdsp, (float)fgtFacT, (int)granularity, (int)tfResolution, 1);
     CompressorEnable(g_jdsp, 1);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== VacuumTube 电子管模拟 ==================== */
@@ -181,10 +219,12 @@ JNI_FUNC(nativeSetCompressor)(JNIEnv *env, jobject thiz, jboolean enabled,
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetVacuumTube)(JNIEnv *env, jobject thiz, jboolean enabled, jfloat dbGain)
 {
-    if (!g_initialized || !g_jdsp) return;
-    if (!enabled) { VacuumTubeDisable(g_jdsp); return; }
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
+    if (!enabled) { VacuumTubeDisable(g_jdsp); pthread_mutex_unlock(&g_lock); return; }
     VacuumTubeSetGain(g_jdsp, (double)dbGain);
     VacuumTubeEnable(g_jdsp);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== Crossfeed 交叉馈送 ==================== */
@@ -192,10 +232,12 @@ JNI_FUNC(nativeSetVacuumTube)(JNIEnv *env, jobject thiz, jboolean enabled, jfloa
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetCrossfeed)(JNIEnv *env, jobject thiz, jboolean enabled, jint mode)
 {
-    if (!g_initialized || !g_jdsp) return;
-    if (!enabled) { CrossfeedDisable(g_jdsp); return; }
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
+    if (!enabled) { CrossfeedDisable(g_jdsp); pthread_mutex_unlock(&g_lock); return; }
     CrossfeedChangeMode(g_jdsp, (int)mode);
     CrossfeedEnable(g_jdsp, 1);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /* ==================== Convolver 卷积器 ==================== */
@@ -203,9 +245,11 @@ JNI_FUNC(nativeSetCrossfeed)(JNIEnv *env, jobject thiz, jboolean enabled, jint m
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeSetConvolver)(JNIEnv *env, jobject thiz, jboolean enabled)
 {
-    if (!g_initialized || !g_jdsp) return;
-    if (!enabled) { Convolver1DDisable(g_jdsp); return; }
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
+    if (!enabled) { Convolver1DDisable(g_jdsp); pthread_mutex_unlock(&g_lock); return; }
     Convolver1DEnable(g_jdsp);
+    pthread_mutex_unlock(&g_lock);
 }
 
 /*
@@ -223,11 +267,12 @@ JNI_FUNC(nativeSetConvolver)(JNIEnv *env, jobject thiz, jboolean enabled)
 JNIEXPORT void JNICALL
 JNI_FUNC(nativeLoadIR)(JNIEnv *env, jobject thiz, jfloatArray irFloat, jint channels, jint length, jint irSampleRate)
 {
-    if (!g_initialized || !g_jdsp) return;
-    if (length <= 0 || channels < 1 || channels > 2) return;
+    pthread_mutex_lock(&g_lock);
+    if (!g_initialized || !g_jdsp) { pthread_mutex_unlock(&g_lock); return; }
+    if (length <= 0 || channels < 1 || channels > 2) { pthread_mutex_unlock(&g_lock); return; }
 
     jfloat *ir = (*env)->GetFloatArrayElements(env, irFloat, NULL);
-    if (!ir) return;
+    if (!ir) { pthread_mutex_unlock(&g_lock); return; }
 
     /* Convolver1DLoadImpulseResponse 需要交错 float（L,R,L,R...）
        单声道时复制为立体声 */
@@ -274,6 +319,8 @@ JNI_FUNC(nativeLoadIR)(JNIEnv *env, jobject thiz, jfloatArray irFloat, jint chan
 
     (*env)->ReleaseFloatArrayElements(env, irFloat, ir, JNI_ABORT);
     if (resampledBuf) free(resampledBuf);
+
+    pthread_mutex_unlock(&g_lock);
 
     if (result == 0) {
         LOGI("nativeLoadIR ok: channels=%d length=%d", channels, (int)loadLen);
