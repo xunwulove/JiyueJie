@@ -2,7 +2,12 @@
 
 > 本段为 fork「极悦界」的版本记录；下方为上游 MusicFree 原版 changelog（未改动）。
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
-> 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_DECISIONS.md。
+> 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
+
+`2026.10.17（未发版改动）`
+1. 【修复】混响/卷积预设胶囊点击后**选中高亮不切换**（`applyReverb` 未把 preset 写回 `jdsp.reverbPreset` / `jdsp.convolverPreset`，而选中态读取它们）
+2. 【规范】全软件**文字胶囊统一为音效页大胶囊格式**（高54 / 左右内边距24 / 圆角27 / 文字15sp）：混响页引擎分段与算法/卷积预设、交叉反馈、ViPER-DDC 耳机补偿（内置/自定义/导入）、均衡器预设、统计页维度、搜索历史、首页推荐分类、歌单页标签
+3. 【变更】通知中心播放图标由旧网易云音符（`logo-transparent.png`）换为**新版加大音符**（`splash-icon.png`）
 
 `2026.10.17 0.6.2.15（已发版）`
 1. 【功能】DDC 耳机补偿：内置 5 款真实 AutoEQ 频响补偿 IR（QCY T13 / AirPods Pro 2 / Sony WH-1000XM4 / Bose QC45 / Sennheiser HD 650），与卷积混响互斥、复用卷积器
