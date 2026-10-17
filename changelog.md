@@ -9,6 +9,7 @@
 2. 【优化】音效页大胶囊**平板档改固定 dp 小尺寸**（`soundEffectSetting.tsx` `chipLarge`）：rpx 按屏幕短边等比放大，平板短边 600→高 40.5dp、900→64.8dp 导致胶囊过大而文字 15sp 不缩放；平板（`src/utils/tablet` `isTabletScreen()`，对齐 sw600dp）时改用固定 height 36dp / paddingHorizontal 16dp / borderRadius 18dp，文字仍 15sp 不变；手机端保持 rpx(54/24/27) 原状；`importChip` 虚线框叠加关系不变，各胶囊选中态逻辑未动
 3. 【优化】**首页推荐歌单胶囊与音效页统一**（`homeBody/recommendSection.tsx` `tag`、`recommendSheets/index.tsx` `tagCapsule`）：此前为全设备固定 dp 54/24/27（手机上偏大、平板比音效胶囊 36 还大），改为与 `chipLarge` 同一套逻辑——手机档 rpx(54)/rpx(24)/rpx(27) 随屏缩放、平板档固定 height 36dp / paddingHorizontal 16dp / borderRadius 18dp；文字仍 body(15sp) 不变，`tag` 的 marginRight:8 与 `tagCapsule` 的 alignItems/justifyContent 等其余属性照旧
 4. 【优化】耳机补偿导入浮窗提示补充 **IR 来源网站**（`soundEffectSetting.tsx` `onImportDdc` 说明文字）：注明可从 AutoEQ（https://github.com/jaakkopasanen/AutoEq）下载对应耳机的频响补偿 IR
+5. 【修复】**浮窗遮罩点击穿透**（`dialogs/components/base/index.tsx`）：Android 原生绘制顺序由 elevation 决定（RN zIndex 不跨父容器生效），页面内带 elevation 的元素（如播放条 MusicBar elevation=6）会盖过无 elevation 的遮罩，导致浮窗打开时点击播放条区域穿透——误进全屏播放器且浮窗不关闭；遮罩层 `backContainer` 补 `elevation: 16300` 把整个浮窗层压到最上，点击浮窗外任意区域均先命中遮罩关闭浮窗（含平板限右内容区布局）
 
 `2026.10.17 0.6.2.15（已发版·同版本号重新发布）`
 > 本次为 **0.6.2.15 同版本号重新发布**（versionName/versionCode 均不变）：在首版基础上并入此前「未发版改动」25 项——P1 修复批次 16 项（播放失败重试链路/下载队列失败卡死/听歌统计/歌单删除刷新/60s 过滤放行损坏文件/切歌换采样率 DSP 静默重置/IR 采样率重采样/插件歌单分页/插件损坏与不兼容状态展示/NoPlugin 引导/平板面板遮挡等）、下载**断点续传与队列持久化**、全项目 **lint 欠账清零**与死代码删除。同版本号重发原因：修复集中在同一维护窗口，保持版本号稳定。**影响**：已装 0.6.2.15 的用户软件内「检查更新」按版本号比较会判定已是最新、收不到新包提示，需手动下载覆盖安装。

@@ -361,6 +361,10 @@ const styles = StyleSheet.create({
     backContainer: {
         position: "absolute",
         zIndex: 16299,
+        // Android 原生绘制顺序由 elevation 决定（RN zIndex 不跨父容器生效）：
+        // 页面内带 elevation 的元素（如播放条 MusicBar elevation=6）会盖过无 elevation 的遮罩，
+        // 导致点击穿透（如点击播放条误进全屏播放器且浮窗不关闭）；这里用大值 elevation 把整个浮窗层压到最上
+        elevation: 16300,
         width: "100%",
         height: "100%",
         left: 0,
