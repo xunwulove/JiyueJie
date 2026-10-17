@@ -86,3 +86,4 @@ https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.j
 - **2026-10-15**：补录 hebijunge 新增「聚合」音源；移除 `probe_plugin.js` / `package.json`（验证脚本已废弃，不再维护）；订阅清单数量不再单独声明。
 - **2026-10-16**：软件音效引擎切换为 **JamesDSP 核心算法库**（均衡器 15 段 + 输出增益/动态低音/立体声增强/混响/电子管/交叉馈送/卷积器等进阶音效），替换系统 AudioEffect；对应更新日志见 `updates/version.json` 的 `changeLog`。
 - **2026-10-17**：发布 **0.6.2.15**——新增 **DDC 耳机补偿**（内置 5 款 AutoEQ 真实频响补偿 IR：QCY T13/AirPods Pro 2/Sony WH-1000XM4/Bose QC45/Sennheiser HD 650）、耳机补偿预设**导入**（三级文件选择器/48kHz WAV/可删除）、混响 5 预设替换为**真实空间 IR**、移除英文界面仅中文；完整日志见 `updates/version.json` 的 `changeLog`。
+- **2026-10-17（同日同版本号重新发布 0.6.2.15）**：修复批次 16 项（播放失败重试链路、下载队列失败卡死、听歌统计失真、切歌换采样率 DSP 静默重置、IR 按引擎采样率重采样、插件歌单分页误判、平板面板遮挡等）+ 新增下载**断点续传与队列持久化**（重启恢复未完成任务并自动续跑）+ 全项目 **lint 清零**（pre-commit 校验恢复）。版本号未变：已装 0.6.2.15 的用户不会收到更新提示，需手动下载覆盖安装。
