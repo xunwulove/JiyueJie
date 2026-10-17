@@ -75,11 +75,15 @@ export default function useSearch() {
                 currentQueryRef.current = query =
                     query ?? prevPluginResult?.query ?? "";
 
-                /** 搜索的页码 */
+                /** 搜索的页码：翻页时若上次为 ERROR（失败），从失败页重试（不跳页），
+                    避免失败在第 1 页时翻页直接请求第 2 页丢数据；正常音源保持 +1 续翻 */
                 const page =
-                    queryPage ?? newSearch
+                    queryPage ??
+                    (newSearch
                         ? 1
-                        : (prevPluginResult?.page ?? 0) + 1;
+                        : prevPluginResult?.state === RequestStateCode.ERROR
+                            ? (prevPluginResult?.page ?? 0)
+                            : (prevPluginResult?.page ?? 0) + 1);
 
                 trace("开始搜索", {
                     _platform,
@@ -93,9 +97,10 @@ export default function useSearch() {
                         produce(draft => {
                             const prevMediaResult: any = draft[searchType];
                             prevMediaResult[_hash] = {
-                                state: newSearch
-                                    ? RequestStateCode.PENDING_FIRST_PAGE
-                                    : RequestStateCode.PENDING_REST_PAGE,
+                                // 失败页重试无旧数据时按整页加载显示，有旧数据按追加加载显示
+                                state: prevMediaResult[_hash]?.data?.length
+                                    ? RequestStateCode.PENDING_REST_PAGE
+                                    : RequestStateCode.PENDING_FIRST_PAGE,
                                 // @ts-ignore
                                 data: newSearch
                                     ? []
@@ -106,11 +111,37 @@ export default function useSearch() {
                         }),
                     );
                     // !! jscore的promise有问题，改成hermes就好了，可能和JIT有关，不知道。
-                    const result = await plugin?.methods?.search?.(
-                        query,
-                        page,
-                        searchType,
-                    );
+                    // 同轮失败自动重试一次：异常或空结果（null/undefined）均触发重试，
+                    // 最多重试 1 次（翻页失败页重试同样走此重试，与页码计算互不冲突）
+                    let result: IPlugin.ISearchResult<ICommon.SupportMediaType> | null = null;
+                    let retryCount = 0;
+                    let searchError: any = null;
+                    while (result === null && retryCount <= 1) {
+                        try {
+                            const r = await plugin?.methods?.search?.(
+                                query,
+                                page,
+                                searchType,
+                            );
+                            if (r) {
+                                result = r;
+                                break;
+                            }
+                            searchError = new Error("搜索结果为空");
+                        } catch (e: any) {
+                            searchError = e;
+                        }
+                        retryCount++;
+                        if (result === null && retryCount <= 1) {
+                            errorLog(
+                                "搜索失败，自动重试一次",
+                                `Plugin: ${plugin.name} Query: ${query} Page: ${page}`,
+                            );
+                        }
+                    }
+                    if (result === null) {
+                        throw searchError ?? new Error("搜索结果为空");
+                    }
                     /** 如果搜索结果不是本次结果 */
                     if (currentQueryRef.current !== query) {
                         return;
@@ -127,9 +158,6 @@ export default function useSearch() {
                         getDefaultStore().get(pageStatusAtom);
                     if (currentPageStatus !== PageStatus.EDITING) {
                         setPageStatus(PageStatus.RESULT);
-                    }
-                    if (!result) {
-                        throw new Error("搜索结果为空");
                     }
                     setSearchResults(
                         produce(draft => {
