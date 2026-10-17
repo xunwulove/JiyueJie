@@ -15,6 +15,8 @@ import {
 } from "@/core/pluginRecommend";
 import useColors from "@/hooks/useColors";
 import Toast from "@/utils/toast";
+import rpx from "@/utils/rpx";
+import { isTabletScreen } from "@/utils/tablet";
 import { useI18N } from "@/core/i18n";
 import { showDialog } from "@/components/dialogs/useDialog";
 import Config from "@/core/appConfig";
@@ -77,6 +79,8 @@ export default function RecommendSection() {
     // 订阅插件列表：冷启动首帧插件异步加载未完成时，
     // 插件就绪（列表从空变非空）会触发重渲染，用于补渲染推荐歌单
     const plugins = usePlugins();
+    // 推荐歌单标签胶囊：手机 rpx 随屏缩放 / 平板固定小尺寸（与音效页 chipLarge 同一套逻辑）
+    const tagStyle = isTabletScreen() ? styles.tagTablet : styles.tag;
 
     // 首帧同步读取当日缓存：有缓存立即渲染（MMKV 同步 API，零网络、零异步），
     // 修复"有缓存但首帧不显示、切 tab 才显示"；无缓存走下方异步 load 拉取
@@ -289,7 +293,7 @@ export default function RecommendSection() {
                         <View
                             key={item.key}
                             style={[
-                                styles.tag,
+                                tagStyle,
                                 {
                                     backgroundColor: isSelected
                                         ? primary
@@ -366,9 +370,18 @@ const styles = StyleSheet.create({
         columnGap: 8, // 对齐 APlayer Arrangement.spacedBy(8.dp)
     },
     tag: {
-        height: 54,
-        paddingHorizontal: 24,
-        borderRadius: 27,
+        height: rpx(54),
+        paddingHorizontal: rpx(24),
+        borderRadius: rpx(27),
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 8,
+    },
+    /* 平板档胶囊：固定 dp 小尺寸（与音效页 chipLargeTablet 一致），文字不动 */
+    tagTablet: {
+        height: 36,
+        paddingHorizontal: 16,
+        borderRadius: 18,
         alignItems: "center",
         justifyContent: "center",
         marginRight: 8,

@@ -12,6 +12,7 @@ import { fontWeightConst } from "@/constants/uiConst";
 import useColors from "@/hooks/useColors";
 import NoPlugin from "@/components/base/noPlugin";
 import rpx, { vw } from "@/utils/rpx";
+import { isTabletScreen } from "@/utils/tablet";
 import ThemeText from "@/components/base/themeText";
 import Image from "@/components/base/image";
 import { ImgAsset } from "@/constants/assetsConst";
@@ -369,10 +370,12 @@ function TagCapsule({
     const colors = useColors();
     const primary = colors.primary;
     const surfaceVariant = colors.surfaceVariant ?? colors.card;
+    // 标签胶囊：手机 rpx 随屏缩放 / 平板固定小尺寸（与音效页 chipLarge 同一套逻辑）
+    const tagCapsuleStyle = isTabletScreen() ? styles.tagCapsuleTablet : styles.tagCapsule;
     return (
         <View
             style={[
-                styles.tagCapsule,
+                tagCapsuleStyle,
                 { backgroundColor: selected ? primary : surfaceVariant },
             ]}>
             <ThemeText
@@ -519,9 +522,17 @@ const styles = StyleSheet.create({
         marginBottom: rpx(24),
     },
     tagCapsule: {
-        height: 54,
-        paddingHorizontal: 24,
-        borderRadius: 27,
+        height: rpx(54),
+        paddingHorizontal: rpx(24),
+        borderRadius: rpx(27),
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    /* 平板档胶囊：固定 dp 小尺寸（与音效页 chipLargeTablet 一致），文字不动 */
+    tagCapsuleTablet: {
+        height: 36,
+        paddingHorizontal: 16,
+        borderRadius: 18,
         alignItems: "center",
         justifyContent: "center",
     },
