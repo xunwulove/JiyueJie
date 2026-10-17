@@ -673,9 +673,15 @@ class TrackPlayer extends EventEmitter<{
             if (info && this.isCurrentMusic(musicItem)) {
                 const mergedTrack = this.mergeTrackSource(track, info);
                 getDefaultStore().set(currentMusicAtom, mergedTrack as IMusic.IMusicItem);
+                // 与 915 播放入口同款处理：getMusicInfo 补充信息中 artwork 可能为空串，
+                // mergeTrackSource 会用空串覆盖 track.artwork，RNTP getUri 对空串抛异常
+                // （RuntimeException: artwork: The URL cannot be empty，Java 层闪退），
+                // 合并后过 patchMediaArtwork 换默认封面兜底
                 await ReactNativeTrackPlayer.updateMetadataForTrack(
                     0,
-                    mergedTrack as TrackMetadataBase,
+                    this.patchMediaArtwork(
+                        mergedTrack as unknown as Track,
+                    ) as TrackMetadataBase,
                 );
             }
         } catch (e: any) {
