@@ -337,12 +337,6 @@ export default function SoundEffectSetting() {
                                 fontWeight="bold">
                                 {t("soundEffect.sectionEq")}
                             </ThemeText>
-                            <ThemeText
-                                fontSize="caption"
-                                fontColor="textSecondary"
-                                style={style.descLine}>
-                                {t("soundEffect.eqDesc")}
-                            </ThemeText>
                         </View>
                         <View
                             style={[
