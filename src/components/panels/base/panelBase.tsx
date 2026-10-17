@@ -259,6 +259,11 @@ const style = StyleSheet.create({
         right: 0,
         bottom: 0,
         zIndex: 15000,
+        // Android 绘制顺序由 elevation 决定（RN zIndex 不跨父容器生效）：
+        // 无 elevation 时页面内带 elevation 的元素（如播放条 MusicBar=6）会画在
+        // 遮罩/面板之上，导致点击穿透、面板被盖住（对称 ef98369 的 Dialog 侧修复）；
+        // 遮罩 15300 / 面板 15310，保持 Panel < Dialog(16300) 的层级语义
+        elevation: 15300,
     },
     mask: {
         backgroundColor: "#000",
@@ -278,8 +283,10 @@ const style = StyleSheet.create({
         borderTopLeftRadius: 14,
         borderTopRightRadius: 14,
         zIndex: 15010,
+        elevation: 15310,
     },
     kbContainer: {
         zIndex: 15010,
+        elevation: 15310,
     },
 });
