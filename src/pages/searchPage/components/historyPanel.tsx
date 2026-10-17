@@ -243,9 +243,9 @@ const style = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        height: 54,
-        paddingHorizontal: 24,
-        borderRadius: 27,
+        height: 36,
+        paddingHorizontal: 16,
+        borderRadius: 18,
     },
     chipClose: {
         marginLeft: 6,

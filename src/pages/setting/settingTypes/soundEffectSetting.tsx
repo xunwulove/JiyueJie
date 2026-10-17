@@ -24,7 +24,6 @@ import globalStyle from "@/constants/globalStyle";
 import { useAppConfig } from "@/core/appConfig";
 import Config from "@/core/appConfig";
 import { useI18N } from "@/core/i18n";
-import { isTabletScreen } from "@/utils/tablet";
 import ReactNativeTrackPlayer, {
     Event,
 } from "react-native-track-player";
@@ -117,8 +116,6 @@ export default function SoundEffectSetting() {
     const jdspReverbEnabled = useAppConfig("jdsp.reverbEnabled") ?? false;
     const jdspReverbPreset = Math.min(useAppConfig("jdsp.reverbPreset") ?? 0, REVERB_PRESETS.length - 1);
     const jdspReverbEngine = useAppConfig("jdsp.reverbEngine") ?? 0;
-    // 平板胶囊固定小尺寸（文字仍 15sp 不缩放）：平板短边大导致 rpx 等比放大胶囊过大，改用 dp 定值
-    const chipLargeStyle = isTabletScreen() ? style.chipLargeTablet : style.chipLarge;
     const jdspTubeEnabled = useAppConfig("jdsp.tubeEnabled") ?? false;
     const jdspTubeGain = useAppConfig("jdsp.tubeGain") ?? 6;
     const jdspCrossfeedEnabled = useAppConfig("jdsp.crossfeedEnabled") ?? false;
@@ -376,7 +373,7 @@ export default function SoundEffectSetting() {
                                                         )
                                                     }
                                                     style={[
-                                                        chipLargeStyle,
+                                                        style.chipLarge,
                                                         {
                                                             backgroundColor:
                                                                 colors.divider,
@@ -586,14 +583,14 @@ export default function SoundEffectSetting() {
                                         contentContainerStyle={{ gap: rpx(8) }}>
                                         <Pressable
                                             onPress={() => applyReverb(true, 0, jdspReverbPreset)}
-                                            style={[chipLargeStyle, { backgroundColor: jdspReverbEngine === 0 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
+                                            style={[style.chipLarge, { backgroundColor: jdspReverbEngine === 0 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
                                             <ThemeText fontSize="body" fontWeight={jdspReverbEngine === 0 ? "medium" : "regular"} color={jdspReverbEngine === 0 ? "#FFFFFF" : (colors as any).onSurfaceVariant ?? colors.textSecondary}>
                                                 算法混响
                                             </ThemeText>
                                         </Pressable>
                                         <Pressable
                                             onPress={() => applyReverb(true, 1, jdspConvolverPreset)}
-                                            style={[chipLargeStyle, { backgroundColor: jdspReverbEngine === 1 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
+                                            style={[style.chipLarge, { backgroundColor: jdspReverbEngine === 1 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
                                             <ThemeText fontSize="body" fontWeight={jdspReverbEngine === 1 ? "medium" : "regular"} color={jdspReverbEngine === 1 ? "#FFFFFF" : (colors as any).onSurfaceVariant ?? colors.textSecondary}>
                                                 卷积混响
                                             </ThemeText>
@@ -616,7 +613,7 @@ export default function SoundEffectSetting() {
                                                 <Pressable
                                                     key={idx}
                                                     onPress={() => applyReverb(true, 0, idx)}
-                                                    style={[chipLargeStyle, { backgroundColor: jdspReverbEnabled && jdspReverbPreset === idx ? colors.primary : colors.background }]}>
+                                                    style={[style.chipLarge, { backgroundColor: jdspReverbEnabled && jdspReverbPreset === idx ? colors.primary : colors.background }]}>
                                                     <ThemeText fontSize="body" fontColor={jdspReverbEnabled && jdspReverbPreset === idx ? "text" : "textSecondary"}>
                                                         {name}
                                                     </ThemeText>
@@ -635,7 +632,7 @@ export default function SoundEffectSetting() {
                                                     <Pressable
                                                         key={idx}
                                                         onPress={() => applyReverb(true, 1, idx)}
-                                                        style={[chipLargeStyle, { backgroundColor: jdspConvolverEnabled && jdspConvolverPreset === idx ? colors.primary : colors.background }]}>
+                                                        style={[style.chipLarge, { backgroundColor: jdspConvolverEnabled && jdspConvolverPreset === idx ? colors.primary : colors.background }]}>
                                                         <ThemeText fontSize="body" fontColor={jdspConvolverEnabled && jdspConvolverPreset === idx ? "text" : "textSecondary"}>
                                                             {preset.name}
                                                         </ThemeText>
@@ -709,7 +706,7 @@ export default function SoundEffectSetting() {
                                                 onPress={() => {
                                                     Config.setConfig("jdsp.crossfeedMode", idx); setCrossfeed(true, idx); 
                                                 }}
-                                                style={[chipLargeStyle, { backgroundColor: jdspCrossfeedMode === idx ? colors.primary : colors.background }]}>
+                                                style={[style.chipLarge, { backgroundColor: jdspCrossfeedMode === idx ? colors.primary : colors.background }]}>
                                                 <ThemeText fontSize="body" fontColor={jdspCrossfeedMode === idx ? "text" : "textSecondary"}>
                                                     {name}
                                                 </ThemeText>
@@ -739,7 +736,7 @@ export default function SoundEffectSetting() {
                                             <Pressable
                                                 key={`builtin-${idx}`}
                                                 onPress={() => applyDdc(true, idx)}
-                                                style={[chipLargeStyle, { backgroundColor: jdspDdcHeadphone === idx ? colors.primary : colors.background }]}>
+                                                style={[style.chipLarge, { backgroundColor: jdspDdcHeadphone === idx ? colors.primary : colors.background }]}>
                                                 <ThemeText fontSize="body" fontColor={jdspDdcHeadphone === idx ? "text" : "textSecondary"}>
                                                     {hp.name}
                                                 </ThemeText>
@@ -752,7 +749,7 @@ export default function SoundEffectSetting() {
                                                     key={`custom-${ci}`}
                                                     onPress={() => applyDdc(true, globalIdx)}
                                                     onLongPress={() => onDeleteDdcCustom(ci)}
-                                                    style={[chipLargeStyle, { backgroundColor: jdspDdcHeadphone === globalIdx ? colors.primary : colors.background }]}>
+                                                    style={[style.chipLarge, { backgroundColor: jdspDdcHeadphone === globalIdx ? colors.primary : colors.background }]}>
                                                     <ThemeText fontSize="body" fontColor={jdspDdcHeadphone === globalIdx ? "text" : "textSecondary"}>
                                                         {item.name}
                                                     </ThemeText>
@@ -761,7 +758,7 @@ export default function SoundEffectSetting() {
                                         })}
                                         <Pressable
                                             onPress={onImportDdc}
-                                            style={[chipLargeStyle, style.importChip, { borderColor: colors.primary }]}>
+                                            style={[style.chipLarge, style.importChip, { borderColor: colors.primary }]}>
                                             <Icon name="plus" size={iconSizeConst.light} color={colors.primary} />
                                             <ThemeText fontSize="body" fontColor="primary">
                                                 导入
@@ -891,16 +888,8 @@ const style = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
-    /* 混响页胶囊放大版（引擎分段 + 算法/卷积预设） */
+    /* 混响页胶囊（引擎分段 + 算法/卷积预设 + 交叉反馈/耳机补偿）：全设备统一固定 dp，消除 rpx 在 600dp 临界的跳变 */
     chipLarge: {
-        height: rpx(54),
-        paddingHorizontal: rpx(24),
-        borderRadius: rpx(27),
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    /* 平板档胶囊：固定 dp 小尺寸（短边 rpx 在平板会放大到 40~65dp 过高，改固定 36/16/18；文字不动） */
-    chipLargeTablet: {
         height: 36,
         paddingHorizontal: 16,
         borderRadius: 18,
