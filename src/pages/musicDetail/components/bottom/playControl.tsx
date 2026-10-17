@@ -1,4 +1,6 @@
-import repeatModeConst from "@/constants/repeatModeConst";
+import repeatModeConst, {
+    MusicRepeatMode,
+} from "@/constants/repeatModeConst";
 import React from "react";
 import {
     InteractionManager,
@@ -13,8 +15,16 @@ import { showPanel } from "@/components/panels/usePanel";
 import TrackPlayer, { useMusicState, useRepeatMode } from "@/core/trackPlayer";
 import useOrientation from "@/hooks/useOrientation";
 import useColors from "@/hooks/useColors";
+import Toast from "@/utils/toast";
 import delay from "@/utils/delay";
 import { musicIsPaused } from "@/utils/trackUtils";
+
+/** 与 trackPlayer.toggleRepeatMapping 一致的循环顺序：列表循环→随机→单曲→列表循环 */
+const NEXT_REPEAT: Record<MusicRepeatMode, MusicRepeatMode> = {
+    [MusicRepeatMode.QUEUE]: MusicRepeatMode.SHUFFLE,
+    [MusicRepeatMode.SINGLE]: MusicRepeatMode.QUEUE,
+    [MusicRepeatMode.SHUFFLE]: MusicRepeatMode.SINGLE,
+};
 
 /**
  * 全屏播放控制行 - 对齐 APlayer PlayingPage：
@@ -49,6 +59,10 @@ export default function PlayControl() {
                     InteractionManager.runAfterInteractions(async () => {
                         await delay(20, false);
                         TrackPlayer.toggleRepeatMode();
+                        const nextMode = NEXT_REPEAT[repeatMode];
+                        Toast.success(
+                            `已切换为：${repeatModeConst[nextMode].text}`,
+                        );
                     });
                 }}
             />

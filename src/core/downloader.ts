@@ -302,6 +302,9 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
             } else {
                 this.markTaskAsError(musicItem, DownloadFailReason.Unknown, e);
             }
+            // 失败路径同样调度下一个 pending 任务，避免队列卡死
+            // （计数已在 markTaskAsError / cleanupCancelledTask 内递减，与正常路径 :309 对称）
+            this.downloadNextPendingTask();
             return;
         }
 
@@ -529,12 +532,27 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
 /** 已下载歌曲列表（下载管理页"已下载"区） */
 export const useDownloadedList = () => useAtomValue(downloadedListAtom);
 
-/** 初始化时从持久化恢复已下载列表 */
+/** 启动时清理下载缓存目录里的半截临时文件（无断点续传/任务持久化，残留即垃圾；此时无进行中任务） */
+async function cleanupDownloadCache() {
+    try {
+        const cacheDir = pathConst.downloadCachePath;
+        const files = await readDir(cacheDir).catch(() => [] as any[]);
+        for (const f of files) {
+            await unlink(f.path).catch(() => {});
+        }
+    } catch (e: any) {
+        errorLog("清理下载缓存失败", e?.message ?? e);
+    }
+}
+
+/** 初始化时从持久化恢复已下载列表，并清理下载缓存残留 */
 export async function initDownloadedList() {
     const list = (await getStorage(DOWNLOADED_LIST_KEY)) ?? [];
     if (Array.isArray(list)) {
         getDefaultStore().set(downloadedListAtom, list as IMusic.IMusicItem[]);
     }
+    // 启动时无进行中任务，缓存目录里的半截文件一律删除（后台执行，不阻塞启动）
+    void cleanupDownloadCache();
 }
 
 

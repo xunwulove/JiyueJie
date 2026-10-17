@@ -4,6 +4,7 @@ import Config from "@/core/appConfig";
 import pathConst from "@/constants/pathConst";
 import { getFileName } from "@/utils/fileUtils";
 import { errorLog, trace } from "@/utils/log";
+import Toast from "@/utils/toast";
 import { setEqualizer as jdspSetEqualizer, setPostGain, setBassBoost, setStereoEnhancement, setReverb, setVacuumTube, setCrossfeed, setConvolver, loadBuiltinIR, loadIR, IR_PRESETS, DDC_HEADPHONES } from "@/core/jamesdsp";
 
 /** 将旧版 N 段毫分贝(millibel)转换为 JamesDSP 15段 dB，线性插值 */
@@ -69,6 +70,37 @@ if (Platform.OS === "android" && SoundEffect) {
         trace("音效：音频路由变化，效果器已重建，缓存失效");
         applyAllConfig();
     });
+}
+
+// 缺陷9：切歌换采样率 → 原生 DSP 被 nativeInit 重置为 Disable，JS 无感知。
+// 原生在采样率/编码/旁路态变化时发射 "JamesDspConfigChanged"，这里重放全部 jdsp 配置。
+// 防循环：applyAllConfig 只调用 Bridge setter（setEqualizer/loadIR/setConvolver 等），
+// 不会触发 ExoPlayer 的 AudioProcessor.configure()，因此不会再次触发本事件。
+if (Platform.OS === "android") {
+    DeviceEventEmitter.addListener(
+        "JamesDspConfigChanged",
+        (payload?: {
+            sampleRate: number;
+            inputEncoding: string;
+            active: boolean;
+            bypassed: boolean;
+            bypassReason: string | null;
+        }) => {
+            trace(
+                "JamesDspConfigChanged: sr=" +
+                    payload?.sampleRate +
+                    " enc=" +
+                    payload?.inputEncoding +
+                    " active=" +
+                    payload?.active +
+                    " bypassed=" +
+                    payload?.bypassed +
+                    " reason=" +
+                    payload?.bypassReason,
+            );
+            applyAllConfig();
+        },
+    );
 }
 
 /**
@@ -217,16 +249,20 @@ export function applyAllConfig() {
         const builtins = DDC_HEADPHONES.length;
         if (selection < builtins) {
             const hp = DDC_HEADPHONES[selection];
-            if (hp) loadBuiltinIR(hp.file);
-            setConvolver(true);
+            if (hp) {
+                loadBuiltinIR(hp.file).then(ok => {
+                    if (ok) setConvolver(true);
+                });
+            }
         } else {
             const custom = ddcCustomList();
             const item = custom[selection - builtins];
             if (item) {
                 RNFS.readFile(pathConst.ddcCustomPath + item.file, "base64")
-                    .then(b64 => {
-                        if (b64) loadIR(b64);
-                        setConvolver(true);
+                    .then(b64 => (b64 ? loadIR(b64) : Promise.resolve(false)))
+                    .then(ok => {
+                        if (ok) setConvolver(true);
+                        else setConvolver(false);
                     })
                     .catch(() => setConvolver(false));
             }
@@ -234,8 +270,11 @@ export function applyAllConfig() {
     } else if (Config.getConfig("jdsp.convolverEnabled")) {
         const presetIdx = Config.getConfig("jdsp.convolverPreset") ?? 0;
         const preset = IR_PRESETS[presetIdx];
-        if (preset) loadBuiltinIR(preset.file);
-        setConvolver(true);
+        if (preset) {
+            loadBuiltinIR(preset.file).then(ok => {
+                if (ok) setConvolver(true);
+            });
+        }
     }
 }
 
@@ -365,9 +404,10 @@ export async function applyDdc(enabled: boolean, selection: number) {
         // 互斥：关闭卷积混响（同一 Convolver 不能同时跑两种 IR）
         Config.setConfig("jdsp.convolverEnabled", false);
         const builtins = DDC_HEADPHONES.length;
+        let loaded = false;
         if (selection < builtins) {
             const hp = DDC_HEADPHONES[selection];
-            if (hp) loadBuiltinIR(hp.file);
+            if (hp) loaded = await loadBuiltinIR(hp.file);
         } else {
             const custom = ddcCustomList();
             const item = custom[selection - builtins];
@@ -376,10 +416,15 @@ export async function applyDdc(enabled: boolean, selection: number) {
                     pathConst.ddcCustomPath + item.file,
                     "base64",
                 );
-                if (b64) loadIR(b64);
+                if (b64) loaded = await loadIR(b64);
             }
         }
-        setConvolver(true);
+        if (loaded) {
+            setConvolver(true);
+        } else {
+            setConvolver(false);
+            Toast.warn("IR 加载失败，请使用 16bit/48kHz WAV");
+        }
     } else {
         setConvolver(false);
     }
@@ -395,7 +440,7 @@ export const REVERB_ENGINE_CONVOLVER = 1;
  * @param engine  引擎类型 0=算法 1=卷积
  * @param preset  对应引擎的预设编号（算法→REVERB_PRESETS，卷积→IR_PRESETS）
  */
-export function applyReverb(enabled: boolean, engine: number, preset: number) {
+export async function applyReverb(enabled: boolean, engine: number, preset: number) {
     // 先全部关闭，保证互斥
     Config.setConfig("jdsp.reverbEnabled", false);
     Config.setConfig("jdsp.convolverEnabled", false);
@@ -406,13 +451,20 @@ export function applyReverb(enabled: boolean, engine: number, preset: number) {
     Config.setConfig("jdsp.reverbEngine", engine);
     if (engine === REVERB_ENGINE_ALGORITHM) {
         Config.setConfig("jdsp.reverbEnabled", true);
+        Config.setConfig("jdsp.reverbPreset", preset);
         setReverb(true, preset);
     } else {
         // 卷积与 DDC 共用 Convolver，互斥
         Config.setConfig("jdsp.ddcEnabled", false);
         const p = IR_PRESETS[preset];
-        if (p) loadBuiltinIR(p.file);
+        if (!p) return;
+        const loaded = await loadBuiltinIR(p.file);
+        if (!loaded) {
+            Toast.warn("IR 加载失败，请使用 16bit/48kHz WAV");
+            return;
+        }
         Config.setConfig("jdsp.convolverEnabled", true);
+        Config.setConfig("jdsp.convolverPreset", preset);
         setConvolver(true);
     }
 }

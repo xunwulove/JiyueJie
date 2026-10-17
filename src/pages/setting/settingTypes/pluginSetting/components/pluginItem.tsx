@@ -2,6 +2,7 @@ import React, { memo, useEffect, useState } from "react";
 
 import useColors from "@/hooks/useColors";
 import pluginManager, { Plugin, usePluginEnabled } from "@/core/pluginManager";
+import { PluginState, PluginErrorReason } from "@/core/pluginManager/plugin";
 import pluginReliability from "@/core/pluginReliability";
 
 import Toast from "@/utils/toast";
@@ -127,6 +128,27 @@ function _PluginItem(props: IPluginItemProps) {
         },
     ];
 
+    // 插件异常状态展示：state 进入 Error 或存在 errorReason 时醒目提示
+    const isErrorState =
+        plugin.state === PluginState.Error || !!plugin.errorReason;
+    const canUpdate = !!plugin.instance.srcUrl;
+    let errorText: string | null = null;
+    if (isErrorState) {
+        switch (plugin.errorReason) {
+        case PluginErrorReason.CannotParse:
+            errorText = "插件已损坏，无法解析";
+            break;
+        case PluginErrorReason.VersionNotMatch:
+            errorText = "插件版本与 App 不兼容";
+            break;
+        default:
+            errorText = "插件异常，请尝试更新";
+        }
+        if (canUpdate) {
+            errorText += "，点击更新/重试";
+        }
+    }
+
     return (
         <View
             style={[
@@ -198,6 +220,16 @@ function _PluginItem(props: IPluginItemProps) {
                     })}
                 </ThemeText>
             </View> : null}
+            {errorText ? (
+                <View style={styles.errorDescription}>
+                    <ThemeText
+                        fontSize="subTitle"
+                        color="#E53935"
+                        style={styles.errorText}>
+                        {errorText}
+                    </ThemeText>
+                </View>
+            ) : null}
             <View style={styles.contents}>
                 {options.map((it, index) =>
                     it.show !== false ? (
@@ -304,6 +336,15 @@ const styles = StyleSheet.create({
         marginHorizontal: rpx(16),
         marginBottom: 12,
         flexDirection: "row",
+    },
+    errorDescription: {
+        marginHorizontal: rpx(16),
+        marginBottom: 12,
+        flexDirection: "row",
+    },
+    errorText: {
+        flexShrink: 1,
+        flexGrow: 1,
     },
     contents: {
         flexDirection: "row",

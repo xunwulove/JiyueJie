@@ -90,12 +90,9 @@ export default function Statistics() {
         >();
         for (const item of filtered) {
             const key = `${item.platform}-${item.id}`;
-            const prev = countMap.get(key);
-            if (prev) {
-                prev.count += 1;
-            } else {
-                countMap.set(key, { music: item, count: 1 });
-            }
+            // 历史已按歌去重，每行播放次数取行内 playCount（全量累计）；period 仅按 playedAt 过滤行
+            const count = (item as { playCount?: number }).playCount ?? 1;
+            countMap.set(key, { music: item, count });
         }
         const ranked = Array.from(countMap.values()).sort(
             (a, b) => b.count - a.count,
@@ -435,7 +432,7 @@ export default function Statistics() {
                                     setSelectedDay(null);
                                 }}>
                                 <ThemeText
-                                    fontSize="normal"
+                                    fontSize="body"
                                     fontWeight={selected ? "bold" : "regular"}
                                     color={
                                         selected ? colors.primary : undefined
@@ -504,9 +501,11 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     chip: {
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 999,
+        height: 54,
+        paddingHorizontal: 24,
+        borderRadius: 27,
+        alignItems: "center",
+        justifyContent: "center",
     },
     overviewRowWrap: {
         flexDirection: "row",

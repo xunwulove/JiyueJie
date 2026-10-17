@@ -189,7 +189,7 @@ export async function initTrackPlayer(logger?: IPerfLogger) {
             Capability.SkipToPrevious,
         ];
     await RNTrackPlayer.updateOptions({
-        icon: ImgAsset.logoTransparent,
+        icon: ImgAsset.splashIcon,
         progressUpdateEventInterval: 1,
         android: {
             alwaysPauseOnInterruption: true,

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
     DeviceEventEmitter,
+    NativeModules,
     Platform,
     Pressable,
     requireNativeComponent,
@@ -109,6 +110,14 @@ export default function SoundEffectSetting() {
     const [outputDevice, setOutputDevice] = useState<{
         type: string;
         name: string;
+    } | null>(null);
+    // 原生 DSP 实际状态（JamesDSPModule.getDspDiagnostics + JamesDspConfigChanged 事件）
+    const [dspDiag, setDspDiag] = useState<{
+        active?: boolean;
+        inputEncoding?: string;
+        sampleRate?: number;
+        bypassed?: boolean;
+        bypassReason?: string;
     } | null>(null);
 
     // ===== JamesDSP 进阶音效状态（config 持久化） =====
@@ -226,6 +235,37 @@ export default function SoundEffectSetting() {
         };
     }, []);
 
+    // 原生 DSP 状态诊断：挂载查一次 + 监听原生配置变化事件刷新；
+    // 模块/方法不可用（非 Android、旧构建）时静默降级，不报错、不渲染该行
+    useEffect(() => {
+        if (Platform.OS !== "android") {
+            return;
+        }
+        const refreshDsp = async () => {
+            try {
+                const mod = (NativeModules as any)?.JamesDSPModule;
+                const diag = await mod?.getDspDiagnostics?.();
+                if (diag) {
+                    setDspDiag(diag);
+                }
+            } catch {
+                // 静默降级
+            }
+        };
+        refreshDsp();
+        const dspSub = DeviceEventEmitter.addListener(
+            "JamesDspConfigChanged",
+            (payload: any) => {
+                if (payload) {
+                    setDspDiag(payload);
+                }
+            },
+        );
+        return () => {
+            dspSub.remove();
+        };
+    }, []);
+
     if (Platform.OS !== "android") {
         return (
             <VerticalSafeAreaView style={globalStyle.fwflex1}>
@@ -300,6 +340,12 @@ export default function SoundEffectSetting() {
             <AppBar>{t("soundEffect.title")}</AppBar>
             <HorizontalSafeAreaView style={style.wrapper}>
                 <ScrollView contentContainerStyle={style.scrollContent}>
+                    {/* 音效实时生效提示（大白话） */}
+                    <View style={style.hintRow}>
+                        <ThemeText fontSize="caption" fontColor="textSecondary">
+                            {t("soundEffect.hint")}
+                        </ThemeText>
+                    </View>
                     {/* ===== 均衡器 ===== */}
                     <View style={style.group}>
                         <View style={style.groupHeader}>
@@ -308,6 +354,12 @@ export default function SoundEffectSetting() {
                                 fontColor="primary"
                                 fontWeight="bold">
                                 {t("soundEffect.sectionEq")}
+                            </ThemeText>
+                            <ThemeText
+                                fontSize="caption"
+                                fontColor="textSecondary"
+                                style={style.descLine}>
+                                {t("soundEffect.eqDesc")}
                             </ThemeText>
                         </View>
                         <View
@@ -348,7 +400,7 @@ export default function SoundEffectSetting() {
                                                         )
                                                     }
                                                     style={[
-                                                        style.chip,
+                                                        style.chipLarge,
                                                         {
                                                             backgroundColor:
                                                                 colors.divider,
@@ -359,7 +411,7 @@ export default function SoundEffectSetting() {
                                                         },
                                                     ]}>
                                                     <ThemeText
-                                                        fontSize="description"
+                                                        fontSize="body"
                                                         fontColor={
                                                             active
                                                                 ? "text"
@@ -446,7 +498,7 @@ export default function SoundEffectSetting() {
                         <View style={[style.card, { backgroundColor: colors.card }]}>
                             {/* 输出增益 */}
                             <ListItem withHorizontalPadding heightType="small">
-                                <ListItem.Content title="输出增益" />
+                                <ListItem.Content title="输出增益" description={t("soundEffect.gainDesc")} />
                                 <View style={{ width: rpx(200) }}>
                                     <Slider
                                         minimumValue={-12}
@@ -465,7 +517,7 @@ export default function SoundEffectSetting() {
                             <ListDivider marginLeft={16} />
                             {/* 低音增强 DBB */}
                             <ListItem withHorizontalPadding heightType="small">
-                                <ListItem.Content title="动态低音 (DBB)" />
+                                <ListItem.Content title="动态低音 (DBB)" description={t("soundEffect.dbbDesc")} />
                                 <ThemeSwitch
                                     value={jdspBassEnabled}
                                     onValueChange={v => { Config.setConfig("jdsp.bassEnabled", v); setJamesDspBass(v, jdspBassGain); }}
@@ -496,7 +548,7 @@ export default function SoundEffectSetting() {
                             <ListDivider marginLeft={16} />
                             {/* 立体声增强 */}
                             <ListItem withHorizontalPadding heightType="small">
-                                <ListItem.Content title="立体声增强" />
+                                <ListItem.Content title="立体声增强" description={t("soundEffect.stereoDesc")} />
                                 <ThemeSwitch
                                     value={jdspStereoEnabled}
                                     onValueChange={v => { Config.setConfig("jdsp.stereoEnabled", v); setStereoEnhancement(v, jdspStereoMix); }}
@@ -548,19 +600,24 @@ export default function SoundEffectSetting() {
                                         contentContainerStyle={{ gap: rpx(8) }}>
                                         <Pressable
                                             onPress={() => applyReverb(true, 0, jdspReverbPreset)}
-                                            style={[style.chip, { backgroundColor: jdspReverbEngine === 0 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
-                                            <ThemeText fontSize="caption" fontWeight={jdspReverbEngine === 0 ? "medium" : "regular"} color={jdspReverbEngine === 0 ? "#FFFFFF" : (colors as any).onSurfaceVariant ?? colors.textSecondary}>
+                                            style={[style.chipLarge, { backgroundColor: jdspReverbEngine === 0 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
+                                            <ThemeText fontSize="body" fontWeight={jdspReverbEngine === 0 ? "medium" : "regular"} color={jdspReverbEngine === 0 ? "#FFFFFF" : (colors as any).onSurfaceVariant ?? colors.textSecondary}>
                                                 算法混响
                                             </ThemeText>
                                         </Pressable>
                                         <Pressable
                                             onPress={() => applyReverb(true, 1, jdspConvolverPreset)}
-                                            style={[style.chip, { backgroundColor: jdspReverbEngine === 1 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
-                                            <ThemeText fontSize="caption" fontWeight={jdspReverbEngine === 1 ? "medium" : "regular"} color={jdspReverbEngine === 1 ? "#FFFFFF" : (colors as any).onSurfaceVariant ?? colors.textSecondary}>
+                                            style={[style.chipLarge, { backgroundColor: jdspReverbEngine === 1 ? colors.primary : (colors.surfaceVariant ?? colors.card) }]}>
+                                            <ThemeText fontSize="body" fontWeight={jdspReverbEngine === 1 ? "medium" : "regular"} color={jdspReverbEngine === 1 ? "#FFFFFF" : (colors as any).onSurfaceVariant ?? colors.textSecondary}>
                                                 卷积混响
                                             </ThemeText>
                                         </Pressable>
                                     </ScrollView>
+                                    <ThemeText fontSize="caption" fontColor="textSecondary" style={[style.descLine, { paddingHorizontal: rpx(24), paddingBottom: rpx(4) }]}>
+                                        {jdspReverbEngine === 0
+                                            ? t("soundEffect.reverbDesc")
+                                            : t("soundEffect.convolverDesc")}
+                                    </ThemeText>
                                     <ListDivider marginLeft={16} />
                                     {jdspReverbEngine === 0 ? (
                                         /* 算法混响预设 */
@@ -573,8 +630,8 @@ export default function SoundEffectSetting() {
                                                 <Pressable
                                                     key={idx}
                                                     onPress={() => applyReverb(true, 0, idx)}
-                                                    style={[style.chip, { backgroundColor: jdspReverbEnabled && jdspReverbPreset === idx ? colors.primary : colors.background }]}>
-                                                    <ThemeText fontSize="caption" fontColor={jdspReverbEnabled && jdspReverbPreset === idx ? "text" : "textSecondary"}>
+                                                    style={[style.chipLarge, { backgroundColor: jdspReverbEnabled && jdspReverbPreset === idx ? colors.primary : colors.background }]}>
+                                                    <ThemeText fontSize="body" fontColor={jdspReverbEnabled && jdspReverbPreset === idx ? "text" : "textSecondary"}>
                                                         {name}
                                                     </ThemeText>
                                                 </Pressable>
@@ -592,8 +649,8 @@ export default function SoundEffectSetting() {
                                                     <Pressable
                                                         key={idx}
                                                         onPress={() => applyReverb(true, 1, idx)}
-                                                        style={[style.chip, { backgroundColor: jdspConvolverEnabled && jdspConvolverPreset === idx ? colors.primary : colors.background }]}>
-                                                        <ThemeText fontSize="caption" fontColor={jdspConvolverEnabled && jdspConvolverPreset === idx ? "text" : "textSecondary"}>
+                                                        style={[style.chipLarge, { backgroundColor: jdspConvolverEnabled && jdspConvolverPreset === idx ? colors.primary : colors.background }]}>
+                                                        <ThemeText fontSize="body" fontColor={jdspConvolverEnabled && jdspConvolverPreset === idx ? "text" : "textSecondary"}>
                                                             {preset.name}
                                                         </ThemeText>
                                                     </Pressable>
@@ -609,7 +666,7 @@ export default function SoundEffectSetting() {
                             <ListDivider marginLeft={16} />
                             {/* 电子管模拟 */}
                             <ListItem withHorizontalPadding heightType="small">
-                                <ListItem.Content title="电子管模拟" />
+                                <ListItem.Content title="电子管模拟" description={t("soundEffect.tubeDesc")} />
                                 <ThemeSwitch
                                     value={jdspTubeEnabled}
                                     onValueChange={v => { Config.setConfig("jdsp.tubeEnabled", v); setVacuumTube(v, jdspTubeGain); }}
@@ -640,7 +697,7 @@ export default function SoundEffectSetting() {
                             <ListDivider marginLeft={16} />
                             {/* 交叉馈送 */}
                             <ListItem withHorizontalPadding heightType="small">
-                                <ListItem.Content title="交叉馈送 (Crossfeed)" />
+                                <ListItem.Content title="交叉馈送 (Crossfeed)" description={t("soundEffect.crossfeedDesc")} />
                                 <ThemeSwitch
                                     value={jdspCrossfeedEnabled}
                                     onValueChange={v => { Config.setConfig("jdsp.crossfeedEnabled", v); setCrossfeed(v, jdspCrossfeedMode); }}
@@ -658,8 +715,8 @@ export default function SoundEffectSetting() {
                                             <Pressable
                                                 key={idx}
                                                 onPress={() => { Config.setConfig("jdsp.crossfeedMode", idx); setCrossfeed(true, idx); }}
-                                                style={[style.chip, { backgroundColor: jdspCrossfeedMode === idx ? colors.primary : colors.background }]}>
-                                                <ThemeText fontSize="caption" fontColor={jdspCrossfeedMode === idx ? "text" : "textSecondary"}>
+                                                style={[style.chipLarge, { backgroundColor: jdspCrossfeedMode === idx ? colors.primary : colors.background }]}>
+                                                <ThemeText fontSize="body" fontColor={jdspCrossfeedMode === idx ? "text" : "textSecondary"}>
                                                     {name}
                                                 </ThemeText>
                                             </Pressable>
@@ -670,7 +727,7 @@ export default function SoundEffectSetting() {
                             <ListDivider marginLeft={16} />
                             {/* ViPER-DDC 耳机补偿（与卷积混响互斥，共用 Convolver） */}
                             <ListItem withHorizontalPadding heightType="small">
-                                <ListItem.Content title="ViPER-DDC 耳机补偿" />
+                                <ListItem.Content title="ViPER-DDC 耳机补偿" description={t("soundEffect.ddcDesc")} />
                                 <ThemeSwitch
                                     value={jdspDdcEnabled}
                                     onValueChange={v => applyDdc(v, jdspDdcHeadphone as number)}
@@ -688,8 +745,8 @@ export default function SoundEffectSetting() {
                                             <Pressable
                                                 key={`builtin-${idx}`}
                                                 onPress={() => applyDdc(true, idx)}
-                                                style={[style.chip, { backgroundColor: jdspDdcHeadphone === idx ? colors.primary : colors.background }]}>
-                                                <ThemeText fontSize="caption" fontColor={jdspDdcHeadphone === idx ? "text" : "textSecondary"}>
+                                                style={[style.chipLarge, { backgroundColor: jdspDdcHeadphone === idx ? colors.primary : colors.background }]}>
+                                                <ThemeText fontSize="body" fontColor={jdspDdcHeadphone === idx ? "text" : "textSecondary"}>
                                                     {hp.name}
                                                 </ThemeText>
                                             </Pressable>
@@ -701,8 +758,8 @@ export default function SoundEffectSetting() {
                                                     key={`custom-${ci}`}
                                                     onPress={() => applyDdc(true, globalIdx)}
                                                     onLongPress={() => onDeleteDdcCustom(ci)}
-                                                    style={[style.chip, { backgroundColor: jdspDdcHeadphone === globalIdx ? colors.primary : colors.background }]}>
-                                                    <ThemeText fontSize="caption" fontColor={jdspDdcHeadphone === globalIdx ? "text" : "textSecondary"}>
+                                                    style={[style.chipLarge, { backgroundColor: jdspDdcHeadphone === globalIdx ? colors.primary : colors.background }]}>
+                                                    <ThemeText fontSize="body" fontColor={jdspDdcHeadphone === globalIdx ? "text" : "textSecondary"}>
                                                         {item.name}
                                                     </ThemeText>
                                                 </Pressable>
@@ -710,9 +767,9 @@ export default function SoundEffectSetting() {
                                         })}
                                         <Pressable
                                             onPress={onImportDdc}
-                                            style={[style.chip, style.importChip, { borderColor: colors.primary }]}>
+                                            style={[style.chipLarge, style.importChip, { borderColor: colors.primary }]}>
                                             <Icon name="plus" size={iconSizeConst.light} color={colors.primary} />
-                                            <ThemeText fontSize="caption" fontColor="primary">
+                                            <ThemeText fontSize="body" fontColor="primary">
                                                 导入
                                             </ThemeText>
                                         </Pressable>
@@ -730,6 +787,8 @@ export default function SoundEffectSetting() {
                                 Config.setConfig("jdsp.crossfeedEnabled", false);
                                 Config.setConfig("jdsp.convolverEnabled", false);
                                 Config.setConfig("jdsp.ddcEnabled", false);
+                                // 原生 EQ 已随 resetJamesDsp 关闭，同步复位 UI 开关状态
+                                Config.setConfig("sound.eqEnabled", false);
                                 resetJamesDsp();
                             }}>
                                 <ListItem.Content title="重置全部 JamesDSP" />
@@ -767,6 +826,19 @@ export default function SoundEffectSetting() {
                                 ? "已就绪"
                                 : "播放后生效"}
                         </ThemeText>
+                        {dspDiag ? (
+                            <ThemeText
+                                fontSize="caption"
+                                fontColor="textSecondary">
+                                {dspDiag.bypassed
+                                    ? `DSP：已旁路（${dspDiag.bypassReason ?? ""}）`
+                                    : `DSP：已激活（${dspDiag.inputEncoding ?? ""} · ${
+                                        dspDiag.sampleRate
+                                            ? `${dspDiag.sampleRate}Hz`
+                                            : ""
+                                    }）`}
+                            </ThemeText>
+                        ) : null}
                     </View>
                 </ScrollView>
             </HorizontalSafeAreaView>
@@ -794,6 +866,16 @@ const style = StyleSheet.create({
         paddingHorizontal: rpx(24),
         paddingBottom: rpx(8),
     },
+    /* 顶部音效生效提示行 */
+    hintRow: {
+        paddingHorizontal: rpx(24),
+        paddingTop: rpx(8),
+        paddingBottom: rpx(4),
+    },
+    /* 术语通俗副标题（caption 小字） */
+    descLine: {
+        marginTop: rpx(4),
+    },
     card: {
         borderRadius: rpx(12),
         marginHorizontal: rpx(16),
@@ -812,6 +894,14 @@ const style = StyleSheet.create({
         height: rpx(44),
         paddingHorizontal: rpx(18),
         borderRadius: rpx(22),
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    /* 混响页胶囊放大版（引擎分段 + 算法/卷积预设） */
+    chipLarge: {
+        height: rpx(54),
+        paddingHorizontal: rpx(24),
+        borderRadius: rpx(27),
         alignItems: "center",
         justifyContent: "center",
     },

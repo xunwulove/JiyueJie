@@ -422,9 +422,7 @@ class MusicSheetClazz implements IInjectable {
             patchData.coverImg = musicList.at(0)?.artwork;
         }
         patchData.worksNum = musicList.length;
-        await this.updateMusicSheetBase(sheetId, {
-            coverImg: musicList.at(0)?.artwork,
-        });
+        await this.updateMusicSheetBase(sheetId, patchData);
 
         await storage.setMusicList(sheetId, musicList.musicList);
         ee.emit("UpdateMusicList", {

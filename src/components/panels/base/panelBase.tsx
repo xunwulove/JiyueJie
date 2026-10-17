@@ -191,14 +191,23 @@ export default function (props: IPanelBaseProps) {
             style={[
                 style.wrapper,
                 tabletBound ? { left: "30%", width: "70%" } : null,
-                orientation === "horizontal" ? {
-                    height: vh(100) - safeAreaInsets.top,
-                    bottom: 0,
-                } : {
-                    top: positionMethod === "top" ? (NativeUtils.getWindowDimensions().height + safeAreaInsets.top) - height - safeAreaInsets.bottom : undefined,
-                    bottom: positionMethod === "bottom" ? 0 : undefined,
-                    height: height,
-                },
+                orientation === "horizontal"
+                    ? tabletBound
+                        ? {
+                            // 与遮罩 tabletBound 对齐：顶边落在 tab 栏之下（top=56），
+                            // 避免面板压住顶部 4-tab 栏
+                            top: TAB_BAR_HEIGHT,
+                            bottom: 0,
+                        }
+                        : {
+                            height: vh(100) - safeAreaInsets.top,
+                            bottom: 0,
+                        }
+                    : {
+                        top: positionMethod === "top" ? (NativeUtils.getWindowDimensions().height + safeAreaInsets.top) - height - safeAreaInsets.bottom : undefined,
+                        bottom: positionMethod === "bottom" ? 0 : undefined,
+                        height: height,
+                    },
                 {
                     backgroundColor: colors.backdrop,
                 },

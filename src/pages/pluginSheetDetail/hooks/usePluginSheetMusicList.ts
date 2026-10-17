@@ -18,7 +18,8 @@ async function resolveSheetDetail(
     pluginHash: string;
     result: IPlugin.ISheetInfoResult;
 } | null> {
-    // 判定：第一页必须拿到歌曲；后续页允许空列表但要求 isEnd（否则继续试）
+    // 判定：第一页必须拿到歌曲；后续页有数据即视为有用（合法中间页），
+    // 空列表且未结束说明是异平台源，继续试下一个；空列表且已结束视为正常收尾。
     function isUseful(result: IPlugin.ISheetInfoResult | null | undefined) {
         if (!result) return false;
         const listLen =
@@ -28,7 +29,7 @@ async function resolveSheetDetail(
         if (page === 1) {
             return listLen > 0;
         }
-        return result?.isEnd === true;
+        return listLen > 0 || result?.isEnd === true;
     }
 
     const candidates =

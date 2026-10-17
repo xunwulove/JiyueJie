@@ -41,7 +41,7 @@
 - **播放**：react-native-track-player ^4.1.1（RNTP，ExoPlayer 内核）。
 - **音效**（JamesDSP 音效引擎）：基于 RootlessJamesDSP 核心算法库，NDK 编译 `libjamesdsp` → `libjiyuejie_dsp`（139 个 C 文件，见 `android/app/src/main/jniLibs`）；fork 本地 kotlinaudio 模块（`android/kotlinaudio/`，包名 `com.doublesymmetry.kotlinaudio.jamesdsp`），通过 `JamesDSPRenderersFactory` 向 ExoPlayer 注入 `JamesDSPProcessor`（AudioProcessor）；RN 桥 `jamesdsp/JamesDSPModule.kt`（经 `SoundEffectPackage` 注册，`NativeModules.JamesDSPModule`），RN 侧 `src/core/jamesdsp.ts` 统一封装。能力：**15 段均衡器 + 输出增益 + 限幅器 + 动态低音(DBB) + 立体声增强 + 混响(Progenitor2) + 电子管模拟 + 交叉馈送(Crossfeed) + 卷积器(IR，5 内置预设)**。旧系统 `android.media.audiofx`（`SoundEffectModule`，Equalizer/BassBoost/Virtualizer）已废弃，仅保留注册做兼容兜底，不再作为主引擎。均衡器/JamesDSP 相关避坑见 `docs/问题排查与避坑记录.md`。
 - **状态管理**：jotai；配置持久化：react-native-mmkv + `src/core/appConfig.ts`。
-- **i18n**：`src/core/i18n/languages/`（zh-cn / zh-tw / en-us 三份 JSON）+ `src/types/core/i18n/index.d.ts` 类型声明（加 key 需三处同步）。
+- **i18n**：`src/core/i18n/languages/`（zh-cn / zh-tw 两份 JSON；en-us 已于 0.6.2.15 移除）+ `src/types/core/i18n/index.d.ts` 类型声明（加 key 需三处同步：zh-cn.json、zh-tw.json、index.d.ts）。
 - **响应式**：`src/hooks/useIsTablet.ts`（宽屏判定）+ `src/utils/tablet.ts`（`rpx = (x/750)*窗口短边`）。
 - **其他关键依赖**：react-native-linear-gradient（渐变背景）、react-native-svg（自绘图形，如均衡器曲线/竖向滑块）、react-native-track-player、@react-navigation、expo-splash-screen（启动页）、react-native-permissions（通知/存储权限）。
 

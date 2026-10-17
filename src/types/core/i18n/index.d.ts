@@ -564,6 +564,15 @@ export interface ILanguageData {
     "soundEffect.bass": string; // 低音增强
     "soundEffect.virtualizer": string; // 环绕声
     "soundEffect.hint": string; // 说明
+    "soundEffect.eqDesc": string; // 均衡器通俗说明
+    "soundEffect.gainDesc": string; // 输出增益通俗说明
+    "soundEffect.dbbDesc": string; // 动态低音通俗说明
+    "soundEffect.stereoDesc": string; // 立体声增强通俗说明
+    "soundEffect.reverbDesc": string; // 算法混响通俗说明
+    "soundEffect.convolverDesc": string; // 卷积混响通俗说明
+    "soundEffect.tubeDesc": string; // 电子管模拟通俗说明
+    "soundEffect.crossfeedDesc": string; // 交叉馈送通俗说明
+    "soundEffect.ddcDesc": string; // ViPER-DDC 耳机补偿通俗说明
     "soundEffect.diagDeviceLabel": string; // 输出设备
     "soundEffect.deviceSpeaker": string; // 扬声器
     "soundEffect.deviceHeadset": string; // 耳机（有线）

@@ -299,7 +299,7 @@ export default function RecommendSection() {
                                 },
                             ]}>
                             <ThemeText
-                                fontSize="description"
+                                fontSize="body"
                                 fontWeight={
                                     isSelected ? "bold" : "regular"
                                 }
@@ -368,9 +368,11 @@ const styles = StyleSheet.create({
         columnGap: 8, // 对齐 APlayer Arrangement.spacedBy(8.dp)
     },
     tag: {
-        borderRadius: 16, // 对齐 APlayer RoundedCornerShape(16.dp)
-        paddingHorizontal: 14,
-        paddingVertical: 6,
+        height: 54,
+        paddingHorizontal: 24,
+        borderRadius: 27,
+        alignItems: "center",
+        justifyContent: "center",
         marginRight: 8,
     },
     cardRow: {

@@ -127,17 +127,19 @@ export function setConvolver(enabled: boolean): void {
 /**
  * 从 WAV 文件加载 IR（脉冲响应）到卷积器
  * @param wavBase64 WAV 文件的 Base64 编码
+ * @returns 加载成功 true；格式不支持/解析失败 false
  */
-export function loadIR(wavBase64: string): void {
-  JamesDSPModule?.loadIR(wavBase64);
+export function loadIR(wavBase64: string): Promise<boolean> {
+  return JamesDSPModule?.loadIR(wavBase64) ?? Promise.resolve(false);
 }
 
 /**
  * 加载内置 IR 预设（assets/ir/ 目录）
  * @param assetName 文件名，如 "ir_church.wav"
+ * @returns 加载成功 true；assets 缺失/解析失败 false
  */
-export function loadBuiltinIR(assetName: string): void {
-  JamesDSPModule?.loadBuiltinIR(assetName);
+export function loadBuiltinIR(assetName: string): Promise<boolean> {
+  return JamesDSPModule?.loadBuiltinIR(assetName) ?? Promise.resolve(false);
 }
 
 /** 内置卷积混响 IR 预设（中文名称） */

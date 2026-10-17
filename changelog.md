@@ -8,6 +8,22 @@
 1. 【修复】混响/卷积预设胶囊点击后**选中高亮不切换**（`applyReverb` 未把 preset 写回 `jdsp.reverbPreset` / `jdsp.convolverPreset`，而选中态读取它们）
 2. 【规范】全软件**文字胶囊统一为音效页大胶囊格式**（高54 / 左右内边距24 / 圆角27 / 文字15sp）：混响页引擎分段与算法/卷积预设、交叉反馈、ViPER-DDC 耳机补偿（内置/自定义/导入）、均衡器预设、统计页维度、搜索历史、首页推荐分类、歌单页标签
 3. 【变更】通知中心播放图标由旧网易云音符（`logo-transparent.png`）换为**新版加大音符**（`splash-icon.png`）
+4. 【修复】**播放失败链路**（`src/core/trackPlayer/index.ts`）：音源解析异常/未知播放错误不再静默吞掉——先重试当前曲一次（延迟 2.5s，重试前校验仍是同一首，`reset()` 强制重新取源），仍失败弹"播放失败"提示后切下一首；整队列失效时连跳不再无声（不做熔断停队）
+5. 【修复】**下载队列失败不再卡死**（`src/core/downloader.ts`）：获取媒体源失败路径补调度下一个 pending 任务（计数已在失败处理内递减，与正常路径对称）；启动时清理 `downloadCachePath` 残留半截临时文件（后台执行，断点续传/任务持久化不做）
+6. 【修复】**听歌统计失真**（`src/pages/statistics/index.tsx`）：历史已按歌去重导致"播放 N 次"恒为 1，countMap 改取行内 `playCount` 全量累计，总时长/排行随之修正
+7. 【修复】**歌单删除歌曲后数量/封面立即刷新**（`src/core/musicSheet/index.ts`）：`removeMusic` 落盘完整 `patchData`（worksNum + 条件 coverImg），不再丢弃
+8. 【修复】**60s 过滤放行损坏文件**（`src/core/localMusicSheet.ts`）：开启"不扫描 60s 以下"时 `duration<=0` 的损坏/无法解析文件不再放行入库
+9. 【修复】**切歌换采样率 DSP 静默重置**（`android/kotlinaudio/.../jamesdsp/JamesDSPProcessor.kt` + `android/app/.../jamesdsp/JamesDSPModule.kt` + `src/core/soundEffect.ts`）：原生检测输入采样率/编码/启用态变化，发 `JamesDspConfigChanged` 事件，JS 收到后 `applyAllConfig()` 重放全部 jdsp 配置
+10. 【修复】**非 16bit 输入静默旁路可见化**（同上 + `src/pages/setting/settingTypes/soundEffectSetting.tsx`）：原生暴露输入编码与旁路原因（`getDspDiagnostics`），音效页新增 **DSP 状态诊断行**显示"已激活（编码·采样率）"或"已旁路（原因）"
+11. 【修复】**IR 按当前引擎采样率重采样**（`android/app/src/main/cpp/jdsp_jni.c` + `android/kotlinaudio/.../jamesdsp/JamesDSPBridge.kt`）：`nativeLoadIR` 增传 IR 自带采样率，与 `g_jdsp->fs` 不一致时用 `JamesDSPOfflineResampling` 重采样后再装载——44.1kHz 歌曲用 48kHz IR 不再混响变慢/时间补偿错位（失败降级装载原始 IR）
+12. 【修复】**导入 IR 失败不再静默吞**（`JamesDSPModule.kt` loadIR/loadBuiltinIR 改 Promise + `soundEffect.ts` applyDdc/applyReverb/applyAllConfig 按加载结果使能）：失败弹"IR 加载失败，请使用 16bit/48kHz WAV"提示且不使能无效卷积器
+13. 【修复】**"重置全部 JamesDSP"只修 eqEnabled 未复位**（`soundEffectSetting.tsx`）：reset 前补 `Config.setConfig("sound.eqEnabled", false)`，消除 UI 开关与原生不一致（不加确认弹窗）
+14. 【修复】**插件歌单详情第 2 页起必进错误态**（`src/pages/pluginSheetDetail/hooks/usePluginSheetMusicList.ts`）：`isUseful` 对后续页改判"有数据即视为合法中间页"（`listLen > 0 || isEnd`），空列表且未结束才换源
+15. 【修复】**音源管理卡片不显示损坏/不兼容状态**（`src/pages/setting/settingTypes/pluginSetting/components/pluginItem.tsx`）：渲染 `plugin.state/errorReason`——"插件已损坏，无法解析 / 插件版本与 App 不兼容 / 插件异常，请尝试更新"，可更新时追加"点击更新/重试"
+16. 【修复】**NoPlugin 引导指向不存在的"侧边栏"**（`src/core/i18n/languages/zh-cn.json` + `zh-tw.json`）：改为「先去『我的 → 音源管理』里安装音源，再来搜索吧~」
+17. 【修复】**平板横屏弹出面板盖住顶部 tab 栏**（`src/components/panels/base/panelBase.tsx`）：平板横屏时面板本体 `top` 改为 `TAB_BAR_HEIGHT`（56，与遮罩同一常量）+ `bottom:0`，不再用整屏高（几何修复，真机目视留待）
+18. 【优化】**播放模式切换弹 toast 反馈**（`src/pages/musicDetail/components/bottom/playControl.tsx`）：用 `repeatModeConst` 现成文案提示"已切换为：列表循环/单曲循环/随机播放"
+19. 【优化】**音效页术语通俗说明**（`soundEffectSetting.tsx` + i18n 新增 9 个 `soundEffect.*Desc` key，两语种同步）：均衡器/输出增益/动态低音/立体声/混响/卷积/电子管/交叉馈送/ViPER-DDC 各加一句大白话；同时渲染此前从未显示的 `soundEffect.hint`（"音效实时作用于当前播放…"）
 
 `2026.10.17 0.6.2.15（已发版）`
 1. 【功能】DDC 耳机补偿：内置 5 款真实 AutoEQ 频响补偿 IR（QCY T13 / AirPods Pro 2 / Sony WH-1000XM4 / Bose QC45 / Sennheiser HD 650），与卷积混响互斥、复用卷积器

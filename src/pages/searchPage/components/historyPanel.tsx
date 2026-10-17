@@ -119,7 +119,7 @@ export default function HistoryPanel() {
                                         ]}
                                         onPress={() => triggerSearch(_)}>
                                         <ThemeText
-                                            fontSize="normal"
+                                            fontSize="body"
                                             fontColor="textSecondary"
                                             numberOfLines={1}>
                                             {_}
@@ -243,10 +243,10 @@ const style = StyleSheet.create({
         flexGrow: 0,
         flexDirection: "row",
         alignItems: "center",
-        borderRadius: 14,
-        paddingLeft: 12,
-        paddingTop: 6,
-        paddingBottom: 6,
+        justifyContent: "center",
+        height: 54,
+        paddingHorizontal: 24,
+        borderRadius: 27,
     },
     chipClose: {
         marginLeft: 6,

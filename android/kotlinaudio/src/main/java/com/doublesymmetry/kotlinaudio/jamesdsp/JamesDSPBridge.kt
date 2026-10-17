@@ -113,11 +113,12 @@ object JamesDSPBridge {
 
     /**
      * 加载 IR（脉冲响应）到卷积器
-     * @param irFloat  归一化 float 数组（-1..1，交错 L/R）
-     * @param channels 声道数（1=mono, 2=stereo）
-     * @param length   采样点数（每声道）
+     * @param irFloat      归一化 float 数组（-1..1，交错 L/R）
+     * @param channels     声道数（1=mono, 2=stereo）
+     * @param length       采样点数（每声道）
+     * @param irSampleRate IR 自带采样率（Hz）；<=0 表示未知，native 侧不重采样
      */
-    external fun nativeLoadIR(irFloat: FloatArray, channels: Int, length: Int)
+    external fun nativeLoadIR(irFloat: FloatArray, channels: Int, length: Int, irSampleRate: Int)
 
     /**
      * 从 WAV 文件加载 IR（便捷封装，自动解码）
@@ -126,28 +127,37 @@ object JamesDSPBridge {
      */
     fun loadIRFromWav(wavData: ByteArray): Boolean {
         return try {
-            val (samples, channels, sampleCount) = decodeWav16Bit(wavData)
-            if (sampleCount <= 0) return false
-            nativeLoadIR(samples, channels, sampleCount)
+            val decoded = decodeWav16Bit(wavData)
+            if (decoded.sampleCount <= 0) return false
+            nativeLoadIR(decoded.samples, decoded.channels, decoded.sampleCount, decoded.sampleRate)
             true
         } catch (e: Exception) {
             false
         }
     }
 
+    /** WAV 解码结果：samples 为交错归一化 float；sampleRate 为 0 表示未解析到 */
+    private data class WavDecoded(
+        val samples: FloatArray,
+        val channels: Int,
+        val sampleCount: Int,
+        val sampleRate: Int
+    )
+
     /**
      * 解码 16-bit PCM WAV → 归一化 float 数组
-     * 支持 mono/stereo，采样率不做重采样（建议 IR 与播放采样率一致）
+     * 采样率随数据一并解析并回传，由 native 侧按需重采样到引擎采样率
      */
-    private fun decodeWav16Bit(data: ByteArray): Triple<FloatArray, Int, Int> {
-        if (data.size < 44) return Triple(FloatArray(0), 0, 0)
+    private fun decodeWav16Bit(data: ByteArray): WavDecoded {
+        if (data.size < 44) return WavDecoded(FloatArray(0), 0, 0, 0)
         // RIFF header（检查完整 "RIFF"）
         if (data[0].toInt() != 0x52 || data[1].toInt() != 0x49 ||
-            data[2].toInt() != 0x46 || data[3].toInt() != 0x46) return Triple(FloatArray(0), 0, 0)
+            data[2].toInt() != 0x46 || data[3].toInt() != 0x46) return WavDecoded(FloatArray(0), 0, 0, 0)
         // 解析 fmt chunk
         var offset = 12
         var channels = 2
         var bitsPerSample = 16
+        var sampleRate = 0
         var dataOffset = 44
         while (offset < data.size - 8) {
             val chunkId = String(data, offset, 4)
@@ -158,6 +168,11 @@ object JamesDSPBridge {
             if (chunkId == "fmt ") {
                 channels = (data[offset + 10].toInt() and 0xFF) or
                     ((data[offset + 11].toInt() and 0xFF) shl 8)
+                // fmt chunk 内偏移 +12 起 4 字节小端为采样率
+                sampleRate = (data[offset + 12].toInt() and 0xFF) or
+                    ((data[offset + 13].toInt() and 0xFF) shl 8) or
+                    ((data[offset + 14].toInt() and 0xFF) shl 16) or
+                    ((data[offset + 15].toInt() and 0xFF) shl 24)
                 bitsPerSample = (data[offset + 22].toInt() and 0xFF) or
                     ((data[offset + 23].toInt() and 0xFF) shl 8)
             } else if (chunkId == "data") {
@@ -178,10 +193,10 @@ object JamesDSPBridge {
                     idx++
                     p += bytesPerSample
                 }
-                return Triple(samples, channels, sampleCount)
+                return WavDecoded(samples, channels, sampleCount, sampleRate)
             }
             offset += 8 + chunkSize + (chunkSize % 2)
         }
-        return Triple(FloatArray(0), 0, 0)
+        return WavDecoded(FloatArray(0), 0, 0, 0)
     }
 }

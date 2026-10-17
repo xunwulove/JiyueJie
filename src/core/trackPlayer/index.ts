@@ -72,6 +72,11 @@ class TrackPlayer extends EventEmitter<{
     private serviceInited = false;
     // 播放器未初始化的重试计数（仅允许一次，避免无限递归）
     private playerInitRetries = 0;
+    // 播放失败重试状态：playRetryScheduled 表示已调度/正在执行重试（期间重复的错误事件直接忽略）；
+    // playRetryFailed 表示重试已发起且仍失败（再次进入 handlePlayFail 时提示并切下一首）。
+    // 播放成功、切歌/换当前曲时两者一并复位。
+    private playRetryScheduled = false;
+    private playRetryFailed = false;
     // 播放队列索引map
     private playListIndexMap = createMediaIndexMap([] as IMusic.IMusicItem[]);
 
@@ -633,8 +638,10 @@ class TrackPlayer extends EventEmitter<{
             trace("获取音源成功", track);
             // 8. 设置音源
             await this.setTrackSource(track as Track);
-            // 播放链路成功，重置"未初始化"重试计数
+            // 播放链路成功，重置"未初始化"重试计数与本曲失败重试状态
             this.playerInitRetries = 0;
+            this.playRetryScheduled = false;
+            this.playRetryFailed = false;
 
             // 9. 获取补充信息
             let info: Partial<IMusic.IMusicItem> | null = null;
@@ -699,6 +706,13 @@ class TrackPlayer extends EventEmitter<{
                 await this.handlePlayFail();
             } else if (message === PlayFailReason.PLAY_LIST_IS_EMPTY) {
                 // 队列是空的，不应该出现这种情况
+            } else {
+                // 未识别的异常（网络抖动/插件崩溃/播放器内部错误等）：不再静默吞掉。
+                // 代际守卫：仅当失败的仍是当前曲才处理，避免异步竞态下处理到别的歌；
+                // 统一走 handlePlayFail（重试当前曲一次，仍失败则提示并切下一首）。
+                if (this.isCurrentMusic(musicItem)) {
+                    await this.handlePlayFail();
+                }
             }
         }
     }
@@ -838,6 +852,12 @@ class TrackPlayer extends EventEmitter<{
     /**************** 辅助函数 -- 设置内部状态 ****************/
 
     private setCurrentMusic(musicItem?: IMusic.IMusicItem | null) {
+        // 切歌/换当前曲时复位播放失败重试状态；同一首歌的重复设置不复位
+        // （否则重试链路 play() 内部 :499 的 setCurrentMusic 会把状态清掉，造成无限重试）
+        if (!isSameMediaItem(musicItem, this.currentMusic)) {
+            this.playRetryScheduled = false;
+            this.playRetryFailed = false;
+        }
         // 设置UI内部状态的musicitem
         if (!musicItem) {
             this.currentIndex = -1;
@@ -1046,17 +1066,48 @@ class TrackPlayer extends EventEmitter<{
 
 
     private async handlePlayFail() {
-        // 如果自动跳转下一曲, 500s后自动跳转
-        if (!this.configService.getConfig("basic.autoStopWhenError")) {
-            await delay(500);
-            await this.skipToNext();
-        } else {
-            // 自动停止模式：播放器停在错误态且不再跳下一首，至少提示用户，避免完全静默
+        // 自动停止模式：保持既有行为——toast 提示，不重试、不切歌
+        if (this.configService.getConfig("basic.autoStopWhenError")) {
             showToast({
                 type: "warn",
                 message: "播放失败",
             });
+            return;
         }
+        const currentMusic = this.currentMusic;
+        // 无当前曲：队列已空，无事可做
+        if (!currentMusic) {
+            return;
+        }
+        // 已重试过仍失败：提示 + 500ms 后切下一首（保证连跳时不静默）
+        if (this.playRetryFailed) {
+            showToast({
+                type: "warn",
+                message: "播放失败",
+            });
+            await delay(500);
+            await this.skipToNext();
+            return;
+        }
+        // 重试已在调度/进行中：同一播放错误可能多次触发 PlaybackError 事件，
+        // 此处直接忽略，等待本次重试结果（重试失败会经 play() 的 catch 再次进入本方法）
+        if (this.playRetryScheduled) {
+            return;
+        }
+        // 首次失败：延迟 2.5s 后重试当前曲一次
+        this.playRetryScheduled = true;
+        await delay(2500);
+        // 竞态守卫：delay 期间用户可能已手动切歌/换曲，重试前再确认仍是同一首，
+        // 否则不接管、不跳歌（新的播放链路自己负责）
+        if (!this.isCurrentMusic(currentMusic)) {
+            return;
+        }
+        // 标记"重试已发起"：本次重试若再失败，将走上面的提示+切歌分支；
+        // reset 清空占位/错误队列，强制重新走取源流程（否则 2.1 分支会把
+        // proposedAudioUrl 占位当成"已有源"，直接重播占位 URL 而不重新解析）
+        this.playRetryFailed = true;
+        await ReactNativeTrackPlayer.reset();
+        await this.play(currentMusic, true);
     }
 
     /**

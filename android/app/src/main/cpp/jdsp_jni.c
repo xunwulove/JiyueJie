@@ -19,7 +19,13 @@
 #include <jni.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "jdsp/jdsp_header.h"
+
+/* 核心库内部的离线线性插值重采样（交错多声道），见 jdspController.c:919 声明。
+   用于把 IR 从其自带采样率重采样到引擎处理采样率 g_jdsp->fs。 */
+extern void JamesDSPOfflineResampling(float const *in, float *out, size_t lenIn, size_t lenOut,
+                                      int channels, double src_ratio);
 
 #define TAG "JamesDSPJNI"
 #include <android/log.h>
@@ -204,12 +210,18 @@ JNI_FUNC(nativeSetConvolver)(JNIEnv *env, jobject thiz, jboolean enabled)
 
 /*
  * 加载 IR（脉冲响应）到卷积器
- * @param irFloat  归一化 float 数组（交错 L/R，单声道则复制到两声道）
- * @param channels 声道数（1=mono, 2=stereo）
- * @param length   采样点数（每声道）
+ * @param irFloat      归一化 float 数组（交错 L/R，单声道则复制到两声道）
+ * @param channels     声道数（1=mono, 2=stereo）
+ * @param length       采样点数（每声道）
+ * @param irSampleRate IR 自带采样率（Hz）；<=0 表示未知，不重采样
+ *
+ * 若 IR 采样率与引擎处理采样率 g_jdsp->fs 不一致（如 48kHz IR 灌到 44.1kHz 引擎），
+ * 先调用 JamesDSPOfflineResampling 把 IR 重采样到 g_jdsp->fs 再装载，
+ * 避免卷积器把 48kHz IR 当 44.1kHz 用导致混响变慢/时间补偿错位。
+ * fs 相同时行为与原先完全一致。重采样失败时降级为直接装载原始 IR。
  */
 JNIEXPORT void JNICALL
-JNI_FUNC(nativeLoadIR)(JNIEnv *env, jobject thiz, jfloatArray irFloat, jint channels, jint length)
+JNI_FUNC(nativeLoadIR)(JNIEnv *env, jobject thiz, jfloatArray irFloat, jint channels, jint length, jint irSampleRate)
 {
     if (!g_initialized || !g_jdsp) return;
     if (length <= 0 || channels < 1 || channels > 2) return;
@@ -220,13 +232,51 @@ JNI_FUNC(nativeLoadIR)(JNIEnv *env, jobject thiz, jfloatArray irFloat, jint chan
     /* Convolver1DLoadImpulseResponse 需要交错 float（L,R,L,R...）
        单声道时复制为立体声 */
     unsigned int impChannels = (channels == 2) ? 2 : 1;
+
+    float *loadPtr = ir;            /* 实际喂给卷积器的数据（原始或重采样后） */
+    size_t loadLen = (size_t)length;
+    float *resampledBuf = NULL;     /* 重采样中间缓冲，装载后即释放 */
+
+    /* —— 按需把 IR 重采样到引擎处理采样率 g_jdsp->fs —— */
+    float targetFs = g_jdsp->fs;
+    if (irSampleRate > 0 && targetFs > 0.0f &&
+        fabsf((float)irSampleRate - targetFs) > 1.0f)
+    {
+        double ratio = (double)targetFs / (double)irSampleRate; /* out/in */
+        size_t outLen = (size_t)ceil((double)length * ratio);
+        if (outLen > 0)
+        {
+            resampledBuf = (float *)malloc(outLen * impChannels * sizeof(float));
+            if (resampledBuf)
+            {
+                /* 函数按交错布局就地重采样（in/out 均为 L,R,L,R...） */
+                memset(resampledBuf, 0, outLen * impChannels * sizeof(float));
+                JamesDSPOfflineResampling(ir, resampledBuf, (size_t)length,
+                                          outLen, (int)impChannels, ratio);
+                loadPtr = resampledBuf;
+                loadLen = outLen;
+                LOGI("nativeLoadIR resample: IR %dHz -> engine %.0fHz, frames %d -> %d",
+                     irSampleRate, targetFs, (int)length, (int)outLen);
+            }
+            else
+            {
+                /* 降级：分配失败则直接装载原始 IR，不崩溃 */
+                LOGE("nativeLoadIR resample malloc %zu frames failed, fallback to raw IR",
+                     outLen * impChannels);
+            }
+        }
+    }
+
+    /* Convolver1DLoadImpulseResponse 内部会 malloc+memcpy 拷贝 IR 并去交错，
+       故本函数返回后 resampledBuf / JNI 数组均可安全释放。 */
     int result = Convolver1DLoadImpulseResponse(
-        g_jdsp, ir, impChannels, (size_t)length, 1);
+        g_jdsp, loadPtr, impChannels, loadLen, 1);
 
     (*env)->ReleaseFloatArrayElements(env, irFloat, ir, JNI_ABORT);
+    if (resampledBuf) free(resampledBuf);
 
     if (result == 0) {
-        LOGI("nativeLoadIR ok: channels=%d length=%d", channels, length);
+        LOGI("nativeLoadIR ok: channels=%d length=%d", channels, (int)loadLen);
     } else {
         LOGE("nativeLoadIR failed: result=%d", result);
     }

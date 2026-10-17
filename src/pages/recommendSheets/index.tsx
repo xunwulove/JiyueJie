@@ -377,7 +377,7 @@ function TagCapsule({
                 { backgroundColor: selected ? primary : surfaceVariant },
             ]}>
             <ThemeText
-                fontSize="description"
+                fontSize="body"
                 fontWeight={selected ? "bold" : "regular"}
                 color={selected ? "#FFFFFF" : undefined}
                 fontColor={selected ? undefined : "textSecondary"}
@@ -521,9 +521,11 @@ const styles = StyleSheet.create({
         marginBottom: rpx(24),
     },
     tagCapsule: {
-        borderRadius: 16,
-        paddingHorizontal: 14,
-        paddingVertical: 6,
+        height: 54,
+        paddingHorizontal: 24,
+        borderRadius: 27,
+        alignItems: "center",
+        justifyContent: "center",
     },
     gridWrap: {
         paddingBottom: rpx(24),

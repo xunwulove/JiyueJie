@@ -323,10 +323,10 @@ async function importLocal(_folderPaths: string[]): Promise<number> {
             }),
         )
     ).filter(_ =>
-        // 不扫描 60 秒以下音频（对齐 APlayer minDuration 过滤）
+        // 不扫描 60 秒以下音频（对齐 APlayer minDuration 过滤）；
+        // 开启过滤时，duration<=0 的损坏/无法解析文件不再放行入库
         minDuration === 0 ||
-        _.duration <= 0 ||
-        _.duration >= minDuration,
+        (_.duration > 0 && _.duration >= minDuration),
     );
     if (token !== importToken) {
         throw new Error("Import Broken");
