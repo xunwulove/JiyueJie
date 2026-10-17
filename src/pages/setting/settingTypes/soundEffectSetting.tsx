@@ -138,7 +138,7 @@ export default function SoundEffectSetting() {
             multi: false,
             actionText: "导入",
             description:
-                "请导入 48kHz 采样率的 WAV 脉冲响应（IR）文件作为耳机频响补偿。非 48kHz 文件可能加载失败或效果异常。",
+                "请导入 48kHz 采样率的 WAV 脉冲响应（IR）文件作为耳机频响补偿。非 48kHz 文件可能加载失败或效果异常。可从 AutoEQ（https://github.com/jaakkopasanen/AutoEq）下载对应耳机的补偿 IR。",
             matchExtension: p => p.toLowerCase().endsWith(".wav"),
             async onAction(selected) {
                 const path = selected[0]?.path;
