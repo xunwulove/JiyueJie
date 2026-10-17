@@ -80,19 +80,10 @@ export default function UpdateDownloadDialog(props: IProps) {
 
         (async () => {
             try {
-                // 复用已下载完成的 APK：目标文件已存在且大于 1MB（排除半成品/损坏文件）→ 直接进入"已下载完成"，不再重新下载
-                const stat = await RNFS.stat(plainPath).catch(() => null);
-                const statSize = (stat as any)?.size ?? 0;
-                if (!disposed && statSize > 1024 * 1024) {
-                    setFileSize(statSize);
-                    setDownloadedSize(statSize);
-                    setProgress(1);
-                    setStatus("completed");
-                    return;
-                }
+                // 每次进入都重新下载目标版本：先清理本地同名旧文件（含此前下载但可能是旧版/损坏的同名 APK），
+                // 避免复用到非当前版本的包导致系统提示"已安装同版本"或安装损坏文件
                 await mkdirR(path.dirname(plainPath));
                 if (disposed) return;
-                // 清理上一次尝试的半成品
                 await RNFS.unlink(plainPath).catch(() => {});
                 if (disposed) return;
 
