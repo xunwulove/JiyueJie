@@ -5,7 +5,7 @@ import pathConst from "@/constants/pathConst";
 import { getFileName } from "@/utils/fileUtils";
 import { errorLog, trace } from "@/utils/log";
 import Toast from "@/utils/toast";
-import { setEqualizer as jdspSetEqualizer, setPostGain, setBassBoost, setStereoEnhancement, setReverb, setVacuumTube, setCrossfeed, setConvolver, loadBuiltinIR, loadIR, IR_PRESETS, DDC_HEADPHONES } from "@/core/jamesdsp";
+import { setEqualizer as jdspSetEqualizer, setPostGain, setBassBoost, setStereoEnhancement, setReverb, setVacuumTube, setCrossfeed, setConvolver, loadBuiltinIR, loadIR, IR_PRESETS, DDC_HEADPHONES, REVERB_PRESETS } from "@/core/jamesdsp";
 
 /** 将旧版 N 段毫分贝(millibel)转换为 JamesDSP 15段 dB，线性插值 */
 function toJamesDspGains(bands: number[]): number[] {
@@ -225,7 +225,11 @@ export function applyAllConfig() {
     if (jdspPostGain !== 0) setPostGain(jdspPostGain);
     if (Config.getConfig("jdsp.bassEnabled")) setBassBoost(true, Config.getConfig("jdsp.bassGain") ?? 6);
     if (Config.getConfig("jdsp.stereoEnabled")) setStereoEnhancement(true, Config.getConfig("jdsp.stereoMix") ?? 0.3);
-    if (Config.getConfig("jdsp.reverbEnabled")) setReverb(true, Config.getConfig("jdsp.reverbPreset") ?? 1);
+    if (Config.getConfig("jdsp.reverbEnabled")) {
+        // 算法混响恢复：存储为 UI 索引（0=小房间），下发原生 +1 跳过 None/0；旧数据整体偏移一格，越界值（旧 19=水下）clamp 到列表末项兜底
+        const uiPreset = Math.min(Config.getConfig("jdsp.reverbPreset") ?? 0, REVERB_PRESETS.length - 1);
+        setReverb(true, uiPreset + 1);
+    }
     if (Config.getConfig("jdsp.tubeEnabled")) setVacuumTube(true, Config.getConfig("jdsp.tubeGain") ?? 6);
     if (Config.getConfig("jdsp.crossfeedEnabled")) setCrossfeed(true, Config.getConfig("jdsp.crossfeedMode") ?? 0);
     // JamesDSP DDC 耳机补偿恢复（与卷积混响互斥，共用 Convolver）
@@ -424,7 +428,7 @@ export const REVERB_ENGINE_CONVOLVER = 1;
  * 合并后的混响开关：统一入口，算法混响与卷积混响二选一。
  * @param enabled 总开关
  * @param engine  引擎类型 0=算法 1=卷积
- * @param preset  对应引擎的预设编号（算法→REVERB_PRESETS，卷积→IR_PRESETS）
+ * @param preset  对应引擎预设的 **UI 索引**（算法→REVERB_PRESETS 索引 0=小房间，底层下发时 +1 跳过原生 None/0；卷积→IR_PRESETS 索引，映射不变）
  */
 export async function applyReverb(enabled: boolean, engine: number, preset: number) {
     // 先全部关闭，保证互斥
@@ -438,7 +442,8 @@ export async function applyReverb(enabled: boolean, engine: number, preset: numb
     if (engine === REVERB_ENGINE_ALGORITHM) {
         Config.setConfig("jdsp.reverbEnabled", true);
         Config.setConfig("jdsp.reverbPreset", preset);
-        setReverb(true, preset);
+        // 算法混响：REVERB_PRESETS 已去掉"关闭"，UI 索引 0=小房间；原生 JamesDSP 预设 0=None，下发 +1（小房间=1 … 水下=19）
+        setReverb(true, preset + 1);
     } else {
         // 卷积与 DDC 共用 Convolver，互斥
         Config.setConfig("jdsp.ddcEnabled", false);

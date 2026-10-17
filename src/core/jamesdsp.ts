@@ -63,9 +63,9 @@ export function setStereoEnhancement(enabled: boolean, mix: number): void {
 
 // ==================== Reverb 混响 ====================
 
-/** 混响预设名称（Progenitor2，20个预设，中文） */
+/** 混响预设名称（Progenitor2，19个预设，中文；UI 索引 0 即"小房间"，底层下发时 +1 跳过原生 None） */
 export const REVERB_PRESETS = [
-    "关闭", "小房间", "中房间", "大房间", "中厅",
+    "小房间", "中房间", "大房间", "中厅",
     "大厅", "板式", "环境", "教堂", "大教堂",
     "地下室", "客厅", "石廊", "地毯厅", "仓库",
     "森林", "城市", "山脉", "深洞", "水下",
@@ -73,7 +73,7 @@ export const REVERB_PRESETS = [
 
 /**
  * @param enabled 是否启用
- * @param preset  预设编号 0..19，0=None
+ * @param preset  原生预设编号 1..19（0=None 保留给原生，UI 不再暴露；调用方按 UI 索引 + 1 传入）
  */
 export function setReverb(enabled: boolean, preset: number): void {
     JamesDSPModule?.setReverb(enabled, preset);

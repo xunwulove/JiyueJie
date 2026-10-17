@@ -114,7 +114,7 @@ export default function SoundEffectSetting() {
     const jdspStereoEnabled = useAppConfig("jdsp.stereoEnabled") ?? false;
     const jdspStereoMix = useAppConfig("jdsp.stereoMix") ?? 0.3;
     const jdspReverbEnabled = useAppConfig("jdsp.reverbEnabled") ?? false;
-    const jdspReverbPreset = useAppConfig("jdsp.reverbPreset") ?? 1;
+    const jdspReverbPreset = Math.min(useAppConfig("jdsp.reverbPreset") ?? 0, REVERB_PRESETS.length - 1);
     const jdspReverbEngine = useAppConfig("jdsp.reverbEngine") ?? 0;
     const jdspTubeEnabled = useAppConfig("jdsp.tubeEnabled") ?? false;
     const jdspTubeGain = useAppConfig("jdsp.tubeGain") ?? 6;

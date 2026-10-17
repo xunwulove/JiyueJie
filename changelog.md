@@ -4,6 +4,9 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.17（未发版改动）`
+1. 【变更】去掉算法混响预设列表首项"关闭"胶囊（`src/core/jamesdsp.ts` `REVERB_PRESETS` 20→19 项，UI 索引 0 从此即"小房间"）：UI 与存储的 **UI 索引语义不变**（`jdsp.reverbPreset` 0=小房间），选中态比较与 `applyReverb(true, 0, idx)` 调用处逻辑未动；**底层映射**在 `applyReverb` 算法引擎分支与启动恢复（`applyAllConfig`）下发原生预设号 = UI 索引 + 1（跳过原生 None/0，点"小房间"下发 1、点"水下"下发 19），卷积混响映射不受影响。**老用户数据偏移说明**：同版本号重发、无版本迁移钩子，本地历史 `jdsp.reverbPreset` 读取时整体偏移一格（旧 0=关闭→新 0=小房间；旧 1=小房间→新 1=中房间……），无法区分新旧值，按接受偏移处理；旧值 19（水下）在新 19 项列表越界，读取时 clamp 到 18（水下）兜底，避免无高亮/原生预设越界
+
 `2026.10.17 0.6.2.15（已发版·同版本号重新发布）`
 > 本次为 **0.6.2.15 同版本号重新发布**（versionName/versionCode 均不变）：在首版基础上并入此前「未发版改动」25 项——P1 修复批次 16 项（播放失败重试链路/下载队列失败卡死/听歌统计/歌单删除刷新/60s 过滤放行损坏文件/切歌换采样率 DSP 静默重置/IR 采样率重采样/插件歌单分页/插件损坏与不兼容状态展示/NoPlugin 引导/平板面板遮挡等）、下载**断点续传与队列持久化**、全项目 **lint 欠账清零**与死代码删除。同版本号重发原因：修复集中在同一维护窗口，保持版本号稳定。**影响**：已装 0.6.2.15 的用户软件内「检查更新」按版本号比较会判定已是最新、收不到新包提示，需手动下载覆盖安装。
 1. 【修复】混响/卷积预设胶囊点击后**选中高亮不切换**（`applyReverb` 未把 preset 写回 `jdsp.reverbPreset` / `jdsp.convolverPreset`，而选中态读取它们）
