@@ -3,7 +3,6 @@ import LyricItem from "@/components/mediaItem/LyricItem";
 import { RequestStateCode } from "@/constants/commonConst";
 import lyricManager from "@/core/lyricManager";
 import TrackPlayer from "@/core/trackPlayer";
-import rpx from "@/utils/rpx";
 import Toast from "@/utils/toast";
 import React, { memo } from "react";
 import { hidePanel } from "../../usePanel";

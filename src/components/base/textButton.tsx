@@ -1,7 +1,6 @@
 import React from "react";
 import { Pressable } from "react-native";
 import ThemeText from "./themeText";
-import rpx from "@/utils/rpx";
 import { CustomizedColors } from "@/hooks/useColors";
 
 interface IButtonProps {

@@ -103,10 +103,10 @@ export default function StatsRow() {
                         { flex: 1 },
                         pressed
                             ? {
-                                  backgroundColor: Color(primary)
-                                      .alpha(0.06)
-                                      .toString(),
-                              }
+                                backgroundColor: Color(primary)
+                                    .alpha(0.06)
+                                    .toString(),
+                            }
                             : null,
                     ]}
                     onPress={() => navigate(ROUTE_PATH.STATISTICS)}>

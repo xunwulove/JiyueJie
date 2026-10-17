@@ -22,20 +22,6 @@ function toJamesDspGains(bands: number[]): number[] {
     return result;
 }
 
-/** 应用 EQ 到 JamesDSP（统一入口） */
-function applyEqToJamesDsp(enabled: boolean) {
-    const preset = Config.getConfig("sound.eqPreset") ?? -1;
-    const bands = Config.getConfig("sound.eqBands") ?? [];
-    let srcBands: number[] = [];
-    if (typeof preset === "number" && preset >= 0) {
-        const p = EQ_PRESETS[preset];
-        if (p) srcBands = p.bands;
-    } else if (Array.isArray(bands)) {
-        srcBands = bands;
-    }
-    jdspSetEqualizer(enabled, toJamesDspGains(srcBands));
-}
-
 /**
  * 音效服务（均衡器/低音增强/环绕声）——2026-10-14 新增。
  *
@@ -306,7 +292,7 @@ export function applyEqEnabled(enabled: boolean) {
 export function applyEqPreset(index: number) {
     // index: -1 = 手动(自定义)，>=0 = 内置预设（EQ_PRESETS[index]，0..N-1）
     Config.setConfig("sound.eqPreset", index);
-    if (!!Config.getConfig("sound.eqEnabled")) {
+    if (Config.getConfig("sound.eqEnabled")) {
         if (index >= 0) {
             // 应用内置预设：旧 10 段毫分贝 → 15 段 dB（线性插值）
             const p = EQ_PRESETS[index];
@@ -330,7 +316,7 @@ export function applyBandLevel(band: number, level: number) {
     // 切到自定义模式
     Config.setConfig("sound.eqPreset", -1);
     // 直接调用 JamesDSP（15段 dB）
-    if (!!Config.getConfig("sound.eqEnabled")) {
+    if (Config.getConfig("sound.eqEnabled")) {
         jdspSetEqualizer(true, bands15);
     }
 }
@@ -467,40 +453,6 @@ export async function applyReverb(enabled: boolean, engine: number, preset: numb
         Config.setConfig("jdsp.convolverPreset", preset);
         setConvolver(true);
     }
-}
-
-export function applyBassBoost(strength: number) {
-    Config.setConfig("sound.bassBoost", strength);
-    if (attached && SoundEffect) SoundEffect.setBassBoost(strength);
-}
-
-export function applyVirtualizer(strength: number) {
-    Config.setConfig("sound.virtualizer", strength);
-    if (attached && SoundEffect) SoundEffect.setVirtualizer(strength);
-}
-
-/** 响度增强 0..1000（0=关闭） */
-export function applyLoudnessEnhancer(strength: number) {
-    Config.setConfig("sound.loudnessEnhancer", strength);
-    if (attached && SoundEffect) SoundEffect.setLoudnessEnhancer(strength);
-}
-
-/** 预设混响 0=关闭,1=小房间,2=中房间,3=大房间,4=中厅,5=大厅,6=板式 */
-export function applyReverbPreset(preset: number) {
-    Config.setConfig("sound.reverbPreset", preset);
-    if (attached && SoundEffect) SoundEffect.setReverbPreset(preset);
-}
-
-/** 环境混响预设 0=关闭,1=小房间,2=中房间,3=大厅,4=教堂,5=洞穴,6=录音棚 */
-export function applyEnvironmentalReverbPreset(preset: number) {
-    Config.setConfig("sound.envReverbPreset", preset);
-    if (attached && SoundEffect) SoundEffect.setEnvironmentalReverbPreset(preset);
-}
-
-/** 动态处理强度 0..1000（0=关闭，API 28+） */
-export function applyDynamicsProcessing(strength: number) {
-    Config.setConfig("sound.dynamicsProcessing", strength);
-    if (attached && SoundEffect) SoundEffect.setDynamicsProcessing(strength);
 }
 
 /** 手动模式下默认 bands（与设备频段数对齐，全 0） */

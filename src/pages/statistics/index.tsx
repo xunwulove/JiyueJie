@@ -304,8 +304,8 @@ export default function Statistics() {
                                     { backgroundColor: dayColor(count) },
                                     isSelected
                                         ? {
-                                              backgroundColor: colors.primary,
-                                          }
+                                            backgroundColor: colors.primary,
+                                        }
                                         : null,
                                 ]}
                                 onPress={() =>
@@ -421,8 +421,8 @@ export default function Statistics() {
                                     {
                                         backgroundColor: selected
                                             ? Color(colors.primary)
-                                                  .alpha(0.12)
-                                                  .toString()
+                                                .alpha(0.12)
+                                                .toString()
                                             : colors.surfaceVariant ??
                                               colors.card,
                                     },

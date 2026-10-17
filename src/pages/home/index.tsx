@@ -38,37 +38,37 @@ function renderTab(
     isTablet: boolean,
 ): React.ReactElement {
     switch (tab) {
-        case SaltTab.HOME:
-            return (
-                <HorizontalSafeAreaView style={globalStyle.flex1}>
-                    <>
-                        {/* 平板：隐藏页内搜索框/标题（搜索入口在 tab 栏搜索 tab，规范 11.7） */}
-                        {isTablet ? null : (
-                            <NavBar
-                                onSearchPress={() =>
-                                    setTab(SaltTab.SEARCH)
-                                }
-                            />
-                        )}
-                        <HomeBody />
-                    </>
-                </HorizontalSafeAreaView>
-            );
-        case SaltTab.SEARCH:
-            // 平板：搜索独占模式（输入框在顶栏 tab 栏），页内隐藏重复搜索框
-            return isTablet ? (
-                <SearchPage standalone hideNavBar />
-            ) : (
-                <SearchPage standalone />
-            );
-        case SaltTab.LIBRARY:
-            return <LibraryTab />;
-        case SaltTab.MINE:
-            return (
-                <MineTab
-                    onGoSheets={() => setTab(SaltTab.HOME)}
-                />
-            );
+    case SaltTab.HOME:
+        return (
+            <HorizontalSafeAreaView style={globalStyle.flex1}>
+                <>
+                    {/* 平板：隐藏页内搜索框/标题（搜索入口在 tab 栏搜索 tab，规范 11.7） */}
+                    {isTablet ? null : (
+                        <NavBar
+                            onSearchPress={() =>
+                                setTab(SaltTab.SEARCH)
+                            }
+                        />
+                    )}
+                    <HomeBody />
+                </>
+            </HorizontalSafeAreaView>
+        );
+    case SaltTab.SEARCH:
+        // 平板：搜索独占模式（输入框在顶栏 tab 栏），页内隐藏重复搜索框
+        return isTablet ? (
+            <SearchPage standalone hideNavBar />
+        ) : (
+            <SearchPage standalone />
+        );
+    case SaltTab.LIBRARY:
+        return <LibraryTab />;
+    case SaltTab.MINE:
+        return (
+            <MineTab
+                onGoSheets={() => setTab(SaltTab.HOME)}
+            />
+        );
     }
 }
 
@@ -113,26 +113,26 @@ function Home() {
                 return;
             }
             switch (action) {
-                case "play":
-                    // 打开播放页：平板切全屏播放层，手机走 MUSIC_DETAIL 路由（先清覆盖层）
-                    setSubPages([]);
-                    if (isTablet) {
-                        setFullPlaying(true);
-                    } else {
-                        navigation.navigate(ROUTE_PATH.MUSIC_DETAIL);
-                    }
-                    break;
-                case "local":
-                    switchTab(SaltTab.LIBRARY);
-                    break;
-                case "search":
-                    switchTab(SaltTab.SEARCH);
-                    break;
-                case "update":
-                    checkUpdateAndShowResult(true);
-                    break;
-                default:
-                    break;
+            case "play":
+                // 打开播放页：平板切全屏播放层，手机走 MUSIC_DETAIL 路由（先清覆盖层）
+                setSubPages([]);
+                if (isTablet) {
+                    setFullPlaying(true);
+                } else {
+                    navigation.navigate(ROUTE_PATH.MUSIC_DETAIL);
+                }
+                break;
+            case "local":
+                switchTab(SaltTab.LIBRARY);
+                break;
+            case "search":
+                switchTab(SaltTab.SEARCH);
+                break;
+            case "update":
+                checkUpdateAndShowResult(true);
+                break;
+            default:
+                break;
             }
         },
         [

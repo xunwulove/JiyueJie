@@ -8,7 +8,6 @@ import pluginReliability from "@/core/pluginReliability";
 import Toast from "@/utils/toast";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { showDialog } from "@/components/dialogs/useDialog";
-import { showPanel } from "@/components/panels/usePanel";
 import rpx from "@/utils/rpx";
 import {
     StyleProp,
@@ -71,10 +70,10 @@ function _PluginItem(props: IPluginItemProps) {
         reliability === null
             ? colors.textSecondary
             : reliability >= 0.8
-            ? "#4CAF50"
-            : reliability >= 0.5
-            ? colors.primary
-            : "#E53935";
+                ? "#4CAF50"
+                : reliability >= 0.5
+                    ? colors.primary
+                    : "#E53935";
 
     const alternativePluginName = pluginManager.getAlternativePluginName(plugin);
 

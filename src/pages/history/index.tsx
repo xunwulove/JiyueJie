@@ -32,13 +32,13 @@ export default function History() {
                 actions={
                     musicHistoryList.length
                         ? [
-                              {
-                                  icon: "trash-outline",
-                                  onPress() {
-                                      musicHistory.clearMusic();
-                                  },
-                              },
-                          ]
+                            {
+                                icon: "trash-outline",
+                                onPress() {
+                                    musicHistory.clearMusic();
+                                },
+                            },
+                        ]
                         : []
                 }>
                 <ThemeText
@@ -62,12 +62,12 @@ export default function History() {
                                 styles.row,
                                 pressed
                                     ? {
-                                          backgroundColor: Color(
-                                              colors.primary,
-                                          )
-                                              .alpha(0.06)
-                                              .toString(),
-                                      }
+                                        backgroundColor: Color(
+                                            colors.primary,
+                                        )
+                                            .alpha(0.06)
+                                            .toString(),
+                                    }
                                     : null,
                             ]}
                             onPress={() =>

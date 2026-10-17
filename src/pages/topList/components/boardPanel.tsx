@@ -1,6 +1,5 @@
 import React, { memo } from "react";
 import { SectionList, SectionListProps, StyleSheet, View } from "react-native";
-import rpx from "@/utils/rpx";
 import { IPluginTopListResult } from "../store/atoms";
 import { RequestStateCode } from "@/constants/commonConst";
 import Loading from "@/components/base/loading";

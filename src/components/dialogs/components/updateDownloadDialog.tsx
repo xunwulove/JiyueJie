@@ -51,7 +51,7 @@ export default function UpdateDownloadDialog(props: IProps) {
     const [downloadedSize, setDownloadedSize] = useState(0);
     const [fileSize, setFileSize] = useState(0);
     const [speed, setSpeed] = useState(0);
-    const [filePath, setFilePath] = useState("");
+    const [_filePath, setFilePath] = useState("");
 
     const jobIdRef = useRef<number | undefined>(undefined);
     const lastSampleRef = useRef({ time: Date.now(), bytes: 0 });
@@ -187,8 +187,8 @@ export default function UpdateDownloadDialog(props: IProps) {
                 {status === "completed"
                     ? `下载完成 V${version}`
                     : status === "error"
-                      ? "下载更新失败"
-                      : `正在下载更新 V${version}`}
+                        ? "下载更新失败"
+                        : `正在下载更新 V${version}`}
             </Dialog.Title>
             <Dialog.Content>
                 <View style={styles.progressRow}>
@@ -216,11 +216,11 @@ export default function UpdateDownloadDialog(props: IProps) {
                     style={styles.metaText}>
                     {status === "downloading"
                         ? `${formatSize(downloadedSize)} / ${formatSize(
-                              fileSize,
-                          )} · ${formatSpeed(speed)}`
+                            fileSize,
+                        )} · ${formatSpeed(speed)}`
                         : status === "completed"
-                          ? "已下载完成，点击下方按钮安装"
-                          : "网络异常或服务器无响应，可重试"}
+                            ? "已下载完成，点击下方按钮安装"
+                            : "网络异常或服务器无响应，可重试"}
                 </ThemeText>
             </Dialog.Content>
             <Dialog.Actions
@@ -233,18 +233,18 @@ export default function UpdateDownloadDialog(props: IProps) {
                     ...(status === "downloading"
                         ? []
                         : [
-                              {
-                                  title:
+                            {
+                                title:
                                       status === "completed"
                                           ? "立即安装"
                                           : "重试",
-                                  type: "primary" as const,
-                                  onPress:
+                                type: "primary" as const,
+                                onPress:
                                       status === "completed"
                                           ? onInstall
                                           : onRetry,
-                              },
-                          ]),
+                            },
+                        ]),
                 ]}
             />
         </Dialog>

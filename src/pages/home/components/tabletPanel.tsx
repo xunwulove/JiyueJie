@@ -16,7 +16,7 @@ import { musicIsPaused } from "@/utils/trackUtils";
 import { showPanel } from "@/components/panels/usePanel";
 import { fullPlayingAtom } from "@/core/tabletNav";
 import { useSetAtom } from "jotai";
-import lyricManager, {
+import {
     useCurrentLyricItem,
     useLyricState,
 } from "@/core/lyricManager";
@@ -34,7 +34,6 @@ import {
     TP_HEADER_H,
     TP_HEADER_MB,
     TP_LYRIC_MARGIN_TOP,
-    TP_LYRIC_MAX_ROWS,
     TP_LYRIC_ROW_H,
     TP_PAD_H,
     TP_TITLE_H,

@@ -7,7 +7,6 @@ import Dialog from "./base";
 import { hideDialog } from "../useDialog";
 import { IIconName } from "@/components/base/icon.tsx";
 import { iconSizeConst } from "@/constants/uiConst";
-import rpx from "@/utils/rpx";
 import { useI18N } from "@/core/i18n";
 import Config from "@/core/appConfig";
 import { IAppConfigProperties } from "@/types/core/config";
@@ -64,56 +63,56 @@ export default function MenuDialog(props: IMenuDialogProps) {
                     {options.map(item =>
                         item.show === false ? null : item.type ===
                           "switch" ? (
-                            <ListItem
-                                key={item.title}
-                                withHorizontalPadding
-                                heightType="small">
-                                {item.icon ? (
-                                    <ListItem.ListItemIcon
-                                        icon={item.icon}
-                                        iconSize={iconSizeConst.light}
-                                    />
-                                ) : null}
-                                <ListItem.Content title={item.title} />
-                                <ThemeSwitch
-                                    value={
-                                        item.configKey
-                                            ? ((Config.getConfig(
-                                                  item.configKey,
-                                              ) as boolean | undefined) ??
+                                <ListItem
+                                    key={item.title}
+                                    withHorizontalPadding
+                                    heightType="small">
+                                    {item.icon ? (
+                                        <ListItem.ListItemIcon
+                                            icon={item.icon}
+                                            iconSize={iconSizeConst.light}
+                                        />
+                                    ) : null}
+                                    <ListItem.Content title={item.title} />
+                                    <ThemeSwitch
+                                        value={
+                                            item.configKey
+                                                ? ((Config.getConfig(
+                                                    item.configKey,
+                                                ) as boolean | undefined) ??
                                                 item.defaultValue ??
                                                 false)
-                                            : item.value ?? false
-                                    }
-                                    onValueChange={v => {
-                                        if (item.configKey) {
-                                            Config.setConfig(
-                                                item.configKey,
-                                                v,
-                                            );
+                                                : item.value ?? false
                                         }
-                                        item.onValueChange?.(v);
-                                    }}
-                                />
-                            </ListItem>
-                        ) : (
-                            <ListItem
-                                key={item.title}
-                                withHorizontalPadding
-                                heightType="small"
-                                onPress={() => {
-                                    hideDialog();
-                                    item.onPress?.();
-                                }}>
-                                {item.icon ? (
-                                    <ListItem.ListItemIcon
-                                        icon={item.icon}
-                                        iconSize={iconSizeConst.light}
+                                        onValueChange={v => {
+                                            if (item.configKey) {
+                                                Config.setConfig(
+                                                    item.configKey,
+                                                    v,
+                                                );
+                                            }
+                                            item.onValueChange?.(v);
+                                        }}
                                     />
-                                ) : null}
-                                <ListItem.Content title={item.title} />
-                            </ListItem>
-                        ),
+                                </ListItem>
+                            ) : (
+                                <ListItem
+                                    key={item.title}
+                                    withHorizontalPadding
+                                    heightType="small"
+                                    onPress={() => {
+                                        hideDialog();
+                                        item.onPress?.();
+                                    }}>
+                                    {item.icon ? (
+                                        <ListItem.ListItemIcon
+                                            icon={item.icon}
+                                            iconSize={iconSizeConst.light}
+                                        />
+                                    ) : null}
+                                    <ListItem.Content title={item.title} />
+                                </ListItem>
+                            ),
                     )}
                 </ScrollView>
             </Dialog.Content>

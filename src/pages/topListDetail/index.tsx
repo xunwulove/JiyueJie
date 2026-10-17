@@ -86,11 +86,11 @@ export default function TopListDetail() {
                                         styles.row,
                                         pressed
                                             ? {
-                                                  backgroundColor:
+                                                backgroundColor:
                                                       Color(colors.primary)
                                                           .alpha(0.06)
                                                           .toString(),
-                                              }
+                                            }
                                             : null,
                                     ]}
                                     onPress={() =>

@@ -1,9 +1,7 @@
 import ListItem from "@/components/base/listItem";
 import { ListDivider } from "@/components/base/divider";
 import ThemeText from "@/components/base/themeText";
-import { showDialog } from "@/components/dialogs/useDialog";
 import { useI18N } from "@/core/i18n";
-import rpx from "@/utils/rpx";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { hideDialog } from "../useDialog";
@@ -50,8 +48,8 @@ export default function LyricSettingDialog(props: IProps) {
         offset === 0
             ? "正常"
             : offset < 0
-              ? `延迟 ${(-offset).toFixed(1)}s`
-              : `提前 ${offset.toFixed(1)}s`;
+                ? `延迟 ${(-offset).toFixed(1)}s`
+                : `提前 ${offset.toFixed(1)}s`;
 
     const associateRadio = createRadio(
         t("basicSettings.associateLyricType"),

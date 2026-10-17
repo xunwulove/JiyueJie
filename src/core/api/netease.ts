@@ -49,9 +49,9 @@ function toMusicItem(track: any): IMusic.IMusicItem | null {
         title: track.name ?? "未知歌曲",
         artist: Array.isArray(ar)
             ? ar
-                  .map((a: any) => a?.name ?? "")
-                  .filter(Boolean)
-                  .join(" / ")
+                .map((a: any) => a?.name ?? "")
+                .filter(Boolean)
+                .join(" / ")
             : "",
         album: track.al?.name ?? track.album?.name ?? "",
         artwork: track.al?.picUrl ?? track.album?.picUrl ?? "",
@@ -111,7 +111,7 @@ export async function getSongDetail(
 /** 推荐歌单列表（响应较慢，放宽超时） */
 export async function getRecommendSheets(): Promise<
     IMusic.IMusicSheetItemBase[]
-> {
+    > {
     const data = await fetchJson<any>(
         `${NETEASE_BASE}/api/personalized/playlist?limit=30`,
         25000,

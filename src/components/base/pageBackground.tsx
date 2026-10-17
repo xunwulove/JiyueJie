@@ -37,12 +37,12 @@ function PageBackground({
     const wrapStyle =
         screenInsets && (screenInsets.top || screenInsets.left)
             ? {
-                  position: "absolute" as const,
-                  top: -(screenInsets.top ?? 0),
-                  left: -(screenInsets.left ?? 0),
-                  width: SCREEN_W,
-                  height: SCREEN_H,
-              }
+                position: "absolute" as const,
+                top: -(screenInsets.top ?? 0),
+                left: -(screenInsets.left ?? 0),
+                width: SCREEN_W,
+                height: SCREEN_H,
+            }
             : style.wrapper;
 
     return (

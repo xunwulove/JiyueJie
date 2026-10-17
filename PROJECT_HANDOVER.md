@@ -40,7 +40,7 @@
 - **React Native 0.76.5 + TypeScript**（`npx tsc --noEmit` 验证）；React 18.3.1。
 - **播放**：react-native-track-player ^4.1.1（RNTP，ExoPlayer 内核）。
 - **音效**（JamesDSP 音效引擎）：基于 RootlessJamesDSP 核心算法库，NDK 编译 `libjamesdsp` → `libjiyuejie_dsp`（139 个 C 文件，见 `android/app/src/main/jniLibs`）；fork 本地 kotlinaudio 模块（`android/kotlinaudio/`，包名 `com.doublesymmetry.kotlinaudio.jamesdsp`），通过 `JamesDSPRenderersFactory` 向 ExoPlayer 注入 `JamesDSPProcessor`（AudioProcessor）；RN 桥 `jamesdsp/JamesDSPModule.kt`（经 `SoundEffectPackage` 注册，`NativeModules.JamesDSPModule`），RN 侧 `src/core/jamesdsp.ts` 统一封装。能力：**15 段均衡器 + 输出增益 + 限幅器 + 动态低音(DBB) + 立体声增强 + 混响(Progenitor2) + 电子管模拟 + 交叉馈送(Crossfeed) + 卷积器(IR，5 内置预设)**。旧系统 `android.media.audiofx`（`SoundEffectModule`，Equalizer/BassBoost/Virtualizer）已废弃，仅保留注册做兼容兜底，不再作为主引擎。均衡器/JamesDSP 相关避坑见 `docs/问题排查与避坑记录.md`。
-- **状态管理**：jotai；配置持久化：react-native-mmkv + `src/core/appConfig.ts`。
+- **状态管理**：jotai；配置持久化：react-native-mmkv + `src/core/appConfig.ts`；下载队列/下载任务表/已下载列表走 `@/utils/storage`（AsyncStorage 封装，key：`download-queue-v1`/`download-tasks-v1`/`downloaded-music-list`）——下载支持**断点续传**（确定性 `<uniqueKey>.<ext>.part` 临时文件 + Range 侧车 `.tail` 拼接；RNFS Android 原生 downloadFile 为截断写、无续传能力，详见 `src/core/downloader.ts` 注释）。
 - **i18n**：`src/core/i18n/languages/`（zh-cn / zh-tw 两份 JSON；en-us 已于 0.6.2.15 移除）+ `src/types/core/i18n/index.d.ts` 类型声明（加 key 需三处同步：zh-cn.json、zh-tw.json、index.d.ts）。
 - **响应式**：`src/hooks/useIsTablet.ts`（宽屏判定）+ `src/utils/tablet.ts`（`rpx = (x/750)*窗口短边`）。
 - **其他关键依赖**：react-native-linear-gradient（渐变背景）、react-native-svg（自绘图形，如均衡器曲线/竖向滑块）、react-native-track-player、@react-navigation、expo-splash-screen（启动页）、react-native-permissions（通知/存储权限）。
@@ -51,7 +51,7 @@
 
 | 路径 | 内容 |
 |---|---|
-| `src/core/` | 核心逻辑：appConfig（配置）、soundEffect（旧 AudioEffect 封装，废弃）、jamesdsp（JamesDSP 封装）、i18n、pluginManager（音源） |
+| `src/core/` | 核心逻辑：appConfig（配置）、soundEffect（旧 AudioEffect 封装，已删迁移遗留死代码，仅保留挂载状态/诊断兜底）、jamesdsp（JamesDSP 封装）、downloader（下载：队列持久化 + 断点续传）、i18n、pluginManager（音源） |
 | `src/pages/` | 页面：`setting/settingTypes/` 下为各设置子页（**soundEffectSetting.tsx = 音效页**） |
 | `src/hooks/` `src/utils/` | useIsTablet、tablet（rpx）、checkUpdate（更新检测，链路依赖 gitee latest tag） |
 | `src/constants/` | defaultPluginSubscription（音源订阅，gitee 同仓 sources/） |
@@ -79,7 +79,8 @@
 
 | 操作 | 命令 |
 |---|---|
-| TS 类型检查 | `npx tsc --noEmit`（项目根） |
+| TS 类型检查 | `npx tsc --noEmit`（项目根；exclude 已含 node_modules / MusicFree-upstream / jiyuejie-resources） |
+| ESLint | `npm run lint`（= `eslint . --ext .js,.jsx,.ts,.tsx src --fix`；pre-commit 钩子。当前 **0 error / 145 warning**，error 清零后提交不再需要 `--no-verify`）。非交付代码排除见 `.eslintignore`（`src/lib/*`、`MusicFree-upstream/`、`jiyuejie-resources/`），**勿修改这些目录内容来迁就 lint** |
 | Kotlin 编译验证 | `E:\xunwu\Deepseek\jiyuejie\android\gradlew.bat :app:compileDebugKotlin --console=plain` |
 | 打包 arm64 | `android\gradlew.bat assembleRelease -PreactNativeArchitectures=arm64-v8a --console=plain` |
 | 打包 universal（全 ABI，gitee 用） | `android\gradlew.bat assembleRelease --console=plain` |
@@ -111,6 +112,8 @@
 - 音效页底部"输出设备 + 效果器状态"只读诊断区（原生 getOutputDevice + 页面 diagRow）
 - 系统 splash 图标音符放大至容器 75%（手机/平板占比统一）
 - 扫描设置 UI 打磨、文档整合（23→4 份）
+- **下载队列持久化 + 断点续传**（2026.10.17 未发版）：AsyncStorage 落盘队列/任务表，重启恢复续跑；`.part` 确定性命名 + Range 侧车拼接（RNFS Android 无原生续传，已源码证实）；启动清理只删孤儿半截文件
+- **lint 欠账清零**（2026.10.17 未发版）：src error 1117→0（排除非交付代码 + eslint --fix + 死代码删除），`npm run lint` exit 0，pre-commit 钩子恢复正常，提交不再需要 `--no-verify`
 
 **待办/未决**：
 - `docs/问题排查与避坑记录.md` 第6章（Gitee 发版避坑）**已写入但未提交 git**，接手后与用户确认是否提交

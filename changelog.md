@@ -24,6 +24,12 @@
 17. 【修复】**平板横屏弹出面板盖住顶部 tab 栏**（`src/components/panels/base/panelBase.tsx`）：平板横屏时面板本体 `top` 改为 `TAB_BAR_HEIGHT`（56，与遮罩同一常量）+ `bottom:0`，不再用整屏高（几何修复，真机目视留待）
 18. 【优化】**播放模式切换弹 toast 反馈**（`src/pages/musicDetail/components/bottom/playControl.tsx`）：用 `repeatModeConst` 现成文案提示"已切换为：列表循环/单曲循环/随机播放"
 19. 【优化】**音效页术语通俗说明**（`soundEffectSetting.tsx` + i18n 新增 9 个 `soundEffect.*Desc` key，两语种同步）：均衡器/输出增益/动态低音/立体声/混响/卷积/电子管/交叉馈送/ViPER-DDC 各加一句大白话；同时渲染此前从未显示的 `soundEffect.hint`（"音效实时作用于当前播放…"）
+20. 【功能】**下载队列与任务持久化**（`src/core/downloader.ts`）：队列顺序（`download-queue-v1`）与任务表（`download-tasks-v1`，含状态/文件名/音质/进度/错误原因/临时文件路径）经 `@/utils/storage`（AsyncStorage）落盘；App 重启后恢复未完成任务与队列顺序并自动续跑（Preparing/Downloading 回落 Pending 重调度、Error 保持可重试、Completed 不入恢复范围）；进度按 500ms+64KB 节流写盘、状态/临时路径即时写盘
+21. 【功能】**下载断点续传**（`src/core/downloader.ts`）：缓存临时文件改确定性命名 `<uniqueKey>.<ext>.part`；RNFS Android `downloadFile` 原生为截断写（源码确认无 Range/追加能力），改带 `Range: bytes=N-` 头把尾部下载到独立侧车 `.part.tail` 再 base64 拼回（206 续传拼接 / 200 全量替换），进度按续传偏移显示；成品仅在 `.part → 下载目录` 拷贝后出现，半截文件不会冒充成品
+22. 【变更】**启动清理只删孤儿半截文件**（`cleanupDownloadCache`）：保留有任务引用的 `.part` 供续传；仅删除无任务引用的 `.part`/`.tail`（被取消任务残留、上轮未拼完的侧车）与旧版 nanoid 随机名残留
+23. 【规范】**lint 欠账清零**：全项目此前 pre-commit `npm run lint` 2712 问题（src 1117 error）导致 commit 只能 `--no-verify`；`.eslintignore` 新增排除 `MusicFree-upstream/`（上游对照副本）、`jiyuejie-resources/`（音源插件脚本，tsconfig exclude 同步），src 经 `eslint --fix` + 手工清理后 **error 归零**（剩 145 个非阻断 warning），`npm run lint` exit 0，pre-commit 钩子恢复正常
+24. 【规范】**死代码删除**（grep 确认零引用后）：`soundEffect.ts` 删 7 个废弃 AudioEffect 遗留导出（applyEqToJamesDsp/applyBassBoost/applyVirtualizer/applyLoudnessEnhancer/applyReverbPreset/applyEnvironmentalReverbPreset/applyDynamicsProcessing）；`soundEffectSetting.tsx` 删对应 7 个 import、6 个旧能力位变量、7 个未用 useAppConfig 解构；`rules-of-hooks` 违规结构性修复（平台早退下移到全部 Hook 调用之后）；另清 30 余处未使用 import/变量（rpx/View/colors/useRef/showPanel 等）
+25. 【规范】**全项目 src 格式统一**（eslint --fix：indent 2→4、brace-style、object-curly-spacing、comma-dangle、quotes 等，约 70 文件、无业务逻辑改动）
 
 `2026.10.17 0.6.2.15（已发版）`
 1. 【功能】DDC 耳机补偿：内置 5 款真实 AutoEQ 频响补偿 IR（QCY T13 / AirPods Pro 2 / Sony WH-1000XM4 / Bose QC45 / Sennheiser HD 650），与卷积混响互斥、复用卷积器

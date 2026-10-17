@@ -8,7 +8,6 @@ import globalStyle from "@/constants/globalStyle";
 import ThemeText from "@/components/base/themeText";
 import Icon, { IIconName } from "@/components/base/icon.tsx";
 import { showDialog } from "@/components/dialogs/useDialog";
-import { showPanel } from "@/components/panels/usePanel";
 import { useI18N } from "@/core/i18n";
 import MusicSheet, {
     useSheetsBase,
@@ -57,12 +56,12 @@ export default function SheetManager() {
                 },
                 pressed
                     ? {
-                          backgroundColor: Color(
-                              colors.primary,
-                          )
-                              .alpha(0.06)
-                              .toString(),
-                      }
+                        backgroundColor: Color(
+                            colors.primary,
+                        )
+                            .alpha(0.06)
+                            .toString(),
+                    }
                     : null,
             ]}
             onPress={onClick}>
@@ -157,15 +156,15 @@ export default function SheetManager() {
                     {/* 我喜欢的音乐（固定收藏歌单） */}
                     {favorite
                         ? renderRow(
-                              "heart",
-                              favorite.title ?? "我喜欢的音乐",
-                              `${favorite.worksNum ?? 0} 首歌曲`,
-                              () =>
-                                  navigate(
-                                      ROUTE_PATH.LOCAL_SHEET_DETAIL,
-                                      { id: favorite.id },
-                                  ),
-                          )
+                            "heart",
+                            favorite.title ?? "我喜欢的音乐",
+                            `${favorite.worksNum ?? 0} 首歌曲`,
+                            () =>
+                                navigate(
+                                    ROUTE_PATH.LOCAL_SHEET_DETAIL,
+                                    { id: favorite.id },
+                                ),
+                        )
                         : null}
                     {/* 自建歌单 */}
                     {customSheets.map(sheet => (

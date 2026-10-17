@@ -38,9 +38,9 @@ async function resolveSheetDetail(
     const ordered =
         pluginHash && candidates.some(p => p.hash === pluginHash)
             ? [
-                  ...candidates.filter(p => p.hash === pluginHash),
-                  ...candidates.filter(p => p.hash !== pluginHash),
-              ]
+                ...candidates.filter(p => p.hash === pluginHash),
+                ...candidates.filter(p => p.hash !== pluginHash),
+            ]
             : candidates;
     for (const plugin of ordered) {
         try {

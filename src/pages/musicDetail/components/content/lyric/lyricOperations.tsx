@@ -47,7 +47,7 @@ interface ILyricOperationsProps {
     scrollToCurrentLrcItem: () => void;
 }
 
-export default function LyricOperations(props: ILyricOperationsProps) {
+export default function LyricOperations(_props: ILyricOperationsProps) {
     const colors = useColors();
     const orientation = useOrientation();
     const { t } = useI18N();

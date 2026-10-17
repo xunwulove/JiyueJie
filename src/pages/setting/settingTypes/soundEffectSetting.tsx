@@ -29,16 +29,10 @@ import ReactNativeTrackPlayer, {
 } from "react-native-track-player";
 import {
     applyBandLevel,
-    applyBassBoost,
     applyDdc,
-    applyDynamicsProcessing,
-    applyEnvironmentalReverbPreset,
     applyEqEnabled,
     applyEqPreset,
-    applyLoudnessEnhancer,
     applyReverb,
-    applyReverbPreset,
-    applyVirtualizer,
     ddcCustomList,
     deleteDdcPreset,
     ensureSoundEffectAttached,
@@ -60,7 +54,6 @@ import {
     CROSSFEED_MODES,
     IR_PRESETS,
     DDC_HEADPHONES,
-    setEqualizer as setJamesDspEqualizer,
 } from "@/core/jamesdsp";
 import useColors from "@/hooks/useColors";
 import useIsTablet from "@/hooks/useIsTablet";
@@ -97,15 +90,9 @@ export default function SoundEffectSetting() {
 
     const eqEnabled = useAppConfig("sound.eqEnabled");
     const eqPreset = useAppConfig("sound.eqPreset") ?? -1;
-    const eqBands = useAppConfig("sound.eqBands") ?? [];
-    const bassBoost = useAppConfig("sound.bassBoost") ?? 0;
-    const virtualizer = useAppConfig("sound.virtualizer") ?? 0;
-    const loudnessEnhancer = useAppConfig("sound.loudnessEnhancer") ?? 0;
-    const reverbPreset = useAppConfig("sound.reverbPreset") ?? 0;
-    const envReverbPreset = useAppConfig("sound.envReverbPreset") ?? 0;
-    const dynamicsProcessing = useAppConfig("sound.dynamicsProcessing") ?? 0;
 
-    const [info, setInfo] = useState<ISoundEffectInfo | null>(null);
+    // info 仅用于驱动下方 initBandsIfNeeded（i.bands）；能力字段已随旧 AudioEffect UI 下线，故不读取 info 值
+    const [, setInfo] = useState<ISoundEffectInfo | null>(null);
     // 当前输出设备（音效页诊断用）
     const [outputDevice, setOutputDevice] = useState<{
         type: string;
@@ -138,6 +125,8 @@ export default function SoundEffectSetting() {
     const jdspDdcEnabled = useAppConfig("jdsp.ddcEnabled") ?? false;
     const jdspDdcHeadphone = useAppConfig("jdsp.ddcHeadphone") ?? 0;
     const jdspDdcCustom = useAppConfig("jdsp.ddcCustom") ?? [];
+    // JamesDSP 固定 15 段 EQ 自定义增益（必须与其它 Hook 一起在平台早退之前调用，避免条件 Hook）
+    const eqBands15 = useAppConfig("jdsp.eqBands") ?? new Array(15).fill(0);
 
     /** 打开文件选择器导入耳机补偿 IR（三级浮窗 + 说明文字） */
     const onImportDdc = () => {
@@ -282,7 +271,6 @@ export default function SoundEffectSetting() {
 
     // JamesDSP 固定 15 段 EQ，不依赖系统 AudioEffect
     const bands = 15;
-    const eqBands15 = useAppConfig("jdsp.eqBands") ?? new Array(15).fill(0);
     // 预设列表固定用内置预设（不依赖设备系统预设，跨设备统一）
     const presets = EQ_PRESETS.map(p => p.name);
     // 滑块范围：毫分贝 -1200..1200（显示时 ÷100 = dB），保持精度
@@ -324,15 +312,6 @@ export default function SoundEffectSetting() {
             return safe();
         }
     })();
-    // 设备对各效果器的支持（info 为 null = 未绑定，保守可滑，等播放后绑定生效）
-    const bassUnsupported = info != null && !info.bassSupported;
-    const virtualizerUnsupported =
-        info != null && !info.virtualizerSupported;
-    const loudnessUnsupported = info != null && !info.loudnessSupported;
-    const presetReverbUnsupported =
-        info != null && !info.presetReverbSupported;
-    const envReverbUnsupported = info != null && !info.envReverbSupported;
-    const dynamicsUnsupported = info != null && !info.dynamicsSupported;
 
     return (
         <VerticalSafeAreaView style={globalStyle.fwflex1}>
@@ -505,9 +484,11 @@ export default function SoundEffectSetting() {
                                         maximumValue={12}
                                         step={0.5}
                                         value={jdspPostGain}
-                                        onValueChange={v => { Config.setConfig("jdsp.postGain", v); setPostGain(v); }}
+                                        onValueChange={v => {
+                                            Config.setConfig("jdsp.postGain", v); setPostGain(v); 
+                                        }}
                                         minimumTrackTintColor={colors.primary}
-                                                thumbTintColor={colors.primary}
+                                        thumbTintColor={colors.primary}
                                     />
                                 </View>
                                 <ThemeText fontSize="caption" fontColor="textSecondary">
@@ -520,7 +501,9 @@ export default function SoundEffectSetting() {
                                 <ListItem.Content title="动态低音 (DBB)" description={t("soundEffect.dbbDesc")} />
                                 <ThemeSwitch
                                     value={jdspBassEnabled}
-                                    onValueChange={v => { Config.setConfig("jdsp.bassEnabled", v); setJamesDspBass(v, jdspBassGain); }}
+                                    onValueChange={v => {
+                                        Config.setConfig("jdsp.bassEnabled", v); setJamesDspBass(v, jdspBassGain); 
+                                    }}
                                 />
                             </ListItem>
                             {jdspBassEnabled && (
@@ -534,7 +517,9 @@ export default function SoundEffectSetting() {
                                                 maximumValue={15}
                                                 step={0.5}
                                                 value={jdspBassGain}
-                                                onValueChange={v => { Config.setConfig("jdsp.bassGain", v); setJamesDspBass(true, v); }}
+                                                onValueChange={v => {
+                                                    Config.setConfig("jdsp.bassGain", v); setJamesDspBass(true, v); 
+                                                }}
                                                 minimumTrackTintColor={colors.primary}
                                                 thumbTintColor={colors.primary}
                                             />
@@ -551,7 +536,9 @@ export default function SoundEffectSetting() {
                                 <ListItem.Content title="立体声增强" description={t("soundEffect.stereoDesc")} />
                                 <ThemeSwitch
                                     value={jdspStereoEnabled}
-                                    onValueChange={v => { Config.setConfig("jdsp.stereoEnabled", v); setStereoEnhancement(v, jdspStereoMix); }}
+                                    onValueChange={v => {
+                                        Config.setConfig("jdsp.stereoEnabled", v); setStereoEnhancement(v, jdspStereoMix); 
+                                    }}
                                 />
                             </ListItem>
                             {jdspStereoEnabled && (
@@ -565,7 +552,9 @@ export default function SoundEffectSetting() {
                                                 maximumValue={1}
                                                 step={0.05}
                                                 value={jdspStereoMix}
-                                                onValueChange={v => { Config.setConfig("jdsp.stereoMix", v); setStereoEnhancement(true, v); }}
+                                                onValueChange={v => {
+                                                    Config.setConfig("jdsp.stereoMix", v); setStereoEnhancement(true, v); 
+                                                }}
                                                 minimumTrackTintColor={colors.primary}
                                                 thumbTintColor={colors.primary}
                                             />
@@ -669,7 +658,9 @@ export default function SoundEffectSetting() {
                                 <ListItem.Content title="电子管模拟" description={t("soundEffect.tubeDesc")} />
                                 <ThemeSwitch
                                     value={jdspTubeEnabled}
-                                    onValueChange={v => { Config.setConfig("jdsp.tubeEnabled", v); setVacuumTube(v, jdspTubeGain); }}
+                                    onValueChange={v => {
+                                        Config.setConfig("jdsp.tubeEnabled", v); setVacuumTube(v, jdspTubeGain); 
+                                    }}
                                 />
                             </ListItem>
                             {jdspTubeEnabled && (
@@ -683,7 +674,9 @@ export default function SoundEffectSetting() {
                                                 maximumValue={24}
                                                 step={0.5}
                                                 value={jdspTubeGain}
-                                                onValueChange={v => { Config.setConfig("jdsp.tubeGain", v); setVacuumTube(true, v); }}
+                                                onValueChange={v => {
+                                                    Config.setConfig("jdsp.tubeGain", v); setVacuumTube(true, v); 
+                                                }}
                                                 minimumTrackTintColor={colors.primary}
                                                 thumbTintColor={colors.primary}
                                             />
@@ -700,7 +693,9 @@ export default function SoundEffectSetting() {
                                 <ListItem.Content title="交叉馈送 (Crossfeed)" description={t("soundEffect.crossfeedDesc")} />
                                 <ThemeSwitch
                                     value={jdspCrossfeedEnabled}
-                                    onValueChange={v => { Config.setConfig("jdsp.crossfeedEnabled", v); setCrossfeed(v, jdspCrossfeedMode); }}
+                                    onValueChange={v => {
+                                        Config.setConfig("jdsp.crossfeedEnabled", v); setCrossfeed(v, jdspCrossfeedMode); 
+                                    }}
                                 />
                             </ListItem>
                             {jdspCrossfeedEnabled && (
@@ -714,7 +709,9 @@ export default function SoundEffectSetting() {
                                         {CROSSFEED_MODES.map((name, idx) => (
                                             <Pressable
                                                 key={idx}
-                                                onPress={() => { Config.setConfig("jdsp.crossfeedMode", idx); setCrossfeed(true, idx); }}
+                                                onPress={() => {
+                                                    Config.setConfig("jdsp.crossfeedMode", idx); setCrossfeed(true, idx); 
+                                                }}
                                                 style={[style.chipLarge, { backgroundColor: jdspCrossfeedMode === idx ? colors.primary : colors.background }]}>
                                                 <ThemeText fontSize="body" fontColor={jdspCrossfeedMode === idx ? "text" : "textSecondary"}>
                                                     {name}
@@ -806,12 +803,12 @@ export default function SoundEffectSetting() {
                                 outputDevice?.type === "headset"
                                     ? t("soundEffect.deviceHeadset")
                                     : outputDevice?.type === "bluetooth"
-                                      ? t("soundEffect.deviceBluetooth")
-                                      : outputDevice?.type === "usb"
-                                        ? t("soundEffect.deviceUsb")
-                                        : outputDevice?.type === "speaker"
-                                          ? t("soundEffect.deviceSpeaker")
-                                          : t("soundEffect.deviceUnknown")
+                                        ? t("soundEffect.deviceBluetooth")
+                                        : outputDevice?.type === "usb"
+                                            ? t("soundEffect.deviceUsb")
+                                            : outputDevice?.type === "speaker"
+                                                ? t("soundEffect.deviceSpeaker")
+                                                : t("soundEffect.deviceUnknown")
                             }`}
                         </ThemeText>
                         <ThemeText

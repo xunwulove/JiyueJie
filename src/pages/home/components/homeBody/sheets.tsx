@@ -2,7 +2,6 @@ import IconButton from "@/components/base/iconButton";
 import ThemeText from "@/components/base/themeText";
 import PlaylistCard from "@/components/mediaItem/playlistCard";
 import { showDialog } from "@/components/dialogs/useDialog";
-import { showPanel } from "@/components/panels/usePanel";
 import { localPluginPlatform } from "@/constants/commonConst";
 import { useI18N } from "@/core/i18n";
 import MusicSheet, {

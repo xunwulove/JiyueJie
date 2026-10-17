@@ -1,6 +1,5 @@
 import React from "react";
 import { StyleProp, StyleSheet, ViewStyle } from "react-native";
-import rpx from "@/utils/rpx";
 import ThemeText from "./themeText";
 import { iconSizeConst } from "@/constants/uiConst";
 import useColors from "@/hooks/useColors";

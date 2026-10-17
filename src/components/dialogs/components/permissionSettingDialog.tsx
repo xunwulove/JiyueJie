@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { AppState } from "react-native";
-import rpx from "@/utils/rpx";
 import ThemeText from "@/components/base/themeText";
 import ListItem from "@/components/base/listItem";
 import ThemeSwitch from "@/components/base/switch";

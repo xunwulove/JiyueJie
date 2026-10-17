@@ -59,50 +59,50 @@ export default function AppBarMore(props: IAppBarMoreProps) {
                         {options.map(item =>
                             item.show === false ? null : item.type ===
                               "switch" ? (
-                                <ListItem
-                                    key={item.title}
-                                    withHorizontalPadding
-                                    heightType="small">
-                                    <ListItem.ListItemIcon
-                                        width={28}
-                                        icon={item.icon}
-                                        iconSize={iconSizeConst.light}
-                                    />
-                                    <ListItem.Content title={item.title} />
-                                    <ThemeSwitch
-                                        value={
-                                            switchValues[item.title] ??
+                                    <ListItem
+                                        key={item.title}
+                                        withHorizontalPadding
+                                        heightType="small">
+                                        <ListItem.ListItemIcon
+                                            width={28}
+                                            icon={item.icon}
+                                            iconSize={iconSizeConst.light}
+                                        />
+                                        <ListItem.Content title={item.title} />
+                                        <ThemeSwitch
+                                            value={
+                                                switchValues[item.title] ??
                                             item.value ??
                                             false
-                                        }
-                                        onValueChange={v => {
+                                            }
+                                            onValueChange={v => {
                                             // 先本地更新（UI 即时跳变），再写配置
-                                            setSwitchValues(prev => ({
-                                                ...prev,
-                                                [item.title]: v,
-                                            }));
-                                            item.onValueChange?.(v);
-                                        }}
-                                    />
-                                </ListItem>
-                            ) : (
-                                <ListItem
-                                    key={item.title}
-                                    withHorizontalPadding
-                                    heightType="small"
-                                    onPress={() => {
+                                                setSwitchValues(prev => ({
+                                                    ...prev,
+                                                    [item.title]: v,
+                                                }));
+                                                item.onValueChange?.(v);
+                                            }}
+                                        />
+                                    </ListItem>
+                                ) : (
+                                    <ListItem
+                                        key={item.title}
+                                        withHorizontalPadding
+                                        heightType="small"
+                                        onPress={() => {
                                         // 先收起本面板，再执行动作（与旧气泡"先关菜单再触发"一致）
-                                        hidePanel();
-                                        item.onPress?.();
-                                    }}>
-                                    <ListItem.ListItemIcon
-                                        width={28}
-                                        icon={item.icon}
-                                        iconSize={iconSizeConst.light}
-                                    />
-                                    <ListItem.Content title={item.title} />
-                                </ListItem>
-                            ),
+                                            hidePanel();
+                                            item.onPress?.();
+                                        }}>
+                                        <ListItem.ListItemIcon
+                                            width={28}
+                                            icon={item.icon}
+                                            iconSize={iconSizeConst.light}
+                                        />
+                                        <ListItem.Content title={item.title} />
+                                    </ListItem>
+                                ),
                         )}
                         <View style={style.footer} />
                     </ScrollView>

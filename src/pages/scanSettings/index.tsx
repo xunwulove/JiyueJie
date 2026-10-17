@@ -433,8 +433,8 @@ function FolderRow({
                     color={
                         colors.textSecondary
                             ? Color(colors.textSecondary)
-                                  .alpha(0.5)
-                                  .toString()
+                                .alpha(0.5)
+                                .toString()
                             : undefined
                     }
                 />

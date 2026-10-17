@@ -58,7 +58,7 @@ const collator = new Intl.Collator("zh");
 function readSortConfig(): {
     sort: MusicLibrarySort;
     direction: MusicLibraryDirection;
-} {
+    } {
     return {
         sort:
             (appConfig.getConfig(
@@ -115,33 +115,33 @@ export default function LibraryTab() {
         sorted.sort((a, b) => {
             let cmp = 0;
             switch (sort) {
-                case "title":
-                    cmp = collator.compare(a.title ?? "", b.title ?? "");
-                    break;
-                case "artist":
-                    cmp = collator.compare(a.artist ?? "", b.artist ?? "");
-                    break;
-                case "album":
-                    cmp = collator.compare(a.album ?? "", b.album ?? "");
-                    break;
-                case "duration":
-                    cmp = (a.duration ?? 0) - (b.duration ?? 0);
-                    break;
-                case "size":
-                    cmp =
+            case "title":
+                cmp = collator.compare(a.title ?? "", b.title ?? "");
+                break;
+            case "artist":
+                cmp = collator.compare(a.artist ?? "", b.artist ?? "");
+                break;
+            case "album":
+                cmp = collator.compare(a.album ?? "", b.album ?? "");
+                break;
+            case "duration":
+                cmp = (a.duration ?? 0) - (b.duration ?? 0);
+                break;
+            case "size":
+                cmp =
                         (Number(a.size) || 0) - (Number(b.size) || 0);
-                    break;
-                case "addTime":
-                    cmp =
+                break;
+            case "addTime":
+                cmp =
                         (a.$timestamp ?? 0) - (b.$timestamp ?? 0);
-                    break;
-                case "playCount":
-                    cmp =
+                break;
+            case "playCount":
+                cmp =
                         (playCountMap.get(`${a.platform}-${a.id}`) ??
                             0) -
                         (playCountMap.get(`${b.platform}-${b.id}`) ??
                             0);
-                    break;
+                break;
             }
             return direction === "asc" ? cmp : -cmp;
         });
@@ -237,176 +237,176 @@ export default function LibraryTab() {
             {/* 固定头部：卡片 + 排序行（歌曲列表表头，不随列表滚动） */}
             <View style={styles.headerArea}>
                 <View style={styles.cardRow}>
-                        {entries.map(entry => (
-                            <Pressable
-                                key={entry.title}
-                                style={({ pressed }) => [
-                                    styles.card,
-                                    {
-                                        flex: isTablet ? 1 : undefined,
-                                    },
-                                    {
-                                        width: isTablet
-                                            ? undefined
-                                            : "48%",
-                                    },
-                                    {
-                                        borderRadius: isTablet ? 18 : 16,
-                                    },
-                                    pressed
-                                        ? {
-                                              backgroundColor: Color(
-                                                  primary,
-                                              )
-                                                  .alpha(0.06)
-                                                  .toString(),
-                                          }
-                                        : null,
+                    {entries.map(entry => (
+                        <Pressable
+                            key={entry.title}
+                            style={({ pressed }) => [
+                                styles.card,
+                                {
+                                    flex: isTablet ? 1 : undefined,
+                                },
+                                {
+                                    width: isTablet
+                                        ? undefined
+                                        : "48%",
+                                },
+                                {
+                                    borderRadius: isTablet ? 18 : 16,
+                                },
+                                pressed
+                                    ? {
+                                        backgroundColor: Color(
+                                            primary,
+                                        )
+                                            .alpha(0.06)
+                                            .toString(),
+                                    }
+                                    : null,
+                            ]}
+                            onPress={entry.action}>
+                            <LinearGradient
+                                colors={[
+                                    Color(primary)
+                                        .alpha(0.14)
+                                        .toString(),
+                                    Color(primary)
+                                        .alpha(0.03)
+                                        .toString(),
                                 ]}
-                                onPress={entry.action}>
-                                <LinearGradient
-                                    colors={[
-                                        Color(primary)
-                                            .alpha(0.14)
-                                            .toString(),
-                                        Color(primary)
-                                            .alpha(0.03)
-                                            .toString(),
-                                    ]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={[
-                                        styles.cardBg,
-                                        isTablet
-                                            ? styles.cardBgTablet
-                                            : null,
-                                        {
-                                            borderColor: Color(
-                                                (colors as any).divider ??
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={[
+                                    styles.cardBg,
+                                    isTablet
+                                        ? styles.cardBgTablet
+                                        : null,
+                                    {
+                                        borderColor: Color(
+                                            (colors as any).divider ??
                                                     "#E2E8F0",
-                                            )
-                                                .alpha(0.35)
-                                                .toString(),
-                                        },
-                                    ]}>
-                                    {isTablet ? (
-                                        <Icon
-                                            name={entry.icon}
-                                            size={52}
-                                            color={Color("#808080")
-                                                .alpha(0.35)
-                                                .toString()}
-                                            style={styles.watermark}
-                                        />
-                                    ) : null}
-                                    {isTablet ? (
-                                        <View style={styles.rowTablet}>
-                                            <LinearGradient
-                                                colors={[
-                                                    primary,
-                                                    Color(primary)
-                                                        .alpha(0.75)
-                                                        .toString(),
-                                                ]}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 1, y: 1 }}
-                                                style={
-                                                    styles.iconBoxTablet
-                                                }>
-                                                <Icon
-                                                    name={entry.icon}
-                                                    size={46}
-                                                    color="#FFFFFF"
-                                                />
-                                            </LinearGradient>
-                                            <View
-                                                style={
-                                                    styles.textBlockTablet
-                                                }>
-                                                <ThemeText
-                                                    fontSize="large"
-                                                    fontWeight="bold"
-                                                    numberOfLines={1}
-                                                    style={
-                                                        styles.titleTablet
-                                                    }>
-                                                    {entry.title}
-                                                </ThemeText>
-                                                <ThemeText
-                                                    fontSize="subTitle"
-                                                    fontColor="textSecondary"
-                                                    numberOfLines={1}>
-                                                    {entry.subtitle}
-                                                </ThemeText>
-                                            </View>
-                                        </View>
-                                    ) : (
-                                        <>
-                                            <LinearGradient
-                                                colors={[
-                                                    primary,
-                                                    Color(primary)
-                                                        .alpha(0.75)
-                                                        .toString(),
-                                                ]}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 1, y: 1 }}
-                                                style={styles.iconBox}>
-                                                <Icon
-                                                    name={entry.icon}
-                                                    size={17}
-                                                    color="#FFFFFF"
-                                                />
-                                            </LinearGradient>
+                                        )
+                                            .alpha(0.35)
+                                            .toString(),
+                                    },
+                                ]}>
+                                {isTablet ? (
+                                    <Icon
+                                        name={entry.icon}
+                                        size={52}
+                                        color={Color("#808080")
+                                            .alpha(0.35)
+                                            .toString()}
+                                        style={styles.watermark}
+                                    />
+                                ) : null}
+                                {isTablet ? (
+                                    <View style={styles.rowTablet}>
+                                        <LinearGradient
+                                            colors={[
+                                                primary,
+                                                Color(primary)
+                                                    .alpha(0.75)
+                                                    .toString(),
+                                            ]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={
+                                                styles.iconBoxTablet
+                                            }>
+                                            <Icon
+                                                name={entry.icon}
+                                                size={46}
+                                                color="#FFFFFF"
+                                            />
+                                        </LinearGradient>
+                                        <View
+                                            style={
+                                                styles.textBlockTablet
+                                            }>
                                             <ThemeText
-                                                fontSize="title"
+                                                fontSize="large"
                                                 fontWeight="bold"
                                                 numberOfLines={1}
-                                                style={styles.titlePhone}>
+                                                style={
+                                                    styles.titleTablet
+                                                }>
                                                 {entry.title}
                                             </ThemeText>
                                             <ThemeText
-                                                fontSize="caption"
+                                                fontSize="subTitle"
                                                 fontColor="textSecondary"
                                                 numberOfLines={1}>
                                                 {entry.subtitle}
                                             </ThemeText>
-                                        </>
-                                    )}
-                                </LinearGradient>
-                            </Pressable>
-                        ))}
-                    </View>
-                    {/* 排序行：位于卡片下方、歌曲列表上方，随列表滚动 */}
-                    <View style={styles.sortRow}>
-                        <ThemeText
-                            fontSize="content"
-                            fontWeight="bold">
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <>
+                                        <LinearGradient
+                                            colors={[
+                                                primary,
+                                                Color(primary)
+                                                    .alpha(0.75)
+                                                    .toString(),
+                                            ]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.iconBox}>
+                                            <Icon
+                                                name={entry.icon}
+                                                size={17}
+                                                color="#FFFFFF"
+                                            />
+                                        </LinearGradient>
+                                        <ThemeText
+                                            fontSize="title"
+                                            fontWeight="bold"
+                                            numberOfLines={1}
+                                            style={styles.titlePhone}>
+                                            {entry.title}
+                                        </ThemeText>
+                                        <ThemeText
+                                            fontSize="caption"
+                                            fontColor="textSecondary"
+                                            numberOfLines={1}>
+                                            {entry.subtitle}
+                                        </ThemeText>
+                                    </>
+                                )}
+                            </LinearGradient>
+                        </Pressable>
+                    ))}
+                </View>
+                {/* 排序行：位于卡片下方、歌曲列表上方，随列表滚动 */}
+                <View style={styles.sortRow}>
+                    <ThemeText
+                        fontSize="content"
+                        fontWeight="bold">
                             本地歌曲
-                        </ThemeText>
-                        <View style={styles.sortRight}>
-                            {sort !== "default" ? (
-                                <ThemeText
-                                    fontSize="normal"
-                                    fontColor="textSecondary"
-                                    numberOfLines={1}
-                                    style={styles.sortCurrent}>
-                                    {SORT_OPTIONS.find(
-                                        o => o.value === sort,
-                                    )?.label ?? ""}
-                                    {direction === "asc" ? " ↑" : " ↓"}
-                                </ThemeText>
-                            ) : null}
-                            <Icon
-                                name="sort-outline"
-                                size={20}
-                                color={primary}
-                                style={styles.sortIcon}
-                                onPress={openSortDialog}
-                            />
-                        </View>
+                    </ThemeText>
+                    <View style={styles.sortRight}>
+                        {sort !== "default" ? (
+                            <ThemeText
+                                fontSize="normal"
+                                fontColor="textSecondary"
+                                numberOfLines={1}
+                                style={styles.sortCurrent}>
+                                {SORT_OPTIONS.find(
+                                    o => o.value === sort,
+                                )?.label ?? ""}
+                                {direction === "asc" ? " ↑" : " ↓"}
+                            </ThemeText>
+                        ) : null}
+                        <Icon
+                            name="sort-outline"
+                            size={20}
+                            color={primary}
+                            style={styles.sortIcon}
+                            onPress={openSortDialog}
+                        />
                     </View>
                 </View>
+            </View>
 
             <FlatList
                 style={styles.container}
@@ -476,92 +476,92 @@ function LocalSongItem({
             ],
             onOk: value => {
                 switch (value) {
-                    case "next":
-                        TrackPlayer.addNext(item);
-                        Toast.success("已加入下一首播放");
-                        break;
-                    case "playlist":
-                        showDialog("AddToMusicSheetDialog", {
-                            musicItem: [item],
-                        });
-                        break;
-                    case "info": {
-                        void (async () => {
-                            const path = getLocalPath(item) ?? "";
-                            // 码率：原生 bitrate 为 bps（如 320000 → 320 kbps）；读取失败/无数据显示 "-"
-                            let bitrateStr = "-";
-                            if (path) {
-                                try {
-                                    const meta = await mp3Util.getBasicMeta(
-                                        path,
-                                    );
-                                    const bps = parseInt(
-                                        meta?.bitrate ?? "",
-                                        10,
-                                    );
-                                    if (!isNaN(bps) && bps > 0) {
-                                        bitrateStr = `${Math.round(
-                                            bps / 1000,
-                                        )} kbps`;
-                                    }
-                                } catch {}
-                            }
-                            const sizeStr = item.size
-                                ? `${(item.size / 1048576).toFixed(1)} MB`
-                                : "-";
-                            const extMatch = path.match(
-                                /\.([a-zA-Z0-9]+)$/,
-                            );
-                            const ext = extMatch
-                                ? extMatch[1].toUpperCase()
-                                : "-";
-                            showDialog("SimpleDialog", {
-                                title: "歌曲信息",
-                                content: [
-                                    `歌曲：${item.title ?? "-"}`,
-                                    `歌手：${item.artist || "-"}`,
-                                    `专辑：${item.album || "-"}`,
-                                    `时长：${formatDuration(
-                                        item.duration ?? 0,
-                                    )}`,
-                                    `大小：${sizeStr}`,
-                                    `格式：${ext}`,
-                                    `码率：${bitrateStr}`,
-                                    `入库时间：${
-                                        item.$timestamp
-                                            ? dayjs(
-                                                  item.$timestamp,
-                                              ).format("YYYY-MM-DD HH:mm")
-                                            : "-"
-                                    }`,
-                                    `路径：${path || "-"}`,
-                                ].join("\n"),
-                            });
-                        })();
-                        break;
-                    }
-                    case "delete":
-                        showDialog("SimpleDialog", {
-                            title: "永久删除",
-                            content: `确定永久删除「${
-                                item.title ?? "未知歌曲"
-                            }」？\n将从设备中删除文件，并从本地音乐列表移除，此操作不可恢复。`,
-                            okText: "删除",
-                            onOk: async () => {
-                                try {
-                                    await LocalMusicSheet.removeMusic(
-                                        item,
-                                        true,
-                                    );
-                                    Toast.success("已删除");
-                                } catch (e: any) {
-                                    Toast.warn(
-                                        e?.message ?? "删除失败",
-                                    );
+                case "next":
+                    TrackPlayer.addNext(item);
+                    Toast.success("已加入下一首播放");
+                    break;
+                case "playlist":
+                    showDialog("AddToMusicSheetDialog", {
+                        musicItem: [item],
+                    });
+                    break;
+                case "info": {
+                    void (async () => {
+                        const path = getLocalPath(item) ?? "";
+                        // 码率：原生 bitrate 为 bps（如 320000 → 320 kbps）；读取失败/无数据显示 "-"
+                        let bitrateStr = "-";
+                        if (path) {
+                            try {
+                                const meta = await mp3Util.getBasicMeta(
+                                    path,
+                                );
+                                const bps = parseInt(
+                                    meta?.bitrate ?? "",
+                                    10,
+                                );
+                                if (!isNaN(bps) && bps > 0) {
+                                    bitrateStr = `${Math.round(
+                                        bps / 1000,
+                                    )} kbps`;
                                 }
-                            },
+                            } catch {}
+                        }
+                        const sizeStr = item.size
+                            ? `${(item.size / 1048576).toFixed(1)} MB`
+                            : "-";
+                        const extMatch = path.match(
+                            /\.([a-zA-Z0-9]+)$/,
+                        );
+                        const ext = extMatch
+                            ? extMatch[1].toUpperCase()
+                            : "-";
+                        showDialog("SimpleDialog", {
+                            title: "歌曲信息",
+                            content: [
+                                `歌曲：${item.title ?? "-"}`,
+                                `歌手：${item.artist || "-"}`,
+                                `专辑：${item.album || "-"}`,
+                                `时长：${formatDuration(
+                                    item.duration ?? 0,
+                                )}`,
+                                `大小：${sizeStr}`,
+                                `格式：${ext}`,
+                                `码率：${bitrateStr}`,
+                                `入库时间：${
+                                    item.$timestamp
+                                        ? dayjs(
+                                            item.$timestamp,
+                                        ).format("YYYY-MM-DD HH:mm")
+                                        : "-"
+                                }`,
+                                `路径：${path || "-"}`,
+                            ].join("\n"),
                         });
-                        break;
+                    })();
+                    break;
+                }
+                case "delete":
+                    showDialog("SimpleDialog", {
+                        title: "永久删除",
+                        content: `确定永久删除「${
+                            item.title ?? "未知歌曲"
+                        }」？\n将从设备中删除文件，并从本地音乐列表移除，此操作不可恢复。`,
+                        okText: "删除",
+                        onOk: async () => {
+                            try {
+                                await LocalMusicSheet.removeMusic(
+                                    item,
+                                    true,
+                                );
+                                Toast.success("已删除");
+                            } catch (e: any) {
+                                Toast.warn(
+                                    e?.message ?? "删除失败",
+                                );
+                            }
+                        },
+                    });
+                    break;
                 }
             },
         });
@@ -573,10 +573,10 @@ function LocalSongItem({
                 styles.songRow,
                 pressed
                     ? {
-                          backgroundColor: Color(primary)
-                              .alpha(0.06)
-                              .toString(),
-                      }
+                        backgroundColor: Color(primary)
+                            .alpha(0.06)
+                            .toString(),
+                    }
                     : null,
             ]}
             onPress={onPress}>

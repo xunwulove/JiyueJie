@@ -19,7 +19,6 @@ import Icon, { IIconName } from "@/components/base/icon";
 import ThemeSwitch from "@/components/base/switch";
 import useColors from "@/hooks/useColors";
 import Color from "color";
-import { ImgAsset } from "@/constants/assetsConst";
 import LocalMusicSheet from "@/core/localMusicSheet";
 import { defaultScanFolders } from "@/core/scanSettings";
 import PluginManager from "@/core/pluginManager";
@@ -236,218 +235,218 @@ export default function Onboarding() {
                     {/* ===== 第 1 屏：欢迎 ===== */}
                     <View style={[styles.page, { width }]}>
                         <View style={styles.pageInner}>
-                        <View style={styles.brandBlock}>
-                            <View style={styles.brandIconWrap}>
-                                <Icon
-                                    name="musical-note"
-                                    size={64}
-                                    color="#FFFFFF"
-                                />
-                            </View>
-                            <ThemeText
-                                fontSize="large"
-                                fontWeight="bold"
-                                style={styles.brandTitle}>
+                            <View style={styles.brandBlock}>
+                                <View style={styles.brandIconWrap}>
+                                    <Icon
+                                        name="musical-note"
+                                        size={64}
+                                        color="#FFFFFF"
+                                    />
+                                </View>
+                                <ThemeText
+                                    fontSize="large"
+                                    fontWeight="bold"
+                                    style={styles.brandTitle}>
                                 极悦界
-                            </ThemeText>
-                            <ThemeText
-                                fontSize="normal"
-                                fontColor="textSecondary"
-                                style={styles.brandSlogan}>
+                                </ThemeText>
+                                <ThemeText
+                                    fontSize="normal"
+                                    fontColor="textSecondary"
+                                    style={styles.brandSlogan}>
                                 本地优先 · 多音源聚合 · 数据都在本机
-                            </ThemeText>
-                        </View>
-                        <View
-                            style={
-                                isTablet
-                                    ? styles.featuresRow
-                                    : styles.featureList
-                            }>
-                            {[
-                                {
-                                    icon: "circle-stack" as IIconName,
-                                    title: "导入音乐源",
-                                    desc: "支持 MusicFree 生态音源，一键订阅更新",
-                                },
-                                {
-                                    icon: "magnifying-glass" as IIconName,
-                                    title: "搜索全网歌曲",
-                                    desc: "多源聚合搜索，自动择优播放",
-                                },
-                                {
-                                    icon: "arrow-down-tray" as IIconName,
-                                    title: "下载到本地",
-                                    desc: "歌曲内嵌专辑图，离线也能听",
-                                },
-                            ].map(f =>
-                                isTablet ? (
-                                    <View
-                                        key={f.title}
-                                        style={styles.featureCardTablet}>
+                                </ThemeText>
+                            </View>
+                            <View
+                                style={
+                                    isTablet
+                                        ? styles.featuresRow
+                                        : styles.featureList
+                                }>
+                                {[
+                                    {
+                                        icon: "circle-stack" as IIconName,
+                                        title: "导入音乐源",
+                                        desc: "支持 MusicFree 生态音源，一键订阅更新",
+                                    },
+                                    {
+                                        icon: "magnifying-glass" as IIconName,
+                                        title: "搜索全网歌曲",
+                                        desc: "多源聚合搜索，自动择优播放",
+                                    },
+                                    {
+                                        icon: "arrow-down-tray" as IIconName,
+                                        title: "下载到本地",
+                                        desc: "歌曲内嵌专辑图，离线也能听",
+                                    },
+                                ].map(f =>
+                                    isTablet ? (
                                         <View
-                                            style={[
-                                                styles.featureIconTablet,
-                                                { backgroundColor: Color(
-                                                    primary,
-                                                )
-                                                    .alpha(0.12)
-                                                    .toString() },
-                                            ]}>
-                                            <Icon
-                                                name={f.icon}
-                                                size={22}
-                                                color={primary}
-                                            />
-                                        </View>
-                                        <ThemeText
-                                            fontWeight="bold"
-                                            fontSize="normal"
-                                            style={styles.featureCardTitle}>
-                                            {f.title}
-                                        </ThemeText>
-                                        <ThemeText
-                                            fontSize="description"
-                                            fontColor="textSecondary"
-                                            style={styles.featureCardDesc}>
-                                            {f.desc}
-                                        </ThemeText>
-                                    </View>
-                                ) : (
-                                    <View
-                                        key={f.title}
-                                        style={styles.featureRow}>
-                                        <View
-                                            style={[
-                                                styles.featureIcon,
-                                                { backgroundColor: Color(
-                                                    primary,
-                                                )
-                                                    .alpha(0.12)
-                                                    .toString() },
-                                            ]}>
-                                            <Icon
-                                                name={f.icon}
-                                                size={22}
-                                                color={primary}
-                                            />
-                                        </View>
-                                        <View style={styles.featureText}>
-                                            <ThemeText fontWeight="bold">
+                                            key={f.title}
+                                            style={styles.featureCardTablet}>
+                                            <View
+                                                style={[
+                                                    styles.featureIconTablet,
+                                                    { backgroundColor: Color(
+                                                        primary,
+                                                    )
+                                                        .alpha(0.12)
+                                                        .toString() },
+                                                ]}>
+                                                <Icon
+                                                    name={f.icon}
+                                                    size={22}
+                                                    color={primary}
+                                                />
+                                            </View>
+                                            <ThemeText
+                                                fontWeight="bold"
+                                                fontSize="normal"
+                                                style={styles.featureCardTitle}>
                                                 {f.title}
                                             </ThemeText>
                                             <ThemeText
                                                 fontSize="description"
-                                                fontColor="textSecondary">
+                                                fontColor="textSecondary"
+                                                style={styles.featureCardDesc}>
                                                 {f.desc}
                                             </ThemeText>
                                         </View>
-                                    </View>
-                                ),
-                            )}
-                        </View>
+                                    ) : (
+                                        <View
+                                            key={f.title}
+                                            style={styles.featureRow}>
+                                            <View
+                                                style={[
+                                                    styles.featureIcon,
+                                                    { backgroundColor: Color(
+                                                        primary,
+                                                    )
+                                                        .alpha(0.12)
+                                                        .toString() },
+                                                ]}>
+                                                <Icon
+                                                    name={f.icon}
+                                                    size={22}
+                                                    color={primary}
+                                                />
+                                            </View>
+                                            <View style={styles.featureText}>
+                                                <ThemeText fontWeight="bold">
+                                                    {f.title}
+                                                </ThemeText>
+                                                <ThemeText
+                                                    fontSize="description"
+                                                    fontColor="textSecondary">
+                                                    {f.desc}
+                                                </ThemeText>
+                                            </View>
+                                        </View>
+                                    ),
+                                )}
+                            </View>
                         </View>
                     </View>
 
                     {/* ===== 第 2 屏：权限 ===== */}
                     <View style={[styles.page, { width }]}>
                         <View style={styles.pageInner}>
-                        <View
-                            style={[
-                                styles.sectionHead,
-                                isTablet && styles.sectionHeadCenter,
-                            ]}>
-                            <ThemeText
-                                fontSize="large"
-                                fontWeight="bold"
-                                style={
-                                    isTablet
-                                        ? styles.sectionTitleCenter
-                                        : undefined
-                                }>
-                                授予必要权限
-                            </ThemeText>
-                            <ThemeText
-                                fontSize="description"
-                                fontColor="textSecondary"
-                                style={[
-                                    styles.sectionSub,
-                                    isTablet && styles.sectionSubCenter,
-                                ]}>
-                                只申请最核心的两项，其余权限用到时再引导
-                            </ThemeText>
-                        </View>
-                        <View
-                            style={[
-                                styles.permissionList,
-                                isTablet && styles.permissionRow,
-                            ]}>
-                            {/* 文件访问 */}
                             <View
                                 style={[
-                                    styles.permissionCard,
-                                    isTablet && styles.permissionCardTablet,
+                                    styles.sectionHead,
+                                    isTablet && styles.sectionHeadCenter,
                                 ]}>
+                                <ThemeText
+                                    fontSize="large"
+                                    fontWeight="bold"
+                                    style={
+                                        isTablet
+                                            ? styles.sectionTitleCenter
+                                            : undefined
+                                    }>
+                                授予必要权限
+                                </ThemeText>
+                                <ThemeText
+                                    fontSize="description"
+                                    fontColor="textSecondary"
+                                    style={[
+                                        styles.sectionSub,
+                                        isTablet && styles.sectionSubCenter,
+                                    ]}>
+                                只申请最核心的两项，其余权限用到时再引导
+                                </ThemeText>
+                            </View>
+                            <View
+                                style={[
+                                    styles.permissionList,
+                                    isTablet && styles.permissionRow,
+                                ]}>
+                                {/* 文件访问 */}
                                 <View
                                     style={[
-                                        styles.permissionIcon,
-                                        { backgroundColor: Color(primary)
-                                            .alpha(0.12)
-                                            .toString() },
+                                        styles.permissionCard,
+                                        isTablet && styles.permissionCardTablet,
                                     ]}>
-                                    <Icon
-                                        name="folder-music-outline"
-                                        size={24}
-                                        color={primary}
-                                    />
-                                </View>
-                                <View style={styles.permissionText}>
-                                    <ThemeText fontWeight="bold">
-                                        文件访问
-                                    </ThemeText>
-                                    <ThemeText
-                                        fontSize="description"
-                                        fontColor="textSecondary">
-                                        扫描本地音乐，并把下载的歌曲保存到设备
-                                    </ThemeText>
-                                </View>
-                                {storageGranted ? (
-                                    <View style={styles.grantedWrap}>
+                                    <View
+                                        style={[
+                                            styles.permissionIcon,
+                                            { backgroundColor: Color(primary)
+                                                .alpha(0.12)
+                                                .toString() },
+                                        ]}>
                                         <Icon
-                                            name="check-circle"
-                                            size={18}
-                                            color="#16A34A"
+                                            name="folder-music-outline"
+                                            size={24}
+                                            color={primary}
                                         />
+                                    </View>
+                                    <View style={styles.permissionText}>
+                                        <ThemeText fontWeight="bold">
+                                        文件访问
+                                        </ThemeText>
                                         <ThemeText
                                             fontSize="description"
-                                            style={{ color: "#16A34A" }}>
-                                            已开启
+                                            fontColor="textSecondary">
+                                        扫描本地音乐，并把下载的歌曲保存到设备
                                         </ThemeText>
                                     </View>
-                                ) : (
-                                    <Pressable
-                                        onPress={requestStorage}
-                                        disabled={checkingStorage}
-                                        style={[
-                                            styles.grantBtn,
-                                            { backgroundColor: primary },
-                                        ]}>
-                                        <ThemeText
-                                            fontSize="description"
-                                            fontWeight="bold"
-                                            color="#FFFFFF">
+                                    {storageGranted ? (
+                                        <View style={styles.grantedWrap}>
+                                            <Icon
+                                                name="check-circle"
+                                                size={18}
+                                                color="#16A34A"
+                                            />
+                                            <ThemeText
+                                                fontSize="description"
+                                                style={{ color: "#16A34A" }}>
+                                            已开启
+                                            </ThemeText>
+                                        </View>
+                                    ) : (
+                                        <Pressable
+                                            onPress={requestStorage}
+                                            disabled={checkingStorage}
+                                            style={[
+                                                styles.grantBtn,
+                                                { backgroundColor: primary },
+                                            ]}>
+                                            <ThemeText
+                                                fontSize="description"
+                                                fontWeight="bold"
+                                                color="#FFFFFF">
                                             去开启
-                                        </ThemeText>
-                                    </Pressable>
-                                )}
-                            </View>
+                                            </ThemeText>
+                                        </Pressable>
+                                    )}
+                                </View>
 
-                            {/* 通知（Android 13+ 需申请；低版本无需权限，默认显示"已开启"，两项权限始终可见） */}
-                            <View
-                                style={[
-                                    styles.permissionCard,
-                                    isTablet &&
+                                {/* 通知（Android 13+ 需申请；低版本无需权限，默认显示"已开启"，两项权限始终可见） */}
+                                <View
+                                    style={[
+                                        styles.permissionCard,
+                                        isTablet &&
                                         styles.permissionCardTablet,
-                                ]}>
+                                    ]}>
                                     <View
                                         style={[
                                             styles.permissionIcon,
@@ -500,171 +499,171 @@ export default function Onboarding() {
                                         </Pressable>
                                     )}
                                 </View>
-                        </View>
+                            </View>
 
-                        {/* 提示文字独立成行（不在卡片 flexWrap 行内，避免换行错位） */}
-                        <ThemeText
-                            fontSize="caption"
-                            fontColor="textSecondary"
-                            style={styles.permissionTip}>
+                            {/* 提示文字独立成行（不在卡片 flexWrap 行内，避免换行错位） */}
+                            <ThemeText
+                                fontSize="caption"
+                                fontColor="textSecondary"
+                                style={styles.permissionTip}>
                             未开启也不影响使用，之后可在「我的 → 设置 → 权限管理」补开
-                        </ThemeText>
+                            </ThemeText>
                         </View>
                     </View>
 
                     {/* ===== 第 3 屏：音源就绪 + 快速上手 ===== */}
                     <View style={[styles.page, { width }]}>
                         <View style={styles.pageInner}>
-                        <View
-                            style={[
-                                styles.sectionHead,
-                                isTablet && styles.sectionHeadCenter,
-                            ]}>
-                            <ThemeText
-                                fontSize="large"
-                                fontWeight="bold"
-                                style={
-                                    isTablet
-                                        ? styles.sectionTitleCenter
-                                        : undefined
-                                }>
-                                一切就绪
-                            </ThemeText>
-                            <ThemeText
-                                fontSize="description"
-                                fontColor="textSecondary"
+                            <View
                                 style={[
-                                    styles.sectionSub,
-                                    isTablet && styles.sectionSubCenter,
+                                    styles.sectionHead,
+                                    isTablet && styles.sectionHeadCenter,
                                 ]}>
+                                <ThemeText
+                                    fontSize="large"
+                                    fontWeight="bold"
+                                    style={
+                                        isTablet
+                                            ? styles.sectionTitleCenter
+                                            : undefined
+                                    }>
+                                一切就绪
+                                </ThemeText>
+                                <ThemeText
+                                    fontSize="description"
+                                    fontColor="textSecondary"
+                                    style={[
+                                        styles.sectionSub,
+                                        isTablet && styles.sectionSubCenter,
+                                    ]}>
                                 打开即用的最后一步
-                            </ThemeText>
-                        </View>
-                        <View style={styles.permissionList}>
-                            {/* 自动更新音源开关（第 1 行，与设置页 basic.autoUpdatePlugin 同一配置） */}
-                            <View style={styles.permissionCard}>
-                                <View
-                                    style={[
-                                        styles.permissionIcon,
-                                        { backgroundColor: Color(primary)
-                                            .alpha(0.12)
-                                            .toString() },
-                                    ]}>
-                                    <Icon
-                                        name="arrow-path"
-                                        size={24}
-                                        color={primary}
-                                    />
-                                </View>
-                                <View style={styles.permissionText}>
-                                    <ThemeText fontWeight="bold">
+                                </ThemeText>
+                            </View>
+                            <View style={styles.permissionList}>
+                                {/* 自动更新音源开关（第 1 行，与设置页 basic.autoUpdatePlugin 同一配置） */}
+                                <View style={styles.permissionCard}>
+                                    <View
+                                        style={[
+                                            styles.permissionIcon,
+                                            { backgroundColor: Color(primary)
+                                                .alpha(0.12)
+                                                .toString() },
+                                        ]}>
+                                        <Icon
+                                            name="arrow-path"
+                                            size={24}
+                                            color={primary}
+                                        />
+                                    </View>
+                                    <View style={styles.permissionText}>
+                                        <ThemeText fontWeight="bold">
                                         自动更新音源
-                                    </ThemeText>
-                                    <ThemeText
-                                        fontSize="description"
-                                        fontColor="textSecondary">
+                                        </ThemeText>
+                                        <ThemeText
+                                            fontSize="description"
+                                            fontColor="textSecondary">
                                         引导完成后自动安装内置音源并保持每日更新
-                                    </ThemeText>
-                                </View>
-                                <ThemeSwitch
-                                    value={autoFetchPlugin}
-                                    onValueChange={setAutoFetchPlugin}
-                                />
-                            </View>
-
-                            {/* 使用移动网络播放开关（与设置页 basic.useCelluarNetworkPlay 同一配置） */}
-                            <View style={styles.permissionCard}>
-                                <View
-                                    style={[
-                                        styles.permissionIcon,
-                                        { backgroundColor: Color(primary)
-                                            .alpha(0.12)
-                                            .toString() },
-                                    ]}>
-                                    <Icon
-                                        name="wifi"
-                                        size={24}
-                                        color={primary}
+                                        </ThemeText>
+                                    </View>
+                                    <ThemeSwitch
+                                        value={autoFetchPlugin}
+                                        onValueChange={setAutoFetchPlugin}
                                     />
                                 </View>
-                                <View style={styles.permissionText}>
-                                    <ThemeText fontWeight="bold">
+
+                                {/* 使用移动网络播放开关（与设置页 basic.useCelluarNetworkPlay 同一配置） */}
+                                <View style={styles.permissionCard}>
+                                    <View
+                                        style={[
+                                            styles.permissionIcon,
+                                            { backgroundColor: Color(primary)
+                                                .alpha(0.12)
+                                                .toString() },
+                                        ]}>
+                                        <Icon
+                                            name="wifi"
+                                            size={24}
+                                            color={primary}
+                                        />
+                                    </View>
+                                    <View style={styles.permissionText}>
+                                        <ThemeText fontWeight="bold">
                                         使用移动网络播放
-                                    </ThemeText>
-                                    <ThemeText
-                                        fontSize="description"
-                                        fontColor="textSecondary">
+                                        </ThemeText>
+                                        <ThemeText
+                                            fontSize="description"
+                                            fontColor="textSecondary">
                                         允许在移动数据（流量）下在线播放，适合车机 / 平板插卡场景
-                                    </ThemeText>
-                                </View>
-                                <ThemeSwitch
-                                    value={useCellularPlay}
-                                    onValueChange={setUseCellularPlay}
-                                />
-                            </View>
-
-                            {/* 扫描本地音乐开关 */}
-                            <View style={styles.permissionCard}>
-                                <View
-                                    style={[
-                                        styles.permissionIcon,
-                                        { backgroundColor: Color(primary)
-                                            .alpha(0.12)
-                                            .toString() },
-                                    ]}>
-                                    <Icon
-                                        name="musical-note"
-                                        size={24}
-                                        color={primary}
+                                        </ThemeText>
+                                    </View>
+                                    <ThemeSwitch
+                                        value={useCellularPlay}
+                                        onValueChange={setUseCellularPlay}
                                     />
                                 </View>
-                                <View style={styles.permissionText}>
-                                    <ThemeText fontWeight="bold">
+
+                                {/* 扫描本地音乐开关 */}
+                                <View style={styles.permissionCard}>
+                                    <View
+                                        style={[
+                                            styles.permissionIcon,
+                                            { backgroundColor: Color(primary)
+                                                .alpha(0.12)
+                                                .toString() },
+                                        ]}>
+                                        <Icon
+                                            name="musical-note"
+                                            size={24}
+                                            color={primary}
+                                        />
+                                    </View>
+                                    <View style={styles.permissionText}>
+                                        <ThemeText fontWeight="bold">
                                         扫描本地音乐
-                                    </ThemeText>
-                                    <ThemeText
-                                        fontSize="description"
-                                        fontColor="textSecondary">
+                                        </ThemeText>
+                                        <ThemeText
+                                            fontSize="description"
+                                            fontColor="textSecondary">
                                         引导结束后自动扫描设备音乐，可在音乐库随时重新扫描
-                                    </ThemeText>
-                                </View>
-                                <ThemeSwitch
-                                    value={scanOnboarding}
-                                    onValueChange={setScanOnboarding}
-                                />
-                            </View>
-
-                            {/* 进入软件自动播放开关（与设置页 basic.autoPlayWhenAppStart 同一配置） */}
-                            <View style={styles.permissionCard}>
-                                <View
-                                    style={[
-                                        styles.permissionIcon,
-                                        { backgroundColor: Color(primary)
-                                            .alpha(0.12)
-                                            .toString() },
-                                    ]}>
-                                    <Icon
-                                        name="play-circle"
-                                        size={24}
-                                        color={primary}
+                                        </ThemeText>
+                                    </View>
+                                    <ThemeSwitch
+                                        value={scanOnboarding}
+                                        onValueChange={setScanOnboarding}
                                     />
                                 </View>
-                                <View style={styles.permissionText}>
-                                    <ThemeText fontWeight="bold">
+
+                                {/* 进入软件自动播放开关（与设置页 basic.autoPlayWhenAppStart 同一配置） */}
+                                <View style={styles.permissionCard}>
+                                    <View
+                                        style={[
+                                            styles.permissionIcon,
+                                            { backgroundColor: Color(primary)
+                                                .alpha(0.12)
+                                                .toString() },
+                                        ]}>
+                                        <Icon
+                                            name="play-circle"
+                                            size={24}
+                                            color={primary}
+                                        />
+                                    </View>
+                                    <View style={styles.permissionText}>
+                                        <ThemeText fontWeight="bold">
                                         进入软件自动播放
-                                    </ThemeText>
-                                    <ThemeText
-                                        fontSize="description"
-                                        fontColor="textSecondary">
+                                        </ThemeText>
+                                        <ThemeText
+                                            fontSize="description"
+                                            fontColor="textSecondary">
                                         启动软件后自动续播上次的歌曲
-                                    </ThemeText>
+                                        </ThemeText>
+                                    </View>
+                                    <ThemeSwitch
+                                        value={autoPlay}
+                                        onValueChange={setAutoPlay}
+                                    />
                                 </View>
-                                <ThemeSwitch
-                                    value={autoPlay}
-                                    onValueChange={setAutoPlay}
-                                />
                             </View>
-                        </View>
                         </View>
                     </View>
                 </ScrollView>
@@ -683,9 +682,9 @@ export default function Onboarding() {
                                     styles.dot,
                                     i === step
                                         ? [
-                                              styles.dotActive,
-                                              { backgroundColor: primary },
-                                          ]
+                                            styles.dotActive,
+                                            { backgroundColor: primary },
+                                        ]
                                         : null,
                                 ]}
                             />

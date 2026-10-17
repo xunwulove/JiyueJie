@@ -240,7 +240,6 @@ function SheetCard({
     type: ApiPageType;
     onPress: () => void;
 }) {
-    const colors = useColors();
     const starred = useSheetIsStarred(item as IMusic.IMusicSheetItem);
 
     const toggleStar = async () => {
@@ -320,11 +319,11 @@ function SheetCard({
                     ? item.updateFrequency
                         ? `更新：${item.updateFrequency}`
                         : item.worksNum
-                          ? `${item.worksNum} 首`
-                          : ""
+                            ? `${item.worksNum} 首`
+                            : ""
                     : item.worksNum
-                      ? `${item.worksNum} 首`
-                      : ""}
+                        ? `${item.worksNum} 首`
+                        : ""}
             </ThemeText>
         </Pressable>
     );

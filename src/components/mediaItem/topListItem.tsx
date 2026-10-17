@@ -30,10 +30,10 @@ export default function TopListItem(props: ITopListResultsProps) {
                     styles.row,
                     pressed
                         ? {
-                              backgroundColor: Color(colors.primary)
-                                  .alpha(0.06)
-                                  .toString(),
-                          }
+                            backgroundColor: Color(colors.primary)
+                                .alpha(0.06)
+                                .toString(),
+                        }
                         : null,
                 ]}
                 onPress={() => {

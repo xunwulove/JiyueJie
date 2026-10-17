@@ -3,7 +3,7 @@
  */
 import React, { memo, useState } from "react";
 import { Text } from "react-native";
-import rpx, { vw } from "@/utils/rpx";
+import { vw } from "@/utils/rpx";
 import { SceneMap, TabBar, TabView } from "react-native-tab-view";
 import ResultSubPanel from "./resultSubPanel";
 import results from "./results";

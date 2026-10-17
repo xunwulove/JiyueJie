@@ -2,7 +2,6 @@ import ListEmpty from "@/components/base/listEmpty";
 import ListFooter from "@/components/base/listFooter";
 import { RequestStateCode } from "@/constants/commonConst";
 import { useParams } from "@/core/router";
-import rpx from "@/utils/rpx";
 import { FlashList } from "@shopify/flash-list";
 import { useAtom } from "jotai";
 import React, { useEffect, useRef, useState } from "react";

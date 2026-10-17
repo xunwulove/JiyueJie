@@ -8,10 +8,8 @@ import minDistance from "@/utils/minDistance";
 import { atom, getDefaultStore, useAtomValue } from "jotai";
 import { Plugin } from "./pluginManager";
 
-import pathConst from "@/constants/pathConst";
 import LyricUtil from "@/native/lyricUtil";
 import PersistStatus from "@/utils/persistStatus";
-import CryptoJs from "crypto-js";
 import RNTrackPlayer, { Event } from "react-native-track-player";
 import { TrackPlayerEvents } from "@/core.defination/trackPlayer";
 import { IPluginManager } from "@/types/core/pluginManager";

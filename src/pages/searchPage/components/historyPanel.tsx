@@ -5,7 +5,6 @@ import ThemeText from "@/components/base/themeText";
 import Button from "@/components/base/textButton.tsx";
 import Empty from "@/components/base/empty";
 import Icon from "@/components/base/icon.tsx";
-import { iconSizeConst } from "@/constants/uiConst";
 import useColors from "@/hooks/useColors";
 import Color from "color";
 import { useSetAtom } from "jotai";
@@ -177,16 +176,16 @@ export default function HistoryPanel() {
                                         {
                                             backgroundColor: pressed
                                                 ? Color(
-                                                      colors.primary,
-                                                  )
-                                                      .alpha(0.1)
-                                                      .toString()
+                                                    colors.primary,
+                                                )
+                                                    .alpha(0.1)
+                                                    .toString()
                                                 : Color(
-                                                      colors.surfaceVariant ??
+                                                    colors.surfaceVariant ??
                                                           colors.placeholder,
-                                                  )
-                                                      .alpha(0.6)
-                                                      .toString(),
+                                                )
+                                                    .alpha(0.6)
+                                                    .toString(),
                                         },
                                     ]}
                                     onPress={() => triggerSearch(word)}>

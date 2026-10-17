@@ -1,4 +1,4 @@
-import { NativeModules } from 'react-native';
+import { NativeModules } from "react-native";
 
 const { JamesDSPModule } = NativeModules;
 
@@ -13,7 +13,7 @@ const { JamesDSPModule } = NativeModules;
 
 /** 输出增益 dB，范围 -12..+12，0=直通 */
 export function setPostGain(gainDb: number): void {
-  JamesDSPModule?.setPostGain(gainDb);
+    JamesDSPModule?.setPostGain(gainDb);
 }
 
 // ==================== Limiter 限幅器 ====================
@@ -23,7 +23,7 @@ export function setPostGain(gainDb: number): void {
  * @param releaseMs   释放时间 ms，建议 50..300
  */
 export function setLimiter(thresholdDb: number, releaseMs: number): void {
-  JamesDSPModule?.setLimiter(thresholdDb, releaseMs);
+    JamesDSPModule?.setLimiter(thresholdDb, releaseMs);
 }
 
 // ==================== Equalizer 15段 ====================
@@ -36,9 +36,9 @@ export const EQ_BANDS = [25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 
  * @param gains   15个频段增益 dB，顺序对应 EQ_BANDS
  */
 export function setEqualizer(enabled: boolean, gains: number[]): void {
-  const padded = [...gains];
-  while (padded.length < 15) padded.push(0);
-  JamesDSPModule?.setEqualizer(enabled, padded.slice(0, 15));
+    const padded = [...gains];
+    while (padded.length < 15) padded.push(0);
+    JamesDSPModule?.setEqualizer(enabled, padded.slice(0, 15));
 }
 
 // ==================== BassBoost 动态低音 ====================
@@ -48,7 +48,7 @@ export function setEqualizer(enabled: boolean, gains: number[]): void {
  * @param maxGainDb 最大低音增益 dB，范围 0..15
  */
 export function setBassBoost(enabled: boolean, maxGainDb: number): void {
-  JamesDSPModule?.setBassBoost(enabled, maxGainDb);
+    JamesDSPModule?.setBassBoost(enabled, maxGainDb);
 }
 
 // ==================== StereoEnhancement 立体声增强 ====================
@@ -58,17 +58,17 @@ export function setBassBoost(enabled: boolean, maxGainDb: number): void {
  * @param mix     混合比例 0..1，0=原音，1=最大增强
  */
 export function setStereoEnhancement(enabled: boolean, mix: number): void {
-  JamesDSPModule?.setStereoEnhancement(enabled, mix);
+    JamesDSPModule?.setStereoEnhancement(enabled, mix);
 }
 
 // ==================== Reverb 混响 ====================
 
 /** 混响预设名称（Progenitor2，20个预设，中文） */
 export const REVERB_PRESETS = [
-  '关闭', '小房间', '中房间', '大房间', '中厅',
-  '大厅', '板式', '环境', '教堂', '大教堂',
-  '地下室', '客厅', '石廊', '地毯厅', '仓库',
-  '森林', '城市', '山脉', '深洞', '水下',
+    "关闭", "小房间", "中房间", "大房间", "中厅",
+    "大厅", "板式", "环境", "教堂", "大教堂",
+    "地下室", "客厅", "石廊", "地毯厅", "仓库",
+    "森林", "城市", "山脉", "深洞", "水下",
 ];
 
 /**
@@ -76,7 +76,7 @@ export const REVERB_PRESETS = [
  * @param preset  预设编号 0..19，0=None
  */
 export function setReverb(enabled: boolean, preset: number): void {
-  JamesDSPModule?.setReverb(enabled, preset);
+    JamesDSPModule?.setReverb(enabled, preset);
 }
 
 // ==================== Compressor 压缩器 ====================
@@ -88,7 +88,7 @@ export function setReverb(enabled: boolean, preset: number): void {
  * @param tfResolution 时频分辨率，建议 2..6
  */
 export function setCompressor(enabled: boolean, fgtFacT: number, granularity: number, tfResolution: number): void {
-  JamesDSPModule?.setCompressor(enabled, fgtFacT, granularity, tfResolution);
+    JamesDSPModule?.setCompressor(enabled, fgtFacT, granularity, tfResolution);
 }
 
 // ==================== VacuumTube 电子管 ====================
@@ -98,15 +98,15 @@ export function setCompressor(enabled: boolean, fgtFacT: number, granularity: nu
  * @param dbGain  驱动增益 dB，范围 0..24，越大越暖
  */
 export function setVacuumTube(enabled: boolean, dbGain: number): void {
-  JamesDSPModule?.setVacuumTube(enabled, dbGain);
+    JamesDSPModule?.setVacuumTube(enabled, dbGain);
 }
 
 // ==================== Crossfeed 交叉馈送 ====================
 
 /** 交叉馈送模式名称（中文） */
 export const CROSSFEED_MODES = [
-  'BS2B 一级', 'BS2B 二级', 'HRTF 交叉馈送',
-  'HRTF 环绕 1', 'HRTF 环绕 2', 'HRTF 环绕 3',
+    "BS2B 一级", "BS2B 二级", "HRTF 交叉馈送",
+    "HRTF 环绕 1", "HRTF 环绕 2", "HRTF 环绕 3",
 ];
 
 /**
@@ -114,14 +114,14 @@ export const CROSSFEED_MODES = [
  * @param mode    模式 0..5
  */
 export function setCrossfeed(enabled: boolean, mode: number): void {
-  JamesDSPModule?.setCrossfeed(enabled, mode);
+    JamesDSPModule?.setCrossfeed(enabled, mode);
 }
 
 // ==================== Convolver 卷积器 ====================
 
 /** @param enabled 是否启用 */
 export function setConvolver(enabled: boolean): void {
-  JamesDSPModule?.setConvolver(enabled);
+    JamesDSPModule?.setConvolver(enabled);
 }
 
 /**
@@ -130,7 +130,7 @@ export function setConvolver(enabled: boolean): void {
  * @returns 加载成功 true；格式不支持/解析失败 false
  */
 export function loadIR(wavBase64: string): Promise<boolean> {
-  return JamesDSPModule?.loadIR(wavBase64) ?? Promise.resolve(false);
+    return JamesDSPModule?.loadIR(wavBase64) ?? Promise.resolve(false);
 }
 
 /**
@@ -139,16 +139,16 @@ export function loadIR(wavBase64: string): Promise<boolean> {
  * @returns 加载成功 true；assets 缺失/解析失败 false
  */
 export function loadBuiltinIR(assetName: string): Promise<boolean> {
-  return JamesDSPModule?.loadBuiltinIR(assetName) ?? Promise.resolve(false);
+    return JamesDSPModule?.loadBuiltinIR(assetName) ?? Promise.resolve(false);
 }
 
 /** 内置卷积混响 IR 预设（中文名称） */
 export const IR_PRESETS: { name: string; file: string }[] = [
-  { name: "小房间", file: "ir_small_room.wav" },
-  { name: "音乐厅", file: "ir_medium_hall.wav" },
-  { name: "教堂", file: "ir_church.wav" },
-  { name: "板式混响", file: "ir_plate.wav" },
-  { name: "洞穴", file: "ir_cave.wav" },
+    { name: "小房间", file: "ir_small_room.wav" },
+    { name: "音乐厅", file: "ir_medium_hall.wav" },
+    { name: "教堂", file: "ir_church.wav" },
+    { name: "板式混响", file: "ir_plate.wav" },
+    { name: "洞穴", file: "ir_cave.wav" },
 ];
 
 // ==================== ViPER-DDC 耳机补偿 ====================
@@ -158,24 +158,24 @@ export const IR_PRESETS: { name: string; file: string }[] = [
  * 与卷积混响共用 Convolver，二者互斥。
  */
 export const DDC_HEADPHONES: { name: string; file: string }[] = [
-  { name: "QCY T13", file: "ddc/qcy_t13.wav" },
-  { name: "AirPods Pro 2", file: "ddc/airpods_pro2.wav" },
-  { name: "Sony WH-1000XM4", file: "ddc/sony_wh1000xm4.wav" },
-  { name: "Bose QC45", file: "ddc/bose_qc45.wav" },
-  { name: "Sennheiser HD 650", file: "ddc/sennheiser_hd650.wav" },
+    { name: "QCY T13", file: "ddc/qcy_t13.wav" },
+    { name: "AirPods Pro 2", file: "ddc/airpods_pro2.wav" },
+    { name: "Sony WH-1000XM4", file: "ddc/sony_wh1000xm4.wav" },
+    { name: "Bose QC45", file: "ddc/bose_qc45.wav" },
+    { name: "Sennheiser HD 650", file: "ddc/sennheiser_hd650.wav" },
 ];
 
 // ==================== 便捷：全部关闭 ====================
 
 /** 关闭所有 JamesDSP 效果器（恢复直通） */
 export function resetAll(): void {
-  setPostGain(0);
-  setEqualizer(false, new Array(15).fill(0));
-  setBassBoost(false, 0);
-  setStereoEnhancement(false, 0);
-  setReverb(false, 0);
-  setCompressor(false, 0, 0, 0);
-  setVacuumTube(false, 0);
-  setCrossfeed(false, 0);
-  setConvolver(false);
+    setPostGain(0);
+    setEqualizer(false, new Array(15).fill(0));
+    setBassBoost(false, 0);
+    setStereoEnhancement(false, 0);
+    setReverb(false, 0);
+    setCompressor(false, 0, 0, 0);
+    setVacuumTube(false, 0);
+    setCrossfeed(false, 0);
+    setConvolver(false);
 }

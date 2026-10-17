@@ -1,4 +1,3 @@
-import { useI18N } from "@/core/i18n";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
 import React from "react";
 import {

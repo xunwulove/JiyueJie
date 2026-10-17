@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Dialog from "./base";
 import { hideDialog, showDialog } from "../useDialog";
 import ThemeText from "@/components/base/themeText";
@@ -51,7 +51,7 @@ export default function DownloadSettingsDialog() {
             Config.getConfig("basic.maxDownload") ??
             3,
     );
-    const [downloadPath, setDownloadPath] = useState<string | undefined>(
+    const [downloadPath] = useState<string | undefined>(
         cachedState?.downloadPath ??
             Config.getConfig("basic.downloadPath"),
     );
@@ -155,11 +155,11 @@ export default function DownloadSettingsDialog() {
                                         title={
                                             v === "asc"
                                                 ? t(
-                                                      "basicSettings.downloadQualityOrder.asc",
-                                                  )
+                                                    "basicSettings.downloadQualityOrder.asc",
+                                                )
                                                 : t(
-                                                      "basicSettings.downloadQualityOrder.desc",
-                                                  )
+                                                    "basicSettings.downloadQualityOrder.desc",
+                                                )
                                         }
                                     />
                                     {order === v ? checked : null}
@@ -194,11 +194,11 @@ export default function DownloadSettingsDialog() {
                                             title={
                                                 v === "title-first"
                                                     ? t(
-                                                          "basicSettings.downloadNameOrder.titleFirst",
-                                                      )
+                                                        "basicSettings.downloadNameOrder.titleFirst",
+                                                    )
                                                     : t(
-                                                          "basicSettings.downloadNameOrder.artistFirst",
-                                                      )
+                                                        "basicSettings.downloadNameOrder.artistFirst",
+                                                    )
                                             }
                                         />
                                         {nameOrder === v ? checked : null}

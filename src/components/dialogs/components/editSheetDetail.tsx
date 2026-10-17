@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import useColors from "@/hooks/useColors";
-import rpx from "@/utils/rpx";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import ThemeText from "@/components/base/themeText";
 import { ImgAsset } from "@/constants/assetsConst";

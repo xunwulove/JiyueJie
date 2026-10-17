@@ -37,7 +37,6 @@ interface IEntry {
 }
 
 export default function MineTab({
-    onGoSheets,
 }: {
     /** 旧入口（已废弃）：我的歌单现走独立歌单管理页 SHEET_MANAGER */
     onGoSheets?: () => void;
@@ -414,10 +413,10 @@ export default function MineTab({
                 styles.mineCard,
                 pressed
                     ? {
-                          backgroundColor: Color(primary)
-                              .alpha(0.06)
-                              .toString(),
-                      }
+                        backgroundColor: Color(primary)
+                            .alpha(0.06)
+                            .toString(),
+                    }
                     : null,
             ]}
             onPress={entry.action}>
@@ -483,10 +482,10 @@ export default function MineTab({
                 styles.statCard,
                 pressed
                     ? {
-                          backgroundColor: Color(primary)
-                              .alpha(0.06)
-                              .toString(),
-                      }
+                        backgroundColor: Color(primary)
+                            .alpha(0.06)
+                            .toString(),
+                    }
                     : null,
             ]}
             onPress={entry.action}>
@@ -540,16 +539,16 @@ export default function MineTab({
                 styles.entryItem,
                 index < entryItems.length - 1
                     ? {
-                          borderBottomWidth: StyleSheet.hairlineWidth,
-                          borderBottomColor: colors.divider,
-                      }
+                        borderBottomWidth: StyleSheet.hairlineWidth,
+                        borderBottomColor: colors.divider,
+                    }
                     : null,
                 pressed
                     ? {
-                          backgroundColor: Color(primary)
-                              .alpha(0.06)
-                              .toString(),
-                      }
+                        backgroundColor: Color(primary)
+                            .alpha(0.06)
+                            .toString(),
+                    }
                     : null,
             ]}
             onPress={entry.action}>

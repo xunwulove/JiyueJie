@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { StyleSheet, Text } from "react-native";
-import rpx from "@/utils/rpx";
 import { SceneMap, TabBar, TabView } from "react-native-tab-view";
 import { fontWeightConst } from "@/constants/uiConst";
 import ResultList from "./resultList";

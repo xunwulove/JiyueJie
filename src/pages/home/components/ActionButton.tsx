@@ -2,7 +2,7 @@ import ThemeText from "@/components/base/themeText";
 import useColors from "@/hooks/useColors";
 import rpx from "@/utils/rpx";
 import React from "react";
-import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import { StyleProp, StyleSheet, ViewStyle } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import Icon, { IIconName } from "@/components/base/icon.tsx";
 import LinearGradient from "react-native-linear-gradient";

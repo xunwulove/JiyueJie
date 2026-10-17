@@ -7,7 +7,6 @@
 import globalStyle from "@/constants/globalStyle";
 import { iconSizeConst } from "@/constants/uiConst";
 import useTextColor from "@/hooks/useTextColor";
-import rpx from "@/utils/rpx";
 import { FlashList } from "@shopify/flash-list";
 import React, {
     ForwardedRef,

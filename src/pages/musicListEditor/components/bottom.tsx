@@ -7,7 +7,6 @@ import { useI18N } from "@/core/i18n";
 import { useParams } from "@/core/router";
 import TrackPlayer from "@/core/trackPlayer";
 import useColors from "@/hooks/useColors";
-import rpx from "@/utils/rpx";
 import Toast from "@/utils/toast";
 import { produce } from "immer";
 import { useAtom, useSetAtom } from "jotai";

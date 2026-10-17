@@ -14,7 +14,6 @@ import {
     isRealSheetItem,
 } from "@/core/pluginRecommend";
 import useColors from "@/hooks/useColors";
-import rpx from "@/utils/rpx";
 import Toast from "@/utils/toast";
 import { useI18N } from "@/core/i18n";
 import { showDialog } from "@/components/dialogs/useDialog";
@@ -254,7 +253,6 @@ export default function RecommendSection() {
         return null; // 无插件支持时整个模块隐藏（对齐 APlayer feedLoading/empty 处理）
     }
 
-    const current = tagList[selected] ?? tagList[0];
     const primary = colors.primary;
     const surfaceVariant = colors.surfaceVariant ?? colors.card;
 

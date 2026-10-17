@@ -3,7 +3,7 @@ import { fontWeightConst } from "@/constants/uiConst";
 import { useI18N } from "@/core/i18n";
 import PluginManager from "@/core/pluginManager";
 import useColors from "@/hooks/useColors";
-import rpx, { vw } from "@/utils/rpx";
+import { vw } from "@/utils/rpx";
 import { useAtomValue } from "jotai";
 import React, { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Text } from "react-native";

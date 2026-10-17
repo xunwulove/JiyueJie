@@ -44,13 +44,13 @@ export default function NavBar({ hideBack }: { hideBack?: boolean }) {
     const searchBg = (colors as any).placeholder
         ? (colors as any).placeholder
         : isDark
-          ? "rgba(128,128,128,0.15)"
-          : "rgba(128,128,128,0.12)";
+            ? "rgba(128,128,128,0.15)"
+            : "rgba(128,128,128,0.12)";
     const searchIconColor = (colors as any).placeholder
         ? "rgba(128,128,128,0.8)"
         : isDark
-          ? "rgba(226,232,240,0.7)"
-          : "rgba(30,41,59,0.7)";
+            ? "rgba(226,232,240,0.7)"
+            : "rgba(30,41,59,0.7)";
 
     return (
         <View style={[style.appbar, { backgroundColor: "transparent" }]}>

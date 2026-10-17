@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import rpx from "@/utils/rpx";
 import useColors from "@/hooks/useColors";
 import ThemeText from "@/components/base/themeText";

@@ -81,15 +81,15 @@ export default function PluginSort() {
                     a.instance.platform,
                 )
                     ? pluginReliability.getRecommendReliabilitySync(
-                          a.instance.platform,
-                      )
+                        a.instance.platform,
+                    )
                     : -1;
                 const rb = pluginReliability.hasRecommendRecordSync(
                     b.instance.platform,
                 )
                     ? pluginReliability.getRecommendReliabilitySync(
-                          b.instance.platform,
-                      )
+                        b.instance.platform,
+                    )
                     : -1;
                 return rb - ra;
             });
@@ -119,14 +119,14 @@ export default function PluginSort() {
         const hasData =
             sortMode === "recommend"
                 ? pluginReliability.hasRecommendRecordSync(
-                      item.instance.platform,
-                  )
+                    item.instance.platform,
+                )
                 : pluginReliability.hasRecordSync(item.instance.platform);
         const rel = hasData
             ? sortMode === "recommend"
                 ? pluginReliability.getRecommendReliabilitySync(
-                      item.instance.platform,
-                  )
+                    item.instance.platform,
+                )
                 : pluginReliability.getReliabilitySync(item.instance.platform)
             : null;
         const relText = rel === null ? "暂无数据" : `${Math.round(rel * 100)}%`;

@@ -89,8 +89,8 @@ export function getCachedSheets(
                 ? neteaseApi.getRecommendSheets
                 : qqApi.getRecommendSheets
             : platform === "netease"
-              ? neteaseApi.getTopLists
-              : qqApi.getTopLists;
+                ? neteaseApi.getTopLists
+                : qqApi.getTopLists;
     return getCachedOrFetch(
         key,
         fetcher,

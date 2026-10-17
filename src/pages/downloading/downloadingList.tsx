@@ -21,18 +21,18 @@ import { showDialog } from "@/components/dialogs/useDialog";
 /** 状态标签（对齐 APlayer statusLabel） */
 function statusLabel(status: DownloadStatus): string {
     switch (status) {
-        case DownloadStatus.Downloading:
-            return "下载中";
-        case DownloadStatus.Pending:
-            return "等待中";
-        case DownloadStatus.Preparing:
-            return "准备中";
-        case DownloadStatus.Completed:
-            return "已完成";
-        case DownloadStatus.Error:
-            return "失败";
-        default:
-            return "";
+    case DownloadStatus.Downloading:
+        return "下载中";
+    case DownloadStatus.Pending:
+        return "等待中";
+    case DownloadStatus.Preparing:
+        return "准备中";
+    case DownloadStatus.Completed:
+        return "已完成";
+    case DownloadStatus.Error:
+        return "失败";
+    default:
+        return "";
     }
 }
 
@@ -62,9 +62,9 @@ function DownloadingListItem(props: { musicItem: IMusic.IMusicItem }) {
     const progress =
         taskInfo?.downloadedSize && taskInfo?.fileSize
             ? Math.min(
-                  100,
-                  (taskInfo.downloadedSize / taskInfo.fileSize) * 100,
-              )
+                100,
+                (taskInfo.downloadedSize / taskInfo.fileSize) * 100,
+            )
             : 0;
 
     /* 副行：歌手 · 状态（下载中附进度）；失败时副行仍显示"歌手 · 失败"，详细错误单独红色行展示 */
@@ -107,55 +107,55 @@ function DownloadingListItem(props: { musicItem: IMusic.IMusicItem }) {
                 {/* 失败/等待中可删除（fork removeDownloadTask 仅支持 Pending/Error） */}
                 {status === DownloadStatus.Error ||
                 status === DownloadStatus.Pending ? (
-                    <Pressable
-                        hitSlop={12}
-                        onPress={() =>
-                            downloader.remove(musicItem)
-                        }>
-                        <Icon
-                            name="trash-outline"
-                            size={24}
-                            color={colors.textSecondary}
-                        />
-                    </Pressable>
-                ) : null}
+                        <Pressable
+                            hitSlop={12}
+                            onPress={() =>
+                                downloader.remove(musicItem)
+                            }>
+                            <Icon
+                                name="trash-outline"
+                                size={24}
+                                color={colors.textSecondary}
+                            />
+                        </Pressable>
+                    ) : null}
             </View>
             {/* 进度/状态区 */}
             {status === DownloadStatus.Downloading ||
             status === DownloadStatus.Pending ||
             status === DownloadStatus.Preparing ? (
-                <>
-                    <View style={styles.progressArea}>
-                        <View
-                            style={[
-                                styles.track,
-                                {
-                                    backgroundColor:
-                                        (colors as any).surface ??
-                                        colors.background,
-                                },
-                            ]}>
+                    <>
+                        <View style={styles.progressArea}>
                             <View
                                 style={[
-                                    styles.fill,
+                                    styles.track,
                                     {
-                                        width: `${progress}%`,
-                                        backgroundColor: colors.primary,
+                                        backgroundColor:
+                                        (colors as any).surface ??
+                                        colors.background,
                                     },
-                                ]}
-                            />
+                                ]}>
+                                <View
+                                    style={[
+                                        styles.fill,
+                                        {
+                                            width: `${progress}%`,
+                                            backgroundColor: colors.primary,
+                                        },
+                                    ]}
+                                />
+                            </View>
                         </View>
-                    </View>
-                    <ThemeText
-                        fontSize="caption"
-                        fontColor="textSecondary"
-                        style={styles.progressText}>
-                        {status === DownloadStatus.Downloading
-                            ? `${Math.round(progress)}%`
-                            : statusLabel(status)}
-                    </ThemeText>
-                </>
-            ) : null}
+                        <ThemeText
+                            fontSize="caption"
+                            fontColor="textSecondary"
+                            style={styles.progressText}>
+                            {status === DownloadStatus.Downloading
+                                ? `${Math.round(progress)}%`
+                                : statusLabel(status)}
+                        </ThemeText>
+                    </>
+                ) : null}
             {status === DownloadStatus.Error ? (
                 <ThemeText
                     fontSize="description"

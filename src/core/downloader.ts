@@ -11,10 +11,9 @@ import network from "@/utils/network";
 import { getQualityOrder } from "@/utils/qualities";
 import EventEmitter from "eventemitter3";
 import { atom, getDefaultStore, useAtomValue } from "jotai";
-import { nanoid } from "nanoid";
 import path from "path-browserify";
 import { useEffect, useState } from "react";
-import { copyFile, downloadFile, exists, readDir, unlink } from "react-native-fs";
+import { appendFile, copyFile, downloadFile, exists, readDir, readFile, stat, unlink } from "react-native-fs";
 import LocalMusicSheet from "./localMusicSheet";
 import { IPluginManager } from "@/types/core/pluginManager";
 import { setStorage, getStorage } from "@/utils/storage";
@@ -77,6 +76,8 @@ interface IDownloadTaskInfo {
     musicItem: IMusic.IMusicItem;
     // 如果下载失败，下载失败的原因
     errorReason?: DownloadFailReason;
+    // 缓存目录中的确定性临时文件路径（.part，含 file scheme）；用于断点续传与孤儿清理
+    tempPath?: string;
 }
 
 
@@ -86,6 +87,75 @@ const downloadTasks = new Map<string, IDownloadTaskInfo>();
 /** 已完成下载的歌曲（持久化，供下载管理页展示"已下载歌曲"） */
 const DOWNLOADED_LIST_KEY = "downloaded-music-list";
 const downloadedListAtom = atom<IMusic.IMusicItem[]>([]);
+
+/** 下载队列顺序持久化 key（IMusic.IMusicItem[]） */
+const DOWNLOAD_QUEUE_KEY = "download-queue-v1";
+/** 下载任务表持久化 key（Record<uniqueKey, IPersistedDownloadTask>，不含运行态 jobId） */
+const DOWNLOAD_TASKS_KEY = "download-tasks-v1";
+
+/** 落盘时的任务结构（Map → Record，剔除运行态 jobId） */
+interface IPersistedDownloadTask {
+    status: DownloadStatus;
+    filename: string;
+    quality?: IMusic.IQualityKey;
+    fileSize?: number;
+    downloadedSize?: number;
+    musicItem: IMusic.IMusicItem;
+    errorReason?: DownloadFailReason;
+    tempPath?: string;
+}
+
+function serializeDownloadTasks(): Record<string, IPersistedDownloadTask> {
+    const out: Record<string, IPersistedDownloadTask> = {};
+    downloadTasks.forEach((t, key) => {
+        out[key] = {
+            status: t.status,
+            filename: t.filename,
+            quality: t.quality,
+            fileSize: t.fileSize,
+            downloadedSize: t.downloadedSize,
+            musicItem: t.musicItem,
+            errorReason: t.errorReason,
+            tempPath: t.tempPath,
+        };
+    });
+    return out;
+}
+
+/** 持久化队列顺序 */
+function persistDownloadQueue() {
+    const queue = getDefaultStore().get(downloadQueueAtom);
+    setStorage(DOWNLOAD_QUEUE_KEY, queue);
+}
+
+// 进度回调节流：关键状态即时写；进度按时间/字节增量节流写
+let lastTasksPersistAt = 0;
+const lastProgressBytes = new Map<string, number>();
+const PROGRESS_PERSIST_INTERVAL = 500; // ms
+const PROGRESS_PERSIST_SIZE_DELTA = 64 * 1024; // bytes
+
+/**
+ * 持久化任务表。
+ * immediate=true：状态/文件名/tempPath/错误原因等关键变更，立即写；
+ * immediate=false：仅进度变更，按 >=500ms 且字节增量 >=64KB 节流写。
+ */
+function persistDownloadTasks(immediate: boolean, key?: string, downloadedSize?: number) {
+    const now = Date.now();
+    if (!immediate) {
+        if (now - lastTasksPersistAt < PROGRESS_PERSIST_INTERVAL) {
+            return;
+        }
+        const prev = key ? (lastProgressBytes.get(key) ?? 0) : 0;
+        if (downloadedSize !== undefined && downloadedSize - prev < PROGRESS_PERSIST_SIZE_DELTA) {
+            return;
+        }
+    }
+    lastTasksPersistAt = now;
+    if (key && downloadedSize !== undefined) {
+        lastProgressBytes.set(key, downloadedSize);
+    }
+    setStorage(DOWNLOAD_TASKS_KEY, serializeDownloadTasks());
+}
 
 
 interface IEvents {
@@ -130,12 +200,18 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
     }
 
     private updateDownloadTask(musicItem: IMusic.IMusicItem, patch: Partial<IDownloadTaskInfo>) {
+        const key = getMediaUniqueKey(musicItem);
         const newValue = {
-            ...downloadTasks.get(getMediaUniqueKey(musicItem)),
+            ...downloadTasks.get(key),
             ...patch,
         } as IDownloadTaskInfo;
-        downloadTasks.set(getMediaUniqueKey(musicItem), newValue);
+        downloadTasks.set(key, newValue);
         this.emit(DownloaderEvent.DownloadTaskUpdate, newValue);
+        // 持久化：关键状态立即写；纯进度回调节流写（避免高频 IO）
+        const progressOnly = Object.keys(patch).every(
+            k => k === "downloadedSize" || k === "fileSize" || k === "jobId",
+        );
+        persistDownloadTasks(!progressOnly, key, patch.downloadedSize);
         return newValue;
     }
 
@@ -216,7 +292,7 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
     }
 
 
-    private async downloadNextPendingTask() {
+    async downloadNextPendingTask() {
         const maxDownloadCount = Math.max(1, Math.min(+(this.configService.getConfig("basic.maxDownload") || 3), 10));
         const downloadQueue = getDefaultStore().get(downloadQueueAtom);
 
@@ -318,10 +394,16 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
             extension = "mp3";
         }
 
-        // 缓存下载地址
-        const cacheDownloadPath = addFileScheme(
-            this.getCacheDownloadPath(`${nanoid()}.${extension}`),
+        // 确定性临时文件名：与任务 uniqueKey 绑定，跨重启可定位半截文件实现断点续传。
+        // 注意：RNFS(Android) 的 downloadFile 以 FileOutputStream(dest, false) 截断写、不支持追加，
+        // 因此续传不直接写 .part，而是带 Range 头把“尾部”下载到独立侧车 .tail，再拼回 .part。
+        const safeKey = escapeCharacter(getMediaUniqueKey(musicItem));
+        const partPath = addFileScheme(
+            this.getCacheDownloadPath(`${safeKey}.${extension}.part`),
         );
+        const tailPath = `${partPath}.tail`;
+        // 关键路径即时落盘，便于启动清理据此保留可续传的半截文件
+        this.updateDownloadTask(musicItem, { tempPath: partPath });
 
         // 真实下载地址
         const targetDownloadPath = addFileScheme(
@@ -344,33 +426,82 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
             return;
         }
 
+        // 探测已有半截文件，计算续传起点
+        let resumeFrom = 0;
+        try {
+            if (await exists(partPath)) {
+                const st = await stat(partPath);
+                resumeFrom = st.size > 0 ? st.size : 0;
+            }
+        } catch {
+            resumeFrom = 0;
+        }
+        // 上次中断发生在“已拼完 .part 但尚未 copyFile 到成品目录”：直接复用，无需重下
+        const persistedFileSize = downloadTasks.get(getMediaUniqueKey(musicItem))?.fileSize ?? 0;
+        const partAlreadyComplete = resumeFrom > 0 &&
+            persistedFileSize > 0 &&
+            resumeFrom >= persistedFileSize;
+
         // 下载（downloadFile 同步调用本身也纳入 try，避免异常逃出任务循环导致计数泄漏）
         try {
-            const { promise: downloadPromise } = downloadFile({
-                fromUrl: url ?? "",
-                toFile: cacheDownloadPath,
-                headers: headers,
-                background: true,
-                begin: (res) => {
-                    this.updateDownloadTask(musicItem, {
-                        status: DownloadStatus.Downloading,
-                        downloadedSize: 0,
-                        fileSize: res.contentLength,
-                        jobId: res.jobId,
+            if (!partAlreadyComplete) {
+                // 组装请求头：续传时追加 Range（其余 headers 原样透传）
+                const reqHeaders: Record<string, string> = {};
+                if (headers && typeof headers === "object") {
+                    Object.entries(headers as Record<string, string>).forEach(([k, v]) => {
+                        if (v !== undefined && v !== null) {
+                            reqHeaders[k] = String(v);
+                        }
                     });
-                },
-                progress: (res) => {
-                    this.updateDownloadTask(musicItem, {
-                        status: DownloadStatus.Downloading,
-                        downloadedSize: res.bytesWritten,
-                        fileSize: res.contentLength,
-                        jobId: res.jobId,
-                    });
-                },
-            });
-            await downloadPromise;
-            // 下载完成，移动文件
-            await copyFile(cacheDownloadPath, targetDownloadPath);
+                }
+                if (resumeFrom > 0) {
+                    reqHeaders.Range = `bytes=${resumeFrom}-`;
+                }
+
+                let beginStatusCode = 0;
+                let beginContentLength = 0;
+                const { promise: downloadPromise } = downloadFile({
+                    fromUrl: url ?? "",
+                    toFile: tailPath,
+                    headers: reqHeaders,
+                    background: true,
+                    begin: (res) => {
+                        beginStatusCode = res.statusCode;
+                        beginContentLength = res.contentLength;
+                        const resumed = resumeFrom > 0 && res.statusCode === 206;
+                        this.updateDownloadTask(musicItem, {
+                            status: DownloadStatus.Downloading,
+                            downloadedSize: resumed ? resumeFrom : 0,
+                            fileSize: resumed ? resumeFrom + res.contentLength : res.contentLength,
+                            jobId: res.jobId,
+                        });
+                    },
+                    progress: (res) => {
+                        const resumed = resumeFrom > 0 && beginStatusCode === 206;
+                        this.updateDownloadTask(musicItem, {
+                            status: DownloadStatus.Downloading,
+                            downloadedSize: resumed ? resumeFrom + res.bytesWritten : res.bytesWritten,
+                            fileSize: resumed ? resumeFrom + beginContentLength : beginContentLength,
+                            jobId: res.jobId,
+                        });
+                    },
+                });
+                await downloadPromise;
+
+                // 拼装：206 续传成功 → 把 tail 追加到 .part；
+                // 全新下载或服务器忽略 Range(200) → tail 即完整文件，替换旧 .part
+                if (resumeFrom > 0 && beginStatusCode === 206) {
+                    const tailB64 = await readFile(tailPath, "base64");
+                    await appendFile(partPath, tailB64, "base64");
+                    await unlink(tailPath).catch(() => {});
+                } else {
+                    await unlink(partPath).catch(() => {});
+                    await copyFile(tailPath, partPath);
+                    await unlink(tailPath).catch(() => {});
+                }
+            }
+            // 下载完成（或已可复用），从 .part 拷贝到成品目录；成品只在此刻出现
+            await copyFile(partPath, targetDownloadPath);
 
             if (this.cancelledTasks.has(getMediaUniqueKey(musicItem))) {
                 // 用户已取消：丢弃目标文件，不入库
@@ -406,8 +537,13 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
             }
         }
 
-        // 清理工作
-        await unlink(cacheDownloadPath);
+        // 清理工作：半截 .part 仅在任务终态后删除（失败/取消时保留供下次续传由上层决定）
+        if (this.cancelledTasks.has(getMediaUniqueKey(musicItem))) {
+            await unlink(partPath).catch(() => {});
+            await unlink(tailPath).catch(() => {});
+        } else if (downloadTasks.get(getMediaUniqueKey(musicItem))?.status === DownloadStatus.Completed) {
+            await unlink(partPath).catch(() => {});
+        }
         this.downloadNextPendingTask();
 
         // 如果任务状态是完成，则从队列中移除
@@ -417,6 +553,8 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
             const downloadQueue = getDefaultStore().get(downloadQueueAtom);
             const newDownloadQueue = downloadQueue.filter(item => !isSameMediaItem(item, musicItem));
             getDefaultStore().set(downloadQueueAtom, newDownloadQueue);
+            persistDownloadQueue();
+            persistDownloadTasks(true);
         }
     }
 
@@ -468,6 +606,10 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
         const newDownloadQueue = [...downloadQueue, ...musicItems];
         getDefaultStore().set(downloadQueueAtom, newDownloadQueue);
 
+        // 持久化入队结果（队列顺序 + 新任务）
+        persistDownloadQueue();
+        persistDownloadTasks(true);
+
         this.downloadNextPendingTask();
     }
 
@@ -492,6 +634,9 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
         const downloadQueue = getDefaultStore().get(downloadQueueAtom);
         const newDownloadQueue = downloadQueue.filter(item => !isSameMediaItem(item, musicItem));
         getDefaultStore().set(downloadQueueAtom, newDownloadQueue);
+        // 持久化队列/任务变更（被删任务的 .part 成为孤儿，由启动清理兜底删除）
+        persistDownloadQueue();
+        persistDownloadTasks(true);
         return true;
     }
 
@@ -532,27 +677,89 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
 /** 已下载歌曲列表（下载管理页"已下载"区） */
 export const useDownloadedList = () => useAtomValue(downloadedListAtom);
 
-/** 启动时清理下载缓存目录里的半截临时文件（无断点续传/任务持久化，残留即垃圾；此时无进行中任务） */
+/**
+ * 启动时清理下载缓存目录。
+ * 旧实现会删除整个缓存目录；改为只删除“孤儿”半截文件：
+ *  - 无任务引用的 .part/.tail 一律删除（含被取消任务残留的 .part、上轮未拼完的 .tail）；
+ *  - 仍被某个已恢复任务引用的 .part 保留——它是可续传的数据，绝不能删。
+ * 调用时机：必须在任务表恢复完成之后（以任务 tempPath 为准）。
+ */
 async function cleanupDownloadCache() {
     try {
         const cacheDir = pathConst.downloadCachePath;
         const files = await readDir(cacheDir).catch(() => [] as any[]);
+        const referenced = new Set<string>();
+        downloadTasks.forEach(t => {
+            if (t.tempPath) {
+                referenced.add(t.tempPath.replace(/^(file|content):\/\//, ""));
+            }
+        });
         for (const f of files) {
-            await unlink(f.path).catch(() => {});
+            const p = f.path.replace(/^(file|content):\/\//, "");
+            const isPartial = /\.(part|tail)$/.test(f.name);
+            if (!isPartial) {
+                // 旧版随机 nanoid 命名的缓存残留：无任务可续传，直接删除
+                await unlink(f.path).catch(() => {});
+                continue;
+            }
+            if (!referenced.has(p)) {
+                await unlink(f.path).catch(() => {});
+            }
         }
     } catch (e: any) {
         errorLog("清理下载缓存失败", e?.message ?? e);
     }
 }
 
-/** 初始化时从持久化恢复已下载列表，并清理下载缓存残留 */
+/** 恢复未完成的下载队列与任务表（启动时调用一次） */
+async function initDownloadQueue() {
+    // 1. 恢复队列顺序
+    const savedQueue = (await getStorage(DOWNLOAD_QUEUE_KEY)) ?? [];
+    if (Array.isArray(savedQueue)) {
+        getDefaultStore().set(downloadQueueAtom, savedQueue as IMusic.IMusicItem[]);
+    }
+    // 2. 恢复任务状态/进度/文件名/音质/错误原因（Map → Record）
+    const savedTasks = (await getStorage(DOWNLOAD_TASKS_KEY)) ?? {};
+    if (savedTasks && typeof savedTasks === "object") {
+        Object.entries(savedTasks as Record<string, IPersistedDownloadTask>).forEach(([key, t]) => {
+            if (!t || !t.musicItem) {
+                return;
+            }
+            let status = t.status;
+            // 崩溃后无在飞下载进程：进行中任务一律回落为 Pending 等待重调度
+            if (status === DownloadStatus.Preparing || status === DownloadStatus.Downloading) {
+                status = DownloadStatus.Pending;
+            }
+            // Completed 已入“已下载列表”，不在恢复范围
+            if (status === DownloadStatus.Completed) {
+                return;
+            }
+            downloadTasks.set(key, {
+                status,
+                filename: t.filename,
+                quality: t.quality,
+                fileSize: t.fileSize,
+                downloadedSize: t.downloadedSize,
+                musicItem: t.musicItem,
+                errorReason: t.errorReason,
+                tempPath: t.tempPath,
+                // jobId 为运行态，不恢复
+            });
+        });
+    }
+    // 3. 先恢复任务，再据此清理孤儿半截文件（有任务引用的 .part 保留续传）
+    await cleanupDownloadCache();
+    // 4. 自动续跑：存在 Pending 任务则触发调度
+    downloader.downloadNextPendingTask();
+}
+
+/** 初始化时从持久化恢复已下载列表 + 未完成下载队列，并清理缓存孤儿残留 */
 export async function initDownloadedList() {
     const list = (await getStorage(DOWNLOADED_LIST_KEY)) ?? [];
     if (Array.isArray(list)) {
         getDefaultStore().set(downloadedListAtom, list as IMusic.IMusicItem[]);
     }
-    // 启动时无进行中任务，缓存目录里的半截文件一律删除（后台执行，不阻塞启动）
-    void cleanupDownloadCache();
+    await initDownloadQueue();
 }
 
 

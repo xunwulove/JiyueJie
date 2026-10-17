@@ -3,7 +3,6 @@ import Config from "@/core/appConfig";
 import { DarkTheme as _DarkTheme, DefaultTheme as _DefaultTheme } from "@react-navigation/native";
 import { GlobalState } from "@/utils/stateMapper";
 import { CustomizedColors } from "@/hooks/useColors";
-import Color from "color";
 import { Appearance } from "react-native";
 
 export const lightTheme = {

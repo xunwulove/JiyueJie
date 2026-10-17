@@ -9,7 +9,7 @@ import {
     View,
     ViewStyle,
 } from "react-native";
-import rpx, { vh } from "@/utils/rpx";
+import { vh } from "@/utils/rpx";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,

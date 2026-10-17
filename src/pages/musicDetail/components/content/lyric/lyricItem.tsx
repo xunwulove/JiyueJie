@@ -1,6 +1,5 @@
 import React, { memo } from "react";
 import { StyleSheet, Text } from "react-native";
-import rpx from "@/utils/rpx";
 import useColors from "@/hooks/useColors";
 import { fontSizeConst } from "@/constants/uiConst";
 

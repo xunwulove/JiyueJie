@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
-import rpx from "@/utils/rpx";
 import Button from "@/components/base/textButton.tsx";
 import { useAtom, useSetAtom } from "jotai";
 import { editingMusicListAtom, musicListChangedAtom } from "@/pages/musicListEditor/store/atom";

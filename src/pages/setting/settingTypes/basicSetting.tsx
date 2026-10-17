@@ -5,7 +5,6 @@ import { ListDivider } from "@/components/base/divider";
 import ThemeSwitch from "@/components/base/switch";
 import ThemeText from "@/components/base/themeText";
 import { showDialog } from "@/components/dialogs/useDialog";
-import { showPanel } from "@/components/panels/usePanel";
 import { SortType } from "@/constants/commonConst.ts";
 import Config, { useAppConfig } from "@/core/appConfig";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
@@ -19,7 +18,7 @@ import { qualityKeys } from "@/utils/qualities";
 import rpx from "@/utils/rpx";
 import Toast from "@/utils/toast";
 import Slider from "@react-native-community/slider";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 

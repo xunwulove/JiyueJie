@@ -6,7 +6,6 @@ import {
     View,
 } from "react-native";
 import useColors from "@/hooks/useColors";
-import rpx from "@/utils/rpx";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,

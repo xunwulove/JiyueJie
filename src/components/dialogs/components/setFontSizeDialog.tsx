@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import rpx from "@/utils/rpx";
 import ThemeText from "@/components/base/themeText";
 
 import Slider from "@react-native-community/slider";

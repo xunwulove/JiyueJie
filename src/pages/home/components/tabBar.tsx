@@ -147,12 +147,12 @@ function HorizontalBar({
                                 styles.hTab,
                                 selected
                                     ? {
-                                          backgroundColor: Color(
-                                              colors.primary,
-                                          )
-                                              .alpha(0.12)
-                                              .toString(),
-                                      }
+                                        backgroundColor: Color(
+                                            colors.primary,
+                                        )
+                                            .alpha(0.12)
+                                            .toString(),
+                                    }
                                     : null,
                             ]}
                             onPress={() => onSelect(tab.key)}>
@@ -282,8 +282,8 @@ function SearchBar({
                         (colors as any).placeholder
                             ? "rgba(128,128,128,0.6)"
                             : (isDark
-                                  ? "rgba(226,232,240,0.5)"
-                                  : "rgba(30,41,59,0.5)")
+                                ? "rgba(226,232,240,0.5)"
+                                : "rgba(30,41,59,0.5)")
                     }
                     placeholder={searchPlaceholder}
                     onSubmitEditing={onSearchSubmit}

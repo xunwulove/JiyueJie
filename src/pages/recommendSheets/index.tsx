@@ -163,7 +163,6 @@ const DEFAULT_TAG: ICommon.IUnique = { title: "", id: "" };
 function RecommendPanel({ hash, onAutoSwitch }: IRecommendPanelProps) {
     const navigate = useNavigate();
     const { t } = useI18N();
-    const colors = useColors();
 
     /** getRecommendSheetTags 结果（pinned = 固定标签/推荐歌单，groups = 更多标签分组） */
     const [tagsData, setTagsData] = useState<IPluginRecommendSheets | null>(null);
@@ -405,7 +404,6 @@ function SheetGrid({
     state,
     pluginHash,
     onRetry,
-    onLoadMore,
 }: {
     sheets: IMusic.IMusicSheetItemBase[];
     state: RequestStateCode;

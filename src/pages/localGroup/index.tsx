@@ -32,7 +32,7 @@ function getGroupKey(music: IMusic.IMusicItem, type: GroupType): string {
     if (type === "artist") {
         return music.artist || "未知歌手";
     }
-    const localPath = (music as any)?.["$"]?.localPath as string | undefined;
+    const localPath = (music as any)?.$?.localPath as string | undefined;
     if (localPath) {
         const idx = localPath.lastIndexOf("/");
         return localPath.slice(0, Math.max(idx, 0)) || "根目录";
@@ -129,12 +129,12 @@ export default function LocalGroup() {
                                     style={({ pressed }) =>
                                         pressed
                                             ? {
-                                                  backgroundColor: Color(
-                                                      colors.primary,
-                                                  )
-                                                      .alpha(0.06)
-                                                      .toString(),
-                                              }
+                                                backgroundColor: Color(
+                                                    colors.primary,
+                                                )
+                                                    .alpha(0.06)
+                                                    .toString(),
+                                            }
                                             : null
                                     }>
                                     {/* 行：48dp 渐变图标块（专辑圆角10 / 歌手圆）+ 组名 15 Medium + "N 首" 12 + Play 18 α0.7 */}

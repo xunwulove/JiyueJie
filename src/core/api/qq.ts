@@ -59,9 +59,9 @@ function toMusicItem(song: any): IMusic.IMusicItem | null {
             data?.singer?.[0]?.name ??
             (Array.isArray(data?.singer)
                 ? data.singer
-                      .map((s: any) => s?.name ?? "")
-                      .filter(Boolean)
-                      .join(" / ")
+                    .map((s: any) => s?.name ?? "")
+                    .filter(Boolean)
+                    .join(" / ")
                 : "") ??
             "",
         album: data?.albumname ?? "",
@@ -115,7 +115,7 @@ export async function getTopListDetail(
 /** 推荐歌单列表 */
 export async function getRecommendSheets(): Promise<
     IMusic.IMusicSheetItemBase[]
-> {
+    > {
     const data = await fetchJson<any>(
         `${QQ_BASE}/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg?format=json&categoryId=10000000&sortId=5&sin=0&ein=30`,
         20000,

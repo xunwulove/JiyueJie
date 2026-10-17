@@ -3,7 +3,6 @@ import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import ListItem from "@/components/base/listItem";
 import { iconSizeConst } from "@/constants/uiConst";
-import ThemeText from "@/components/base/themeText";
 import useColors from "@/hooks/useColors";
 import { useI18N } from "@/core/i18n";
 import PersistStatus from "@/utils/persistStatus";
