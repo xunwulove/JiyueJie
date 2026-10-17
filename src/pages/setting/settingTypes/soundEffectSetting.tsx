@@ -319,12 +319,6 @@ export default function SoundEffectSetting() {
             <AppBar>{t("soundEffect.title")}</AppBar>
             <HorizontalSafeAreaView style={style.wrapper}>
                 <ScrollView contentContainerStyle={style.scrollContent}>
-                    {/* 音效实时生效提示（大白话） */}
-                    <View style={style.hintRow}>
-                        <ThemeText fontSize="caption" fontColor="textSecondary">
-                            {t("soundEffect.hint")}
-                        </ThemeText>
-                    </View>
                     {/* ===== 均衡器 ===== */}
                     <View style={style.group}>
                         <View style={style.groupHeader}>
@@ -856,12 +850,6 @@ const style = StyleSheet.create({
     groupHeader: {
         paddingHorizontal: rpx(24),
         paddingBottom: rpx(8),
-    },
-    /* 顶部音效生效提示行 */
-    hintRow: {
-        paddingHorizontal: rpx(24),
-        paddingTop: rpx(8),
-        paddingBottom: rpx(4),
     },
     /* 术语通俗副标题（caption 小字） */
     descLine: {

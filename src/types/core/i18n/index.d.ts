@@ -563,7 +563,6 @@ export interface ILanguageData {
     "soundEffect.eqWaitPlay": string; // 播放后显示频段
     "soundEffect.bass": string; // 低音增强
     "soundEffect.virtualizer": string; // 环绕声
-    "soundEffect.hint": string; // 说明
     "soundEffect.gainDesc": string; // 输出增益通俗说明
     "soundEffect.dbbDesc": string; // 动态低音通俗说明
     "soundEffect.stereoDesc": string; // 立体声增强通俗说明

@@ -462,7 +462,6 @@
     "soundEffect.eqWaitPlay": "播放一首歌曲後顯示頻段調節",
     "soundEffect.bass": "低音增強",
     "soundEffect.virtualizer": "環繞聲",
-    "soundEffect.hint": "音效即時作用於目前播放，需播放過歌曲後生效；換歌不重設設定。",
     "soundEffect.gainDesc": "把整首歌的音量一起放大或縮小，太輕太響時用它",
     "soundEffect.dbbDesc": "讓鼓聲、低音更帶勁，咚咚地更有感覺",
     "soundEffect.stereoDesc": "感覺聲音從兩邊包過來，更寬更立體",
