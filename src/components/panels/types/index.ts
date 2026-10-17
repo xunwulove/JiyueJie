@@ -4,7 +4,6 @@ import MusicItemOptions from "./musicItemOptions";
 import MusicQuality from "./musicQuality";
 import PlayList from "./playList";
 import SearchLrc from "./searchLrc";
-import SetUserVariables from "./setUserVariables";
 import SheetTags from "./sheetTags";
 import SimpleInput from "./simpleInput";
 import SimpleSelect from "./simpleSelect";
@@ -29,7 +28,5 @@ export default {
     SearchLrc,
     /** 简单的选择 */
     SimpleSelect,
-    /** 设置插件用户变量 */
-    SetUserVariables,
     MusicItemLyricOptions,
 };

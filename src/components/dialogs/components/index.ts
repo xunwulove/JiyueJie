@@ -28,6 +28,7 @@ import LyricColorDialog from "./lyricColorDialog";
 import RecommendSourceDialog from "./recommendSourceDialog";
 import ImageViewerDialog from "./imageViewerDialog";
 import SimpleInputDialog from "./simpleInputDialog";
+import WebDAVSettingDialog from "./webdavSettingDialog";
 
 const dialogs = {
     SimpleDialog,
@@ -60,6 +61,7 @@ const dialogs = {
     RecommendSourceDialog,
     ImageViewerDialog,
     SimpleInputDialog,
+    WebDAVSettingDialog,
 };
 
 export default dialogs;

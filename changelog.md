@@ -10,6 +10,7 @@
 3. 【优化】**首页推荐歌单胶囊与音效页统一**（`homeBody/recommendSection.tsx` `tag`、`recommendSheets/index.tsx` `tagCapsule`）：此前为全设备固定 dp 54/24/27（手机上偏大、平板比音效胶囊 36 还大），改为与 `chipLarge` 同一套逻辑——手机档 rpx(54)/rpx(24)/rpx(27) 随屏缩放、平板档固定 height 36dp / paddingHorizontal 16dp / borderRadius 18dp；文字仍 body(15sp) 不变，`tag` 的 marginRight:8 与 `tagCapsule` 的 alignItems/justifyContent 等其余属性照旧
 4. 【优化】耳机补偿导入浮窗提示补充 **IR 来源网站**（`soundEffectSetting.tsx` `onImportDdc` 说明文字）：注明可从 AutoEQ（https://github.com/jaakkopasanen/AutoEq）下载对应耳机的频响补偿 IR
 5. 【修复】**浮窗遮罩点击穿透**（`dialogs/components/base/index.tsx`）：Android 原生绘制顺序由 elevation 决定（RN zIndex 不跨父容器生效），页面内带 elevation 的元素（如播放条 MusicBar elevation=6）会盖过无 elevation 的遮罩，导致浮窗打开时点击播放条区域穿透——误进全屏播放器且浮窗不关闭；遮罩层 `backContainer` 补 `elevation: 16300` 把整个浮窗层压到最上，点击浮窗外任意区域均先命中遮罩关闭浮窗（含平板限右内容区布局）
+6. 【修复】**WebDAV 设置改为三级浮窗**（新增 `dialogs/components/webdavSettingDialog.tsx`，替换原底部面板 `SetUserVariables`）：原面板在 RNGH ScrollView 内嵌 RN 原生 TextInput，Android 上手势抢占导致用户名/密码输入框点击弹不出键盘；三级浮窗内容区无手势滚动冲突，输入恢复正常（密码行掩码显示；url/用户名/密码三项 + 取消/确定）。原 `SetUserVariables` 面板改后零引用，按死代码惯例删除（含 `panels/types/index.ts` 注册）
 
 `2026.10.17 0.6.2.15（已发版·同版本号重新发布）`
 > 本次为 **0.6.2.15 同版本号重新发布**（versionName/versionCode 均不变）：在首版基础上并入此前「未发版改动」25 项——P1 修复批次 16 项（播放失败重试链路/下载队列失败卡死/听歌统计/歌单删除刷新/60s 过滤放行损坏文件/切歌换采样率 DSP 静默重置/IR 采样率重采样/插件歌单分页/插件损坏与不兼容状态展示/NoPlugin 引导/平板面板遮挡等）、下载**断点续传与队列持久化**、全项目 **lint 欠账清零**与死代码删除。同版本号重发原因：修复集中在同一维护窗口，保持版本号稳定。**影响**：已装 0.6.2.15 的用户软件内「检查更新」按版本号比较会判定已是最新、收不到新包提示，需手动下载覆盖安装。

@@ -7,7 +7,6 @@ import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { showDialog } from "@/components/dialogs/useDialog";
-import { showPanel } from "@/components/panels/usePanel";
 import axios from "axios";
 
 import { ResumeMode } from "@/constants/commonConst.ts";
@@ -306,35 +305,19 @@ export default function BackupSetting() {
                         withHorizontalPadding
                         heightType="small"
                         onPress={() => {
-                            showPanel("SetUserVariables", {
-                                title: t("backupAndResume.webdavSettings"),
+                            showDialog("WebDAVSettingDialog", {
                                 initValues: {
                                     url: webdavUrl ?? "",
                                     username: webdavUsername ?? "",
                                     password: webdavPassword ?? "",
                                 },
-                                variables: [
-                                    {
-                                        key: "url",
-                                        name: "URL",
-                                        hint: t("backupAndResume.webdavUrl"),
-                                    },
-                                    {
-                                        key: "username",
-                                        name: t("common.username"),
-                                    },
-                                    {
-                                        key: "password",
-                                        name: t("common.password"),
-                                    },
-                                ],
-                                onOk(values, closePanel) {
+                                onOk(values, closeDialog) {
                                     Config.setConfig("webdav.url", values?.url);
                                     Config.setConfig("webdav.username", values?.username);
                                     Config.setConfig("webdav.password", values?.password);
 
                                     Toast.success(t("toast.saveSuccess"));
-                                    closePanel();
+                                    closeDialog();
                                 },
                             });
                         }}>
