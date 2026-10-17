@@ -556,7 +556,7 @@ export default function SoundEffectSetting() {
                             <ListDivider marginLeft={16} />
                             {/* 混响（算法 Progenitor2 与卷积 Convolver 合并为单一入口，段内二选一） */}
                             <ListItem withHorizontalPadding heightType="small">
-                                <ListItem.Content title="混响" />
+                                <ListItem.Content title="混响" description={t("soundEffect.reverbHint")} />
                                 <ThemeSwitch
                                     value={jdspReverbEnabled || jdspConvolverEnabled}
                                     onValueChange={v => applyReverb(
@@ -590,11 +590,6 @@ export default function SoundEffectSetting() {
                                             </ThemeText>
                                         </Pressable>
                                     </ScrollView>
-                                    <ThemeText fontSize="caption" fontColor="textSecondary" style={[style.descLine, { paddingHorizontal: rpx(24), paddingBottom: rpx(4) }]}>
-                                        {jdspReverbEngine === 0
-                                            ? t("soundEffect.reverbDesc")
-                                            : t("soundEffect.convolverDesc")}
-                                    </ThemeText>
                                     <ListDivider marginLeft={16} />
                                     {jdspReverbEngine === 0 ? (
                                         /* 算法混响预设 */
@@ -633,9 +628,6 @@ export default function SoundEffectSetting() {
                                                     </Pressable>
                                                 ))}
                                             </ScrollView>
-                                            <ThemeText fontSize="caption" fontColor="textSecondary" style={{ paddingHorizontal: rpx(24), paddingBottom: rpx(8) }}>
-                                                真实空间录音
-                                            </ThemeText>
                                         </View>
                                     )}
                                 </>
@@ -850,10 +842,6 @@ const style = StyleSheet.create({
     groupHeader: {
         paddingHorizontal: rpx(24),
         paddingBottom: rpx(8),
-    },
-    /* 术语通俗副标题（caption 小字） */
-    descLine: {
-        marginTop: rpx(4),
     },
     card: {
         borderRadius: rpx(12),
