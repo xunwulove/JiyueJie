@@ -10,6 +10,7 @@ import Clipboard from "@react-native-clipboard/clipboard";
 import { showDialog } from "@/components/dialogs/useDialog";
 import rpx from "@/utils/rpx";
 import {
+    Pressable,
     StyleProp,
     StyleSheet,
     Text,
@@ -159,11 +160,25 @@ function _PluginItem(props: IPluginItemProps) {
             ]}>
             <View style={styles.header}>
                 <View style={styles.headerPluginContainer}>
-                    <ThemeText
-                        numberOfLines={1}
-                        fontSize="title">
-                        {plugin.name}
-                    </ThemeText>
+                    {/* 插件名字 = 设置入口：有 userVariables 时点击弹设置表单；没有则不可点（disabled） */}
+                    <Pressable
+                        disabled={!plugin.instance.userVariables?.length}
+                        onPress={() =>
+                            showDialog("PluginSettingDialog", { plugin })
+                        }
+                        style={({ pressed }) => [
+                            styles.pluginNameTouch,
+                            pressed &&
+                            plugin.instance.userVariables?.length
+                                ? styles.pluginNamePressed
+                                : null,
+                        ]}>
+                        <ThemeText
+                            numberOfLines={1}
+                            fontSize="title">
+                            {plugin.name}
+                        </ThemeText>
+                    </Pressable>
                     {
                         plugin.instance.description?.length ? <IconButton name='question-mark-circle' sizeType='light' onPress={() => {
                             showDialog("MarkdownDialog", {
@@ -309,6 +324,13 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         gap: rpx(8),
         alignItems: "center",
+    },
+    /** 插件名（设置入口）：可点时轻微压暗提示可点 */
+    pluginNameTouch: {
+        flexShrink: 1,
+    },
+    pluginNamePressed: {
+        opacity: 0.6,
     },
     reliabilityTag: {
         borderRadius: rpx(8),

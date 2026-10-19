@@ -196,6 +196,8 @@ export interface ILanguageData {
     "pluginSetting.pluginItem.author": string; // 作者
     "pluginSetting.pluginItem.reliability": string; // 可用率
     "pluginSetting.pluginItem.noReliabilityData": string; // 暂无可用率数据
+    "pluginSetting.pluginSetting.title": string; // 插件设置
+    "pluginSetting.pluginSetting.empty": string; // 插件无设置项提示
     "pluginSetting.menu.subscriptionSetting": string; // 订阅设置
     "pluginSetting.menu.sort": string; // 排序
     "pluginSetting.menu.uninstallAll": string; // 卸载所有
@@ -219,6 +221,7 @@ export interface ILanguageData {
     "toast.copiedToClipboardFailed": string; // 复制失败
     "toast.failToSharePlugin": string; // 插件分享失败
     "toast.pluginUninstalled": string; // 插件已卸载
+    "toast.pluginSettingSaved": string; // 插件设置已保存
     "toast.toast.pluginUninstalled": string; // 插件已卸载
     "toast.failToImportMusic": string; // 音乐导入失败
     "toast.importing": string; // 正在导入
