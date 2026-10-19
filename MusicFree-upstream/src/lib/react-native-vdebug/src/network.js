@@ -619,7 +619,7 @@ function proxyAjax(XHR, stack) {
                 for (let i = 0; i < resHeadersArr.length; i++) {
                     const line = resHeadersArr[i];
                     if (!line) {
-                         
+                        // eslint-disable-next-line no-continue
                         continue;
                     }
                     const arr = line.split(': ');
