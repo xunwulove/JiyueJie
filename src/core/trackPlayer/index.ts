@@ -13,6 +13,7 @@ import { errorLog, trace } from "@/utils/log";
 import { createMediaIndexMap } from "@/utils/mediaIndexMap";
 import {
     getLocalPath,
+    getMediaUniqueKey,
     isSameMediaItem,
 } from "@/utils/mediaUtils";
 import Network from "@/utils/network";
@@ -34,6 +35,7 @@ import ReactNativeTrackPlayer, {
 import LocalMusicSheet from "../localMusicSheet";
 import { matchMusic, prewarmApiSongs, platformMatches } from "../playMatcher";
 import pluginReliability from "../pluginReliability";
+import playEvents from "../playEvents";
 import { ensureSoundEffectAttached } from "@/core/soundEffect";
 
 import { TrackPlayerEvents } from "@/core.defination/trackPlayer";
@@ -79,6 +81,17 @@ class TrackPlayer extends EventEmitter<{
     private playRetryFailed = false;
     // 播放队列索引map
     private playListIndexMap = createMediaIndexMap([] as IMusic.IMusicItem[]);
+
+    // ===== 听歌时长统计：当前曲收听会话（播放器 currentTime 增量累计，切歌/清空时提交） =====
+    // 与旧实现（按歌聚合最近播放时间×累计次数）不同：按事件流记实际收听秒数，
+    // 时段统计精确归属（见 playEvents.ts）。会话在播放中累计、暂停停止、切歌/清空提交。
+    private listenSession: {
+        musicItem: IMusic.IMusicItem;
+        key: string;
+        listenedSec: number;
+        lastPosition: number;
+        active: boolean;
+    } | null = null;
 
 
     private static maxMusicQueueLength = 10000;
@@ -225,6 +238,45 @@ class TrackPlayer extends EventEmitter<{
                         } else {
                             // 当前生效的歌曲是下一曲的标记
                             await this.skipToNext();
+                        }
+                    }
+                },
+            );
+
+            ReactNativeTrackPlayer.addEventListener(
+                Event.PlaybackProgressUpdated,
+                evt => {
+                    // 播放进度增量累计实际收听秒数（播放中才加；seek/回退不累计负值）
+                    const s = this.listenSession;
+                    if (!s) {
+                        return;
+                    }
+                    const position = evt?.position ?? 0;
+                    if (s.active && position >= s.lastPosition) {
+                        s.listenedSec += position - s.lastPosition;
+                    }
+                    s.lastPosition = position;
+                },
+            );
+
+            ReactNativeTrackPlayer.addEventListener(
+                Event.PlaybackState,
+                async evt => {
+                    // 校准收听会话 active：播放中=累计、暂停/停止=停止累计；
+                    // 恢复播放时以当前进度为基准，避免把暂停期间误算进收听
+                    const s = this.listenSession;
+                    if (!s) {
+                        return;
+                    }
+                    const isPlaying = evt?.state === State.Playing;
+                    s.active = isPlaying;
+                    if (isPlaying) {
+                        try {
+                            const playbackPos =
+                                await ReactNativeTrackPlayer.getProgress();
+                            s.lastPosition = playbackPos?.position ?? 0;
+                        } catch {
+                            /* 拿不到进度不阻塞播放 */
                         }
                     }
                 },
@@ -863,6 +915,8 @@ class TrackPlayer extends EventEmitter<{
         if (!isSameMediaItem(musicItem, this.currentMusic)) {
             this.playRetryScheduled = false;
             this.playRetryFailed = false;
+            // 切歌/清空：提交上一曲收听事件（有效判定见 commitListenSession）
+            this.commitListenSession();
         }
         // 设置UI内部状态的musicitem
         if (!musicItem) {
@@ -880,7 +934,51 @@ class TrackPlayer extends EventEmitter<{
         this.currentIndex = this.getMusicIndexInPlayList(musicItem);
         getDefaultStore().set(currentMusicAtom, musicItem);
 
+        // 为当前曲建立收听会话（切到新歌/从无到有才重建；同曲重复设置沿用会话，
+        // 避免重试链路把已累计的收听清空）
+        if (!isSameMediaItem(musicItem, this.listenSession?.musicItem)) {
+            this.listenSession = {
+                musicItem,
+                key: getMediaUniqueKey(musicItem),
+                listenedSec: 0,
+                lastPosition: 0,
+                // 是否播放中交由 PlaybackState 事件校准（首次默认 false 更稳）
+                active: false,
+            };
+        }
+
         this.emit(TrackPlayerEvents.CurrentMusicChanged, musicItem);
+    }
+
+    /**
+     * 提交当前曲收听会话：有效收听（≥30s 或 ≥50% 时长）才写入事件流（听歌时长统计数据源）。
+     * 清空会话；无会话或无有效时长直接返回。
+     */
+    private commitListenSession() {
+        const s = this.listenSession;
+        this.listenSession = null;
+        if (!s?.musicItem || s.listenedSec <= 0) {
+            return;
+        }
+        const durationSec = normalizeDurationSec(s.musicItem.duration);
+        const valid =
+            s.listenedSec >= 30 ||
+            (durationSec > 0 && s.listenedSec >= durationSec * 0.5);
+        if (!valid) {
+            return;
+        }
+        playEvents.add({
+            key: s.key,
+            title: s.musicItem.title,
+            artist: s.musicItem.artist,
+            artwork:
+                typeof s.musicItem.artwork === "string"
+                    ? s.musicItem.artwork
+                    : undefined,
+            duration: durationSec > 0 ? durationSec : undefined,
+            ts: Date.now(),
+            listenedSec: Math.round(s.listenedSec),
+        });
     }
 
     private setRepeatMode(mode: MusicRepeatMode) {

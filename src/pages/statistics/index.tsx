@@ -1,9 +1,8 @@
 import AppBar from "@/components/base/appBar";
 import ThemeText from "@/components/base/themeText";
-import { useMusicHistory } from "@/core/musicHistory";
+import { usePlayEvents } from "@/core/playEvents";
 import useColors from "@/hooks/useColors";
 import useIsTablet from "@/hooks/useIsTablet";
-import { normalizeDurationSec } from "@/utils/durationUtil";
 import Color from "color";
 import React, { useMemo, useState } from "react";
 import {
@@ -60,7 +59,7 @@ const RANK_ROW_H = 44;
 
 export default function Statistics() {
     const colors = useColors();
-    const history = useMusicHistory();
+    const events = usePlayEvents();
     const isTablet = useIsTablet();
 
     const [period, setPeriod] = useState<Period>("DAY");
@@ -75,38 +74,51 @@ export default function Statistics() {
         return Math.max(3, Math.min(10, n));
     }, [isTablet, calendarHeight]);
 
-    /* 维度过滤 + 排行（对齐 APlayer：按播放次数倒序；平板显示动态 TOP N，手机满 10）
-     * 累计时长 = 该时段全部播放歌曲时长（不再只算前 N 首，数值更完整） */
-    const { ranked, totalMs, uniqueCount, periodLabel } = useMemo(() => {
+    /* 维度过滤 + 排行（按播放事件流精确汇总）：
+     * 累计时长 = 时段内全部事件实际收听秒数 listenedSec 之和（不再"播放次数×整曲时长"估算）；
+     * 排行 = 时段内按 key 聚合事件次数倒序（短播 <30s 已在采集层判定为无效、不入事件流）；
+     * 歌曲数 = 时段内事件去重 key 数 —— 事件带 ts，精确归属今日/本周/今年，不跨时段虚大 */
+    const { ranked, totalSec, uniqueCount, periodLabel } = useMemo(() => {
         const fromMs = periodStartMs(period);
-        const filtered = (history ?? []).filter(
-            it =>
-                !fromMs ||
-                ((it as { playedAt?: number }).playedAt ?? 0) >= fromMs,
+        const filtered = (events ?? []).filter(
+            it => !fromMs || it.ts >= fromMs,
         );
-        const countMap = new Map<
+        const map = new Map<
             string,
-            { music: IMusic.IMusicItem; count: number }
+            {
+                title?: string;
+                artist?: string;
+                artwork?: string;
+                count: number;
+                totalSec: number;
+            }
         >();
-        for (const item of filtered) {
-            const key = `${item.platform}-${item.id}`;
-            // 历史已按歌去重，每行播放次数取行内 playCount（全量累计）；period 仅按 playedAt 过滤行
-            const count = (item as { playCount?: number }).playCount ?? 1;
-            countMap.set(key, { music: item, count });
+        let total = 0;
+        for (const e of filtered) {
+            total += e.listenedSec;
+            const rec = map.get(e.key) ?? {
+                title: e.title,
+                artist: e.artist,
+                artwork: e.artwork,
+                count: 0,
+                totalSec: 0,
+            };
+            rec.count += 1;
+            rec.totalSec += e.listenedSec;
+            map.set(e.key, rec);
         }
-        const ranked = Array.from(countMap.values()).sort(
+        const rankedList = Array.from(map.values()).sort(
             (a, b) => b.count - a.count,
-        );
-        const totalMs = ranked.reduce(
-            (acc, it) =>
-                acc +
-                it.count * normalizeDurationSec(it.music.duration),
-            0,
         );
         const label =
             PERIODS.find(p => p.key === period)?.label ?? "今日";
-        return { ranked, totalMs, uniqueCount: countMap.size, periodLabel: label };
-    }, [history, period]);
+        return {
+            ranked: rankedList,
+            totalSec: total,
+            uniqueCount: map.size,
+            periodLabel: label,
+        };
+    }, [events, period]);
 
     const shown = ranked.slice(0, topCount);
 
@@ -120,8 +132,8 @@ export default function Statistics() {
         const counts = new Array<number>(daysInMonth).fill(0);
         const monthStart = new Date(year, month, 1).getTime();
         const nextMonthStart = new Date(year, month + 1, 1).getTime();
-        for (const item of history ?? []) {
-            const ts = (item as { playedAt?: number }).playedAt;
+        for (const e of events ?? []) {
+            const ts = e.ts;
             if (ts && ts >= monthStart && ts < nextMonthStart) {
                 const day = new Date(ts).getDate();
                 if (day >= 1 && day <= daysInMonth) {
@@ -130,7 +142,7 @@ export default function Statistics() {
             }
         }
         return counts;
-    }, [history, daysInMonth, year, month]);
+    }, [events, daysInMonth, year, month]);
 
     const leadingBlanks = (new Date(year, month, 1).getDay() + 6) % 7; // 周一=0
     const calendarRows = Math.ceil((leadingBlanks + daysInMonth) / 7);
@@ -179,7 +191,7 @@ export default function Statistics() {
             ) : (
                 shown.map((item, index) => (
                     <View
-                        key={`${item.music.platform}-${item.music.id}`}
+                        key={`${item.title}-${item.artist}`}
                         style={[
                             styles.rankRow,
                             isTablet ? styles.rankRowTablet : null,
@@ -212,21 +224,19 @@ export default function Statistics() {
                                 fontSize="body"
                                 fontWeight="medium"
                                 numberOfLines={1}>
-                                {item.music.title ?? "未知歌曲"}
+                                {item.title ?? "未知歌曲"}
                             </ThemeText>
                             <ThemeText
                                 fontSize="description"
                                 fontColor="textSecondary"
                                 numberOfLines={1}>
-                                {item.music.artist ?? ""} · 播放 {item.count} 次
+                                {item.artist ?? ""} · 播放 {item.count} 次
                             </ThemeText>
                         </View>
                         <ThemeText
                             fontSize="description"
                             fontColor="textSecondary">
-                            {formatTotalTime(
-                                item.count * normalizeDurationSec(item.music.duration),
-                            )}
+                            {formatTotalTime(item.totalSec)}
                         </ThemeText>
                     </View>
                 ))
@@ -451,9 +461,9 @@ export default function Statistics() {
                 <View style={styles.overviewRowWrap}>
                     {overviewCard(
                         "clock-outline",
-                        formatTotalTime(totalMs),
+                        formatTotalTime(totalSec),
                         "累计听歌时长",
-                        "按完整播放估算",
+                        "实际收听时长",
                     )}
                     {overviewCard(
                         "musical-note",
