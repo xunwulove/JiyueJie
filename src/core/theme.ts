@@ -17,8 +17,8 @@ export const lightTheme = {
         primary: "#2F6FED",
         pageBackground: "#F8F9FA",
         // 白天底部微蓝起点：PageBackground 顶部 pageBackground → 底部 pageBackgroundTop
-        // 方向为"顶部白、底部浅蓝"（从下到上逐渐变白）；#EAF0FA 比原 #F2F5FC 深一档，保证渐变可感知
-        pageBackgroundTop: "#EAF0FA",
+        // 方向为"顶部白、底部浅蓝"（从下到上逐渐变白）；#DDE9F9 为 2026-10-20 加深一档（弹窗与背景区分更清晰）
+        pageBackgroundTop: "#DDE9F9",
         shadow: "#000",
         appBar: "#2F6FED",
         appBarText: "#FFFFFF",
@@ -53,7 +53,8 @@ export const darkTheme = {
         pageBackground: "#0F172A",
         // 深色渐变底部端点：顶部 pageBackground(深黑) → 底部 pageBackgroundTop(深蓝灰)，
         // 与白天"底部品牌色氛围"方向一致；从下到上逐渐变深（顶部最深）
-        pageBackgroundTop: "#182848",
+        // #14233F 为 2026-10-20 加深一档（弹窗与背景区分更清晰）
+        pageBackgroundTop: "#14233F",
         shadow: "#999",
         appBar: "#2F6FED",
         appBarText: "#FFFFFF",

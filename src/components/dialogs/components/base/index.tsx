@@ -144,7 +144,8 @@ function Dialog(props: IDialogProps) {
                     <View style={StyleSheet.absoluteFill} />
                 </TouchableWithoutFeedback>
                 {/* 视觉淡入层（纯动画，不可交互）：淡入淡出由 containerStyle 驱动；pointerEvents none
-                    避免全屏透明层拦截命中下方的关闭层 */}
+                    避免全屏透明层拦截命中下方的关闭层。
+                    无暗色遮罩：弹窗直接浮在当前页面上（保留透明点击层，点弹窗外部空白仍可关闭） */}
                 <Animated.View
                     pointerEvents="none"
                     style={[styles.container, containerStyle]}
@@ -427,7 +428,7 @@ const styles = StyleSheet.create({
         zIndex: 909, // 概念编码 0909（JS 数值去前导零）
         borderRadius: 20, // 对齐 APlayer Level3Dialog 圆角 20dp
         borderWidth: 0.5, // 对齐 APlayer 细边框（outlineVariant α0.35）
-        borderColor: "rgba(0,0,0,0.16)",
+        borderColor: "rgba(0,0,0,0.28)", // 2026-10-20 0.16→0.28：浅色下弹窗轮廓与渐变背景区分更清晰
         overflow: "hidden", // 渐变标题行/选项行为直角矩形，需裁剪以贴合弹窗圆角（避免圆角区露出底色）
         shadowOffset: {
             width: 0,
