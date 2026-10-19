@@ -236,6 +236,17 @@ export default function (props: IPanelBaseProps) {
                     ]}
                 />
             </Pressable>
+            {/* 平板：遮罩限定右内容区时，左 30% 播放区补透明触摸拦截层——
+                视觉不变暗、不遮挡播放区（tabletBound 设计保留），但点击播放区/播放条
+                只关闭浮窗，不再穿透触发下层进全屏导航（MusicBar tapGesture） */}
+            {tabletBound && (
+                <Pressable
+                    style={[style.maskWrapper, style.tabletLeftBlocker]}
+                    onPress={() => {
+                        snapPoint.value = withTiming(0, timingConfig);
+                    }}
+                />
+            )}
             {keyboardAvoidBehavior === "none" ? (
                 panelBody
             ) : (
@@ -275,6 +286,15 @@ const style = StyleSheet.create({
         width: "70%",
         top: TAB_BAR_HEIGHT,
         bottom: 0,
+    },
+    /** 平板左 30% 播放区透明拦截层：不显示暗色（不遮挡播放区视觉），
+     *  但触摸拦截——点击播放区/播放条关闭浮窗，不穿透触发下层进全屏导航 */
+    tabletLeftBlocker: {
+        left: 0,
+        width: "30%",
+        top: TAB_BAR_HEIGHT,
+        bottom: 0,
+        height: undefined, // 覆盖 maskWrapper 的 height 100%，由 top+bottom 定高
     },
     wrapper: {
         position: "absolute",

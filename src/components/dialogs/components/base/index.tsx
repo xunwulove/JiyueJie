@@ -125,6 +125,20 @@ function Dialog(props: IDialogProps) {
                 onPress={onDismiss}>
                 <Animated.View style={[styles.container, containerStyle]} />
             </TouchableWithoutFeedback>
+            {/* 平板：弹窗限定右内容区时，左 30% 播放区补透明触摸拦截层——
+                视觉不变暗、不遮挡播放区（平板设计保留），但点击播放区/播放条
+                只关闭弹窗，不再穿透触发下层进全屏导航（MusicBar tapGesture） */}
+            {isTablet && (
+                <TouchableWithoutFeedback onPress={onDismiss}>
+                    <Animated.View
+                        style={[
+                            styles.container,
+                            styles.tabletLeftBlocker,
+                            containerStyle,
+                        ]}
+                    />
+                </TouchableWithoutFeedback>
+            )}
             <Animated.View
                 style={[
                     styles.dialogContainer,
@@ -381,6 +395,15 @@ const styles = StyleSheet.create({
         top: 0,
         // 无遮盖：弹窗直接浮在当前页面上（保留透明点击层，点弹窗外部空白仍可关闭）
         backgroundColor: "transparent",
+    },
+    /** 平板左 30% 播放区透明拦截层：不显示暗色（不遮挡播放区视觉），
+     *  但触摸拦截——点击播放区/播放条关闭弹窗，不穿透触发下层进全屏导航 */
+    tabletLeftBlocker: {
+        left: 0,
+        width: "30%",
+        top: TAB_BAR_HEIGHT,
+        bottom: 0,
+        height: undefined, // 覆盖 container 的 height 100%，由 top+bottom 定高
     },
     dialogContainer: {
         position: "absolute",
