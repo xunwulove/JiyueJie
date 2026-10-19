@@ -26,7 +26,9 @@ interface IMusicItemLyricOptionsDialogProps {
     musicItem: IMusic.IMusicItem;
 }
 
-const ITEM_HEIGHT = 48;
+// 行高用 ListItem 紧凑档位 smallest(36)（规范：big64/normal56/small48/smallest36），
+// 与下方 ListItem heightType="smallest" 保持一致，缩短弹窗总高
+const ITEM_HEIGHT = 36;
 
 interface IOption {
     icon: IIconName;
@@ -252,7 +254,7 @@ export default function MusicItemLyricOptionsDialog(
                         item.show !== false ? (
                             <ListItem
                                 withHorizontalPadding
-                                heightType="small"
+                                heightType="smallest"
                                 onPress={item.onPress}>
                                 <ListItem.ListItemIcon
                                     width={28}
