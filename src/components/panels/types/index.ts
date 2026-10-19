@@ -1,19 +1,15 @@
 import AppBarMore from "./appBarMore";
 import AssociateLrc from "./associateLrc";
-import MusicItemOptions from "./musicItemOptions";
 import MusicQuality from "./musicQuality";
 import PlayList from "./playList";
 import SearchLrc from "./searchLrc";
 import SheetTags from "./sheetTags";
 import SimpleInput from "./simpleInput";
 import SimpleSelect from "./simpleSelect";
-import MusicItemLyricOptions from "./musicItemLyricOptions";
 
 export default {
     /** 顶栏三点通用菜单 */
     AppBarMore,
-    /** 歌曲选项 */
-    MusicItemOptions,
     /** 当前播放列表 */
     PlayList: PlayList,
     /** 关联歌词 */
@@ -28,5 +24,4 @@ export default {
     SearchLrc,
     /** 简单的选择 */
     SimpleSelect,
-    MusicItemLyricOptions,
 };

@@ -29,6 +29,8 @@ import RecommendSourceDialog from "./recommendSourceDialog";
 import ImageViewerDialog from "./imageViewerDialog";
 import SimpleInputDialog from "./simpleInputDialog";
 import WebDAVSettingDialog from "./webdavSettingDialog";
+import MusicItemOptionsDialog from "./musicItemOptionsDialog";
+import MusicItemLyricOptionsDialog from "./musicItemLyricOptionsDialog";
 
 const dialogs = {
     SimpleDialog,
@@ -62,6 +64,8 @@ const dialogs = {
     ImageViewerDialog,
     SimpleInputDialog,
     WebDAVSettingDialog,
+    MusicItemOptionsDialog,
+    MusicItemLyricOptionsDialog,
 };
 
 export default dialogs;

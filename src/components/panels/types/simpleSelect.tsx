@@ -31,6 +31,7 @@ export default function SimpleSelect(props: ISimpleSelectProps) {
 
     return (
         <PanelBase
+            keyboardAvoidBehavior="none"
             height={height}
             renderBody={() => (
                 <>

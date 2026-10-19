@@ -3,7 +3,6 @@ import { StyleSheet, View } from "react-native";
 import IconButton from "@/components/base/iconButton";
 import { useGoBack } from "@/core/tabletNav";
 import useColors from "@/hooks/useColors";
-import { showPanel } from "@/components/panels/usePanel";
 import { showDialog } from "@/components/dialogs/useDialog";
 import TrackPlayer from "@/core/trackPlayer";
 
@@ -45,7 +44,7 @@ export default function NavBar() {
                     onPress={() => {
                         const currentMusic = TrackPlayer.currentMusic;
                         if (currentMusic) {
-                            showPanel("MusicItemLyricOptions", {
+                            showDialog("MusicItemLyricOptionsDialog", {
                                 musicItem: currentMusic,
                             });
                         }

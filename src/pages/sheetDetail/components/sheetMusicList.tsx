@@ -10,7 +10,7 @@ import { useSheetItem } from "@/core/musicSheet";
 import useColors from "@/hooks/useColors";
 import Color from "color";
 import TrackPlayer from "@/core/trackPlayer";
-import { showPanel } from "@/components/panels/usePanel";
+import { showDialog } from "@/components/dialogs/useDialog";
 
 /**
  * 歌单歌曲列表 - 对齐 APlayer PlaylistDetailPage：
@@ -113,7 +113,7 @@ export default function SheetMusicList() {
                             hitSlop={8}
                             style={styles.moreBtn}
                             onPress={() =>
-                                showPanel("MusicItemOptions", {
+                                showDialog("MusicItemOptionsDialog", {
                                     musicItem: item,
                                     musicSheet,
                                 })

@@ -13,25 +13,24 @@ import LocalMusicSheet from "@/core/localMusicSheet";
 import { localMusicSheetId, musicHistorySheetId } from "@/constants/commonConst";
 import { ROUTE_PATH } from "@/core/router";
 
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import PanelBase from "../base/panelBase";
-import { FlatList } from "react-native-gesture-handler";
-import musicHistory from "@/core/musicHistory";
-import { showDialog } from "@/components/dialogs/useDialog";
-import { hidePanel, showPanel } from "../usePanel";
+import { hideDialog, showDialog } from "@/components/dialogs/useDialog";
+import { showPanel } from "@/components/panels/usePanel";
 import Divider from "@/components/base/divider";
 import { iconSizeConst } from "@/constants/uiConst";
-import Config from "@/core/appConfig";
 import TrackPlayer from "@/core/trackPlayer";
 import mediaCache from "@/core/mediaCache";
 import { IIconName } from "@/components/base/icon.tsx";
 import MusicSheet from "@/core/musicSheet";
 import downloader from "@/core/downloader";
+import Config from "@/core/appConfig";
 import { getMediaExtraProperty } from "@/utils/mediaExtra";
 import lyricManager from "@/core/lyricManager";
 import { useI18N } from "@/core/i18n";
+import musicHistory from "@/core/musicHistory";
+import { FlatList } from "react-native-gesture-handler";
+import Dialog from "./base";
 
-interface IMusicItemOptionsProps {
+interface IMusicItemOptionsDialogProps {
     /** 歌曲信息 */
     musicItem: IMusic.IMusicItem;
     /** 歌曲所在歌单 */
@@ -49,11 +48,17 @@ interface IOption {
     show?: boolean;
 }
 
-export default function MusicItemOptions(props: IMusicItemOptionsProps) {
+/**
+ * 歌曲选项 - 三级浮窗（Dialog 版，替代原底部面板 MusicItemOptions）：
+ * 歌单歌曲列表三点菜单弹此浮窗。选项逻辑与面板版一致，
+ * 载体改对话框体系（居中缩放 + 16300 层级），规避底部面板在
+ * 歌单/全屏等场景被 KeyboardAvoidingView/覆盖层压住的问题。
+ */
+export default function MusicItemOptionsDialog(
+    props: IMusicItemOptionsDialogProps,
+) {
     const { musicItem, musicSheet, from } = props ?? {};
     const { t } = useI18N();
-
-    const safeAreaInsets = useSafeAreaInsets();
 
     const downloaded = LocalMusicSheet.isLocalMusic(musicItem);
     const associatedLrc = getMediaExtraProperty(musicItem, "associatedLrc");
@@ -75,6 +80,7 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
                     ),
                 );
                 Toast.success(t("toast.copiedToClipboard"));
+                hideDialog();
             },
         },
         {
@@ -87,6 +93,7 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
                 } catch {
                     Toast.warn(t("toast.copiedToClipboardFailed"));
                 }
+                hideDialog();
             },
         },
         {
@@ -100,6 +107,7 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
                 } catch {
                     Toast.warn(t("toast.copiedToClipboardFailed"));
                 }
+                hideDialog();
             },
         },
         {
@@ -107,21 +115,27 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
             title: t("musicListEditor.addToNextPlay"),
             onPress: () => {
                 TrackPlayer.addNext(musicItem);
-                hidePanel();
+                hideDialog();
             },
         },
         {
             icon: "folder-plus",
             title: t("musicListEditor.addToSheet"),
             onPress: () => {
-                showDialog("AddToMusicSheetDialog", { musicItem });
+                hideDialog();
+                // 浮窗切换需延迟：hideDialog 同步清 store，立即 showDialog 会被清掉
+                setTimeout(() => {
+                    showDialog("AddToMusicSheetDialog", { musicItem });
+                }, 0);
             },
         },
         {
             icon: "arrow-down-tray",
             title: t("common.download"),
             show: !downloaded,
-            onPress: async () => {
+            onPress: () => {
+                hideDialog();
+                // 音质选择仍为底部面板（不同 store，直接切换安全）
                 showPanel("MusicQuality", {
                     musicItem,
                     type: "download",
@@ -149,7 +163,7 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
                     await MusicSheet.removeMusic(musicSheet!.id, musicItem);
                 }
                 Toast.success(t("toast.deleteSuccess"));
-                hidePanel();
+                hideDialog();
             },
         },
         {
@@ -157,19 +171,21 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
             title: t("panel.musicItemOptions.deleteLocalDownload"),
             show: !!downloaded,
             onPress: () => {
-                showDialog("SimpleDialog", {
-                    title: t("panel.musicItemOptions.deleteLocalDownload"),
-                    content: t("panel.musicItemOptions.deleteLocalDownloadConfirm"),
-                    async onOk() {
-                        try {
-                            await LocalMusicSheet.removeMusic(musicItem, true);
-                            Toast.success(t("toast.deleteSuccess"));
-                        } catch (e: any) {
-                            Toast.warn(`${t("panel.musicItemOptions.deleteFailed")} ${e?.message ?? e}`);
-                        }
-                    },
-                });
-                hidePanel();
+                hideDialog();
+                setTimeout(() => {
+                    showDialog("SimpleDialog", {
+                        title: t("panel.musicItemOptions.deleteLocalDownload"),
+                        content: t("panel.musicItemOptions.deleteLocalDownloadConfirm"),
+                        async onOk() {
+                            try {
+                                await LocalMusicSheet.removeMusic(musicItem, true);
+                                Toast.success(t("toast.deleteSuccess"));
+                            } catch (e: any) {
+                                Toast.warn(`${t("panel.musicItemOptions.deleteFailed")} ${e?.message ?? e}`);
+                            }
+                        },
+                    });
+                }, 0);
             },
         },
         {
@@ -177,7 +193,8 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
             title: associatedLrc
                 ? t("panel.musicItemOptions.associatedLyric", { platform: associatedLrc.platform, id: associatedLrc.id })
                 : t("panel.musicItemOptions.associateLyric"),
-            onPress: async () => {
+            onPress: () => {
+                hideDialog();
                 if (
                     Config.getConfig("basic.associateLyricType") === "input"
                 ) {
@@ -198,7 +215,7 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
             onPress: async () => {
                 lyricManager.unassociateLyric(musicItem);
                 Toast.success(t("panel.musicItemOptions.unassociateLyricSuccess"));
-                hidePanel();
+                hideDialog();
             },
         },
         {
@@ -206,8 +223,10 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
             title: t("panel.musicItemOptions.timingClose"),
             show: from === ROUTE_PATH.MUSIC_DETAIL,
             onPress: () => {
-                // C15 用户拍板：定时关闭统一用居中浮窗版（TimingCloseDialog），下线面板版
-                showDialog("TimingCloseDialog");
+                hideDialog();
+                setTimeout(() => {
+                    showDialog("TimingCloseDialog");
+                }, 0);
             },
         },
         {
@@ -216,87 +235,88 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
             onPress: () => {
                 mediaCache.removeMediaCache(musicItem);
                 Toast.success(t("panel.musicItemOptions.cacheCleared"));
+                hideDialog();
             },
         },
     ];
 
     return (
-        <PanelBase
-            keyboardAvoidBehavior="none"
-            renderBody={() => (
-                <>
-                    <View style={style.header}>
-                        <FastImage
-                            style={style.artwork}
-                            source={musicItem?.artwork}
-                            placeholderSource={ImgAsset.albumDefault}
-                        />
-                        <View style={style.content}>
-                            <ThemeText numberOfLines={2} style={style.title}>
-                                {musicItem?.title}
-                            </ThemeText>
-                            <ThemeText
-                                fontColor="textSecondary"
-                                numberOfLines={2}
-                                fontSize="description">
-                                {musicItem?.artist}{" "}
-                                {musicItem?.album ? `- ${musicItem.album}` : ""}
-                            </ThemeText>
-                        </View>
+        <Dialog onDismiss={hideDialog}>
+            <Dialog.Content
+                needScroll
+                style={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 0 }}>
+                <View style={style.header}>
+                    <FastImage
+                        style={style.artwork}
+                        source={musicItem?.artwork}
+                        placeholderSource={ImgAsset.albumDefault}
+                    />
+                    <View style={style.content}>
+                        <ThemeText numberOfLines={2} style={style.title}>
+                            {musicItem?.title}
+                        </ThemeText>
+                        <ThemeText
+                            fontColor="textSecondary"
+                            numberOfLines={2}
+                            fontSize="description">
+                            {musicItem?.artist}{" "}
+                            {musicItem?.album ? `- ${musicItem.album}` : ""}
+                        </ThemeText>
                     </View>
-                    <Divider />
-                    <View style={style.wrapper}>
-                        <FlatList
-                            data={options}
-                            getItemLayout={(_, index) => ({
-                                length: ITEM_HEIGHT,
-                                offset: ITEM_HEIGHT * index,
-                                index,
-                            })}
-                            ListFooterComponent={<View style={style.footer} />}
-                            style={[
-                                style.listWrapper,
-                                {
-                                    marginBottom: safeAreaInsets.bottom,
-                                },
-                            ]}
-                            keyExtractor={_ => _.title}
-                            renderItem={({ item }) =>
-                                item.show !== false ? (
-                                    <ListItem
-                                        withHorizontalPadding
-                                        heightType="small"
-                                        onPress={item.onPress}>
-                                        <ListItem.ListItemIcon
-                                            width={28}
-                                            icon={item.icon}
-                                            iconSize={iconSizeConst.light}
-                                        />
-                                        <ListItem.Content title={item.title} />
-                                    </ListItem>
-                                ) : null
-                            }
-                        />
-                    </View>
-                </>
-            )}
-        />
+                </View>
+                <Divider />
+                <FlatList
+                    data={options}
+                    getItemLayout={(_, index) => ({
+                        length: ITEM_HEIGHT,
+                        offset: ITEM_HEIGHT * index,
+                        index,
+                    })}
+                    ListFooterComponent={<View style={style.footer} />}
+                    style={style.listWrapper}
+                    keyExtractor={_ => _.title}
+                    renderItem={({ item }) =>
+                        item.show !== false ? (
+                            <ListItem
+                                withHorizontalPadding
+                                heightType="small"
+                                onPress={item.onPress}>
+                                <ListItem.ListItemIcon
+                                    width={28}
+                                    icon={item.icon}
+                                    iconSize={iconSizeConst.light}
+                                />
+                                <ListItem.Content title={item.title} />
+                            </ListItem>
+                        ) : null
+                    }
+                />
+            </Dialog.Content>
+            <Dialog.Actions
+                actions={[
+                    {
+                        title: t("common.cancel"),
+                        type: "normal",
+                        onPress() {
+                            hideDialog();
+                        },
+                    },
+                ]}
+            />
+        </Dialog>
     );
 }
 
 const style = StyleSheet.create({
-    wrapper: {
-        width: rpx(750),
-        flex: 1,
-    },
     header: {
-        width: rpx(750),
+        width: "100%",
         height: 100,
         flexDirection: "row",
-        padding: rpx(24),
+        paddingHorizontal: rpx(24),
     },
     listWrapper: {
         paddingTop: rpx(12),
+        flexGrow: 0,
     },
     artwork: {
         width: 72,
@@ -313,7 +333,7 @@ const style = StyleSheet.create({
         paddingRight: rpx(24),
     },
     footer: {
-        width: rpx(750),
+        width: "100%",
         height: rpx(30),
     },
 });
