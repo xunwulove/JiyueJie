@@ -11,6 +11,7 @@ import { ROUTE_PATH, useNavigate } from "@/core/router";
 import { fullPlayingAtom } from "@/core/tabletNav";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import TrackPlayer, { useMusicQuality, usePlayList } from "@/core/trackPlayer";
+import LocalMusicSheet from "@/core/localMusicSheet";
 import Animated, {
     SharedValue,
     runOnJS,
@@ -66,8 +67,8 @@ function _BarMusicItem(props: IBarMusicItemProps) {
                     {musicItem?.title}
                 </ThemeText>
                 {/* 当前音质标识（QQ 音乐式带框标签）：`标题 ·高音质`，description 小字、musicBarText 半透明；
-                    点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板 */}
-                {musicItem && quality && (
+                    点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板；本地音乐无多音质不显示 */}
+                {musicItem && quality && !LocalMusicSheet.isLocalMusic(musicItem) && (
                     <ThemeText
                         fontSize="description"
                         color={Color(colors.musicBarText)
