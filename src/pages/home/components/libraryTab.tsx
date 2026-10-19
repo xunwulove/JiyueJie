@@ -14,6 +14,7 @@ import Color from "color";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
 import LocalMusicSheet from "@/core/localMusicSheet";
 import { getLocalPath } from "@/utils/mediaUtils";
+import { normalizeDurationSec } from "@/utils/durationUtil";
 import TrackPlayer from "@/core/trackPlayer";
 import LocalSongCover from "@/components/mediaItem/localSongCover";
 import { showDialog } from "@/components/dialogs/useDialog";
@@ -522,7 +523,7 @@ function LocalSongItem({
                                 `歌手：${item.artist || "-"}`,
                                 `专辑：${item.album || "-"}`,
                                 `时长：${formatDuration(
-                                    item.duration ?? 0,
+                                    normalizeDurationSec(item.duration),
                                 )}`,
                                 `大小：${sizeStr}`,
                                 `格式：${ext}`,
@@ -604,7 +605,7 @@ function LocalSongItem({
                 fontSize="normal"
                 fontColor="textSecondary"
                 style={styles.songDuration}>
-                {formatDuration(item.duration ?? 0)}
+                {formatDuration(normalizeDurationSec(item.duration))}
             </ThemeText>
             <Icon
                 name="ellipsis-vertical"
