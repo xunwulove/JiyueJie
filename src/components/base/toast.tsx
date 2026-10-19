@@ -132,7 +132,7 @@ export function ToastBaseComponent() {
                         color={typeConfig[activeToast.type].color}
                     />
                     <ThemeText
-                        fontSize="content"
+                        fontSize="title"
                         color={colors.text}
                         numberOfLines={2}
                         style={styles.text}>
@@ -175,6 +175,8 @@ const styles = StyleSheet.create({
         backgroundColor: "blue",
         flexDirection: "row",
         alignItems: "center",
+        // 图标+文字（+行动按钮）整体水平居中；text 不撑满（flexShrink 非 flex:1），整体才居中
+        justifyContent: "center",
         paddingHorizontal: rpx(24),
         paddingVertical: rpx(16),
         shadowOffset: {
@@ -187,7 +189,8 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     text: {
-        flex: 1,
+        // 不撑满剩余宽度（flexShrink 允许换行收缩），配合容器 justifyContent:center 使图标+文字整体居中
+        flexShrink: 1,
         marginLeft: rpx(24),
     },
     actionTextContainer: {
