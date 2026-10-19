@@ -67,8 +67,9 @@ function _BarMusicItem(props: IBarMusicItemProps) {
                     {musicItem?.title}
                 </ThemeText>
                 {/* 当前音质标识（QQ 音乐式带框标签）：`标题 ·高音质`，description 小字、musicBarText 半透明；
-                    点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板；本地音乐无多音质不显示 */}
-                {musicItem && quality && !LocalMusicSheet.isLocalMusic(musicItem) && (
+                    点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板；
+                    本地音乐单音质：显示标识但禁用点击（onPress 置空） */}
+                {musicItem && quality && (
                     <ThemeText
                         fontSize="description"
                         color={Color(colors.musicBarText)
@@ -82,9 +83,15 @@ function _BarMusicItem(props: IBarMusicItemProps) {
                                 .alpha(0.35)
                                 .toString(),
                         }}
-                        onPress={() => {
-                            TrackPlayer.changeQuality(getNextQuality(quality));
-                        }}>
+                        onPress={
+                            !LocalMusicSheet.isLocalMusic(musicItem)
+                                ? () => {
+                                    TrackPlayer.changeQuality(
+                                        getNextQuality(quality),
+                                    );
+                                }
+                                : undefined
+                        }>
                         {" "}·{qualityText[quality]}
                     </ThemeText>
                 )}

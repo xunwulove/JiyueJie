@@ -87,9 +87,10 @@ export default function MusicDetail() {
                 ]}>
                 {musicItem?.artist}
             </Text>
-            {/* 当前音质标识（QQ 音乐式带框标签）：qualityText[当前音质]（无歌曲时随 musicItem 隐藏；
-                本地音乐无多音质不显示）；点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板 */}
-            {musicItem && !LocalMusicSheet.isLocalMusic(musicItem) && (
+            {/* 当前音质标识（QQ 音乐式带框标签）：qualityText[当前音质]（无歌曲时随 musicItem 隐藏）；
+                点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板；
+                本地音乐单音质：显示标识但禁用点击（onPress 置空，不执行 changeQuality） */}
+            {musicItem && (
                 <Text
                     numberOfLines={1}
                     ellipsizeMode="tail"
@@ -106,9 +107,15 @@ export default function MusicDetail() {
                                 .toString(),
                         },
                     ]}
-                    onPress={() => {
-                        TrackPlayer.changeQuality(getNextQuality(quality));
-                    }}>
+                    onPress={
+                        !LocalMusicSheet.isLocalMusic(musicItem)
+                            ? () => {
+                                TrackPlayer.changeQuality(
+                                    getNextQuality(quality),
+                                );
+                            }
+                            : undefined
+                    }>
                     {qualityText[quality]}
                 </Text>
             )}
