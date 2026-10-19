@@ -65,7 +65,7 @@ export default function LyricSettingDialog(props: IProps) {
     const autoSearchLyric = createSwitch(
         t("basicSettings.lyric.autoSearchLyric"),
         "lyric.autoSearchLyric",
-        enableAutoSearchLyric ?? false,
+        enableAutoSearchLyric ?? true,
     );
 
     return (

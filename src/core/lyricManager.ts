@@ -217,8 +217,11 @@ class LyricManager implements IInjectable {
                 return;
             }
 
-            // 如果歌词源不存在，并且开启自动搜索歌词
-            if (!lrcSource && this.appConfig.getConfig("lyric.autoSearchLyric")) {
+            // 如果歌词源不存在，并且开启自动搜索歌词（默认开启：未显式关闭时自动搜索）
+            if (
+                !lrcSource &&
+                (this.appConfig.getConfig("lyric.autoSearchLyric") ?? true)
+            ) {
                 // 重置歌词状态
                 this.setLyricAsLoadingState();
 
