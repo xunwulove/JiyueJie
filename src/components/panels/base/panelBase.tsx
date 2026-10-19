@@ -219,11 +219,11 @@ export default function (props: IPanelBaseProps) {
 
     return (
         <>
+            {/* 全屏触摸拦截层（Pressable 覆盖 100% 整屏，含左播放区与顶部 tab 栏）：
+                点击任意面板外区域（含左播放区/播放条）关闭浮窗，不再穿透进全屏——
+                与视觉暗色层分离：暗色仍限右内容区（不压暗播放区，tabletBound 设计保留） */}
             <Pressable
-                style={[
-                    style.maskWrapper,
-                    tabletBound ? style.tabletBound : null,
-                ]}
+                style={style.maskWrapper}
                 onPress={() => {
                     snapPoint.value = withTiming(0, timingConfig);
                 }}>
@@ -236,17 +236,6 @@ export default function (props: IPanelBaseProps) {
                     ]}
                 />
             </Pressable>
-            {/* 平板：遮罩限定右内容区时，左 30% 播放区补透明触摸拦截层——
-                视觉不变暗、不遮挡播放区（tabletBound 设计保留），但点击播放区/播放条
-                只关闭浮窗，不再穿透触发下层进全屏导航（MusicBar tapGesture） */}
-            {tabletBound && (
-                <Pressable
-                    style={[style.maskWrapper, style.tabletLeftBlocker]}
-                    onPress={() => {
-                        snapPoint.value = withTiming(0, timingConfig);
-                    }}
-                />
-            )}
             {keyboardAvoidBehavior === "none" ? (
                 panelBody
             ) : (
@@ -286,15 +275,6 @@ const style = StyleSheet.create({
         width: "70%",
         top: TAB_BAR_HEIGHT,
         bottom: 0,
-    },
-    /** 平板左 30% 播放区透明拦截层：不显示暗色（不遮挡播放区视觉），
-     *  但触摸拦截——点击播放区/播放条关闭浮窗，不穿透触发下层进全屏导航 */
-    tabletLeftBlocker: {
-        left: 0,
-        width: "30%",
-        top: TAB_BAR_HEIGHT,
-        bottom: 0,
-        height: undefined, // 覆盖 maskWrapper 的 height 100%，由 top+bottom 定高
     },
     wrapper: {
         position: "absolute",

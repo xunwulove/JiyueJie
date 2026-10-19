@@ -107,52 +107,44 @@ function Dialog(props: IDialogProps) {
     });
 
     return (
-        <View
-            style={[
-                styles.backContainer,
-                isTablet
-                    ? {
-                        left: "30%",
-                        width: "70%",
-                        top: TAB_BAR_HEIGHT,
-                        bottom: 0,
-                        height: undefined,
-                    }
-                    : null,
-            ]}>
-            <TouchableWithoutFeedback
-                style={styles.container}
-                onPress={onDismiss}>
-                <Animated.View style={[styles.container, containerStyle]} />
+        <>
+            {/* 全屏触摸拦截层：覆盖 100% 整屏（含左播放区），点击任意非弹窗区域=关闭浮窗，
+                不再穿透触发下层进全屏导航（tabletPanel playContent onPress）。
+                与 backContainer 同级同 elevation、渲染在前 → backContainer（弹窗本体）触摸优先；
+                纯透明 View，不显示暗色（平板不遮挡播放区视觉） */}
+            <TouchableWithoutFeedback onPress={onDismiss}>
+                <View style={styles.screenTouchBlock} />
             </TouchableWithoutFeedback>
-            {/* 平板：弹窗限定右内容区时，左 30% 播放区补透明触摸拦截层——
-                视觉不变暗、不遮挡播放区（平板设计保留），但点击播放区/播放条
-                只关闭弹窗，不再穿透触发下层进全屏导航（MusicBar tapGesture） */}
-            {isTablet && (
-                <TouchableWithoutFeedback onPress={onDismiss}>
-                    <Animated.View
-                        style={[
-                            styles.container,
-                            styles.tabletLeftBlocker,
-                            containerStyle,
-                        ]}
-                    />
-                </TouchableWithoutFeedback>
-            )}
-            <Animated.View
+            <View
                 style={[
-                    styles.dialogContainer,
-                    dialogContainerStyle,
-                    containerStyle,
-                    scaleAnimationStyle,
-                    {
-                        backgroundColor: colors.backdrop,
-                        shadowColor: colors.shadow,
-                    },
+                    styles.backContainer,
+                    isTablet
+                        ? {
+                            left: "30%",
+                            width: "70%",
+                            top: TAB_BAR_HEIGHT,
+                            bottom: 0,
+                            height: undefined,
+                        }
+                        : null,
                 ]}>
-                {children}
-            </Animated.View>
-        </View>
+                {/* 视觉淡入层（纯动画，不可交互）：淡入淡出由 containerStyle 驱动 */}
+                <Animated.View style={[styles.container, containerStyle]} />
+                <Animated.View
+                    style={[
+                        styles.dialogContainer,
+                        dialogContainerStyle,
+                        containerStyle,
+                        scaleAnimationStyle,
+                        {
+                            backgroundColor: colors.backdrop,
+                            shadowColor: colors.shadow,
+                        },
+                    ]}>
+                    {children}
+                </Animated.View>
+            </View>
+        </>
     );
 }
 
@@ -396,14 +388,17 @@ const styles = StyleSheet.create({
         // 无遮盖：弹窗直接浮在当前页面上（保留透明点击层，点弹窗外部空白仍可关闭）
         backgroundColor: "transparent",
     },
-    /** 平板左 30% 播放区透明拦截层：不显示暗色（不遮挡播放区视觉），
-     *  但触摸拦截——点击播放区/播放条关闭弹窗，不穿透触发下层进全屏导航 */
-    tabletLeftBlocker: {
+    /** 全屏触摸拦截层：与 backContainer 同级同 elevation（16300）、渲染在前
+     *  → backContainer（弹窗本体）触摸优先，弹窗外任意区域（含左播放区）命中本层=关闭。
+     *  纯透明不显示暗色：平板不遮挡左播放区视觉（tabletBound 设计保留） */
+    screenTouchBlock: {
+        position: "absolute",
+        top: 0,
         left: 0,
-        width: "30%",
-        top: TAB_BAR_HEIGHT,
+        right: 0,
         bottom: 0,
-        height: undefined, // 覆盖 container 的 height 100%，由 top+bottom 定高
+        zIndex: 16300,
+        elevation: 16300,
     },
     dialogContainer: {
         position: "absolute",
