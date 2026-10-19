@@ -20,9 +20,10 @@ import ImmersiveLayer, {
 } from "./components/immersiveLayer";
 import Config from "@/core/appConfig";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
-import { useCurrentMusic, useMusicQuality } from "@/core/trackPlayer";
+import TrackPlayer, { useCurrentMusic, useMusicQuality } from "@/core/trackPlayer";
 import useColors from "@/hooks/useColors";
 import { qualityText } from "@/utils/qualities";
+import { showPanel } from "@/components/panels/usePanel";
 
 /**
  * 全屏播放页 - 对齐 APlayer PlayingPage：
@@ -85,7 +86,8 @@ export default function MusicDetail() {
                 ]}>
                 {musicItem?.artist}
             </Text>
-            {/* 当前音质标识：qualityText[当前音质]（无歌曲时随 musicItem 隐藏） */}
+            {/* 当前音质标识：qualityText[当前音质]（无歌曲时随 musicItem 隐藏）；
+                点击弹播放音质面板，切换后无缝替换音源、保持进度 */}
             {musicItem && (
                 <Text
                     numberOfLines={1}
@@ -97,7 +99,16 @@ export default function MusicDetail() {
                             : styles.qualityTagPhone,
                         compact && styles.qualityTagCompact,
                         { color: colors.textSecondary },
-                    ]}>
+                    ]}
+                    onPress={() => {
+                        showPanel("MusicQuality", {
+                            musicItem,
+                            type: "play",
+                            async onQualityPress(q) {
+                                await TrackPlayer.changeQuality(q);
+                            },
+                        });
+                    }}>
                     {qualityText[quality]}
                 </Text>
             )}

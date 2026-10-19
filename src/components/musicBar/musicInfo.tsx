@@ -21,6 +21,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { timingConfig } from "@/constants/commonConst";
 import { qualityText } from "@/utils/qualities";
+import { showPanel } from "@/components/panels/usePanel";
 
 interface IBarMusicItemProps {
     musicItem: IMusic.IMusicItem | null;
@@ -65,13 +66,23 @@ function _BarMusicItem(props: IBarMusicItemProps) {
                 <ThemeText fontSize="content" fontColor="musicBarText">
                     {musicItem?.title}
                 </ThemeText>
-                {/* 当前音质标识：`标题 ·高音质`，description 小字、musicBarText 半透明（与 artist 同款） */}
+                {/* 当前音质标识：`标题 ·高音质`，description 小字、musicBarText 半透明（与 artist 同款）；
+                    点击弹播放音质面板，切换后无缝替换音源、保持进度 */}
                 {musicItem && quality && (
                     <ThemeText
                         fontSize="description"
                         color={Color(colors.musicBarText)
                             .alpha(0.6)
-                            .toString()}>
+                            .toString()}
+                        onPress={() => {
+                            showPanel("MusicQuality", {
+                                musicItem,
+                                type: "play",
+                                async onQualityPress(q) {
+                                    await TrackPlayer.changeQuality(q);
+                                },
+                            });
+                        }}>
                         {" "}·{qualityText[quality]}
                     </ThemeText>
                 )}
