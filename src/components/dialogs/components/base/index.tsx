@@ -136,8 +136,19 @@ function Dialog(props: IDialogProps) {
                         }
                         : null,
                 ]}>
-                {/* 视觉淡入层（纯动画，不可交互）：淡入淡出由 containerStyle 驱动 */}
-                <Animated.View style={[styles.container, containerStyle]} />
+                {/* 弹窗外区域点击=关闭：覆盖 backContainer 全区域（平板右 70% 内容区 / 全屏播放页整屏），
+                    垫在淡入层与弹窗本体之下（zIndex 默认 0 < 16300/16310）。
+                    此前该区域命中 backContainer 空容器（无响应者）导致点击不退出；
+                    点击弹窗本体（dialogContainer 16310 在上）不触发本层，点击外部命中本层=关闭 */}
+                <TouchableWithoutFeedback onPress={onDismiss}>
+                    <View style={StyleSheet.absoluteFill} />
+                </TouchableWithoutFeedback>
+                {/* 视觉淡入层（纯动画，不可交互）：淡入淡出由 containerStyle 驱动；pointerEvents none
+                    避免全屏透明层拦截命中下方的关闭层 */}
+                <Animated.View
+                    pointerEvents="none"
+                    style={[styles.container, containerStyle]}
+                />
                 <Animated.View
                     style={[
                         styles.dialogContainer,

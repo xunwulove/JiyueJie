@@ -2,6 +2,7 @@ import StatusBar from "@/components/base/statusBar";
 import globalStyle from "@/constants/globalStyle";
 import useOrientation from "@/hooks/useOrientation";
 import React, { useEffect } from "react";
+import LocalMusicSheet from "@/core/localMusicSheet";
 import {
     Pressable,
     StyleSheet,
@@ -86,9 +87,9 @@ export default function MusicDetail() {
                 ]}>
                 {musicItem?.artist}
             </Text>
-            {/* 当前音质标识（QQ 音乐式带框标签）：qualityText[当前音质]（无歌曲时随 musicItem 隐藏）；
-                点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板 */}
-            {musicItem && (
+            {/* 当前音质标识（QQ 音乐式带框标签）：qualityText[当前音质]（无歌曲时随 musicItem 隐藏；
+                本地音乐无多音质不显示）；点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板 */}
+            {musicItem && !LocalMusicSheet.isLocalMusic(musicItem) && (
                 <Text
                     numberOfLines={1}
                     ellipsizeMode="tail"
