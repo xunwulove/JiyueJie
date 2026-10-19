@@ -3,7 +3,7 @@ import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import ListItem from "../base/listItem";
 
 import LocalMusicSheet from "@/core/localMusicSheet";
-import { showPanel } from "../panels/usePanel";
+import { showDialog } from "@/components/dialogs/useDialog";
 import TitleAndTag from "./titleAndTag";
 import ThemeText from "../base/themeText";
 import TrackPlayer from "@/core/trackPlayer";
@@ -104,7 +104,7 @@ export default function MusicItem(props: IMusicItemProps) {
                     position="none"
                     icon="ellipsis-vertical"
                     onPress={() => {
-                        showPanel("MusicItemOptions", {
+                        showDialog("MusicItemOptionsDialog", {
                             musicItem,
                             musicSheet,
                         });

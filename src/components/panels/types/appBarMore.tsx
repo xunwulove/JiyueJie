@@ -46,6 +46,7 @@ export default function AppBarMore(props: IAppBarMoreProps) {
 
     return (
         <PanelBase
+            keyboardAvoidBehavior="none"
             renderBody={() => (
                 <>
                     {title ? (

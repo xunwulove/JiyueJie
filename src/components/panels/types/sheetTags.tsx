@@ -24,6 +24,7 @@ export default function SheetTags(props: ISheetTagsProps) {
 
     return (
         <PanelBase
+            keyboardAvoidBehavior="none"
             height={vh(70)}
             renderBody={() => (
                 <>
