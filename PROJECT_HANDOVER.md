@@ -18,7 +18,7 @@
 | 上游快照 | `MusicFree-upstream/`（原版源码快照，2026-10-19 更新至上游 master=d118b18b3d，即 v1.0.0-beta.4 tag 指向 commit；1.0.0-beta 完整源码作者尚未公开，正式版发布后才上主分支） |
 
 **远程仓库**：
-- **GitHub**（源代码）：`github.com/xunwulove/JiyueJie`，main 分支。push 凭据已在 `.git/config` 的 origin URL 内（含 PAT，勿外泄、勿复制到公开文档）；直连 github.com 常断，兜底镜像 `https://ghfast.top/https://github.com/xunwulove/JiyueJie.git`。
+- **GitHub**（源代码）：`github.com/xunwulove/JiyueJie`，main 分支。push 凭据已在 `.git/config` 的 origin URL 内（含 PAT，勿外泄、勿复制到公开文档）；**github.com:443 持续封锁，git 直连/镜像均不可靠——固定用 Git Data API 推送（api.github.com 走 REST，保留完整 commit 历史），脚本思路见 `docs/问题排查与避坑记录.md` §6.3**。
 - **Gitee**（软件更新仓）：`gitee.com/xunwulove/jiyuejie`，master 分支。结构：`updates/version.json`（更新兜底）+ Release tag `latest`（主更新地址，附件 = version.json / app-arm64-v8a-release.apk / app-universal-release.apk，**文件名不可变**）。gitee token 见原交接人对话记录，勿写入本文档。
 
 ---
@@ -100,7 +100,7 @@
 **发版步骤（每次用户要求"打包/上传"时）**：
 1. 升版本号（package.json 无 BOM + build.gradle versionCode+1）
 2. 前台打包 arm64 + universal → 重命名"极悦界 vX.Y.Z (abi).apk"到项目根
-3. **GitHub push 源码**：直连重试 3 次失败 → 用 ghfast.top 镜像（命令与避坑见 `docs/问题排查与避坑记录.md` §6.3 及历史记录）；APK 不入库
+3. **GitHub push 源码**：**固定用 Git Data API 推送**（`api.github.com` REST：逐 commit 上传改动 blob → base_tree 建 tree → 建 commit → PATCH ref；保留完整历史，直连 github.com:443 持续封锁勿再试 git push/镜像）；APK 不入库
 4. **Gitee 更新**：**必须重建 release**（删 release → 重建 tag=latest + target_commitish=master → 分次上传 3 个附件，本地文件须预先命名成目标文件名）→ 同步更新仓库 `updates/version.json`（PUT contents，先 GET 拿 sha）→ curl -L 验证三链接 200。**"同名覆盖"是陷阱**（实为新增同名附件，链接仍指旧文件），完整流程见 `docs/问题排查与避坑记录.md` 第6章。
 
 ---
@@ -138,5 +138,5 @@
 
 - **GitHub PAT**：嵌在 `.git/config` origin URL 中（自动生效，可直接 push）；勿在文档/对话外泄露。
 - **Gitee token**：账号 `xunwulove`，token 保存在原交接人（豆包）会话记忆里；接手 AI 需要时向用户索取，**不要写入本项目文档**（防文档泄露）。
-- 项目约定沉淀：均衡器/JamesDSP 音效引擎避坑已在文档第2章（并新增 JamesDSP 集成避坑节）；gitee 发版避坑已在文档第6章；打包卡死/镜像推送等经验在本文 §5/§6。
+- 项目约定沉淀：均衡器/JamesDSP 音效引擎避坑已在文档第2章（并新增 JamesDSP 集成避坑节）；gitee 发版避坑已在文档第6章；打包卡死/GitHub API 推送等经验在本文 §5/§6。
 - 用户偏好（长期）：见本会话 user-preferences（不主动打包、先备份、临时文件目录、平板优先、版本号规则等），上文 §2 已摘录关键项。
