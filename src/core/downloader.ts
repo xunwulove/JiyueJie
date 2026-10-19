@@ -180,17 +180,14 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
 
     private generateFilename(musicItem: IMusic.IMusicItem) {
         // 下载文件命名：歌名在前（默认）/ 作者在前，可配置 basic.downloadNameOrder
+        // （用户要求去除平台与歌曲id后缀，命名保持纯净：`歌名 - 歌手`）
         const order =
             this.configService?.getConfig("basic.downloadNameOrder") ?? "title-first";
         const title = escapeCharacter(musicItem.title) || "未知歌曲";
         const artist = escapeCharacter(musicItem.artist) || "未知歌手";
-        const baseName =
-            order === "artist-first"
-                ? `${artist} - ${title}`
-                : `${title} - ${artist}`;
-        // 追加平台与歌曲id，避免同名同作者不同版本互相覆盖；并保留该后缀不被截断
-        const uniqueTag = `_${escapeCharacter(musicItem.platform)}-${escapeCharacter(musicItem.id)}`;
-        return baseName.slice(0, Math.max(0, 200 - uniqueTag.length)) + uniqueTag;
+        return order === "artist-first"
+            ? `${artist} - ${title}`
+            : `${title} - ${artist}`;
     }
 
 
@@ -514,6 +511,21 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                         targetDownloadPath,
                         musicItem.artwork,
                     ).catch(() => {});
+                }
+                // 内嵌歌词：音源支持 getLyric 时尝试写入（失败不影响入库，
+                // 避免个别音源歌词接口异常拖垮下载队列）
+                if (plugin?.methods?.getLyric) {
+                    plugin.methods
+                        .getLyric(musicItem)
+                        .then(async lrc => {
+                            if (lrc) {
+                                await Mp3Util.setMediaTag(
+                                    targetDownloadPath,
+                                    { lyric: lrc },
+                                );
+                            }
+                        })
+                        .catch(() => {});
                 }
                 LocalMusicSheet.addMusic({
                     ...musicItem,
