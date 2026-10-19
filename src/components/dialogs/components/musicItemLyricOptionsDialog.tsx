@@ -40,7 +40,7 @@ interface IOption {
 /**
  * 全屏播放页歌曲选项 - 三级浮窗（Dialog 版，替代原底部面板 MusicItemLyricOptions）：
  * 全屏播放页顶部三点菜单弹此浮窗。选项逻辑与面板版一致，
- * 载体改对话框体系（居中缩放 + 16300 层级），规避底部面板在全屏播放层被压住的问题。
+ * 载体改对话框体系（居中缩放 + 0901/0909 层级），规避底部面板在全屏播放层被压住的问题。
  */
 export default function MusicItemLyricOptionsDialog(
     props: IMusicItemLyricOptionsDialogProps,

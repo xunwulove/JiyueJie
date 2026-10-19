@@ -261,12 +261,13 @@ const style = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 15000,
+        zIndex: 509, // 概念编码 0509（JS 数值去前导零）
         // Android 绘制顺序由 elevation 决定（RN zIndex 不跨父容器生效）：
         // 无 elevation 时页面内带 elevation 的元素（如播放条 MusicBar=6）会画在
         // 遮罩/面板之上，导致点击穿透、面板被盖住（对称 ef98369 的 Dialog 侧修复）；
-        // 遮罩 15300 / 面板 15310，保持 Panel < Dialog(16300) 的层级语义
-        elevation: 15300,
+        // 层级编码规范：主层 05 次级界面层（二级页面 0501 / 沉浸播放 0505 / 面板遮罩 0509 / 面板本体 0513），
+        // 保持 Panel < Dialog(0901) 的层级语义
+        elevation: 509, // 概念编码 0509（JS 数值去前导零）
     },
     mask: {
         backgroundColor: "#000",
@@ -289,12 +290,12 @@ const style = StyleSheet.create({
         // 不裁剪时直角边缘在圆角处外露，视觉上呈"圆角处直角阴影/直角角块"。
         // Android elevation 阴影基于 View outline（圆角 outline），overflow hidden 不影响阴影显示。
         overflow: "hidden",
-        zIndex: 15010,
-        elevation: 15310,
+        zIndex: 513, // 概念编码 0513（JS 数值去前导零）
+        elevation: 513,
     },
     kbContainer: {
         // 与 Dialog backContainer(ef98369 / 717b872) 同构：必须 position absolute + 全屏 100%，
-        // elevation(15310) 才在 Android 生效、把整个面板子树抬到全屏 Pressable 拦截层(15300)之上。
+        // elevation(513) 才在 Android 生效、把整个面板子树抬到全屏 Pressable 拦截层(509)之上。
         // 此前 kbContainer 无 position/无尺寸(0x0)，elevation 不生效，面板子树仍落在普通绘制序，
         // 被已 elevation 的全屏暗色拦截层盖住 → 实测只显示一片阴影、面板内容不可见。
         // 全屏 absolute 后它叠在 mask 之上：触控穿透由外层 KeyboardAvoidingView 的
@@ -302,7 +303,7 @@ const style = StyleSheet.create({
         position: "absolute",
         width: "100%",
         height: "100%",
-        zIndex: 15010,
-        elevation: 15310,
+        zIndex: 513, // 概念编码 0513（JS 数值去前导零）
+        elevation: 513,
     },
 });
