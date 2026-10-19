@@ -140,7 +140,6 @@ function Dialog(props: IDialogProps) {
                     style={[
                         styles.dialogContainer,
                         dialogContainerStyle,
-                        containerStyle,
                         scaleAnimationStyle,
                         {
                             backgroundColor: colors.backdrop,
