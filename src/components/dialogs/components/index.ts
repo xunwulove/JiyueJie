@@ -31,6 +31,7 @@ import SimpleInputDialog from "./simpleInputDialog";
 import WebDAVSettingDialog from "./webdavSettingDialog";
 import MusicItemOptionsDialog from "./musicItemOptionsDialog";
 import MusicItemLyricOptionsDialog from "./musicItemLyricOptionsDialog";
+import MusicQualityDialog from "./musicQualityDialog";
 
 const dialogs = {
     SimpleDialog,
@@ -66,6 +67,7 @@ const dialogs = {
     WebDAVSettingDialog,
     MusicItemOptionsDialog,
     MusicItemLyricOptionsDialog,
+    MusicQualityDialog,
 };
 
 export default dialogs;

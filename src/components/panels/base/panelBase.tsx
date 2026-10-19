@@ -285,6 +285,10 @@ const style = StyleSheet.create({
         right: 0,
         borderTopLeftRadius: 14,
         borderTopRightRadius: 14,
+        // 裁剪子内容到顶部圆角内：标题（PanelHeader 直角渐变）等子视图为直角矩形，
+        // 不裁剪时直角边缘在圆角处外露，视觉上呈"圆角处直角阴影/直角角块"。
+        // Android elevation 阴影基于 View outline（圆角 outline），overflow hidden 不影响阴影显示。
+        overflow: "hidden",
         zIndex: 15010,
         elevation: 15310,
     },

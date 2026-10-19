@@ -1,6 +1,5 @@
 import AppBarMore from "./appBarMore";
 import AssociateLrc from "./associateLrc";
-import MusicQuality from "./musicQuality";
 import PlayList from "./playList";
 import SearchLrc from "./searchLrc";
 import SheetTags from "./sheetTags";
@@ -12,8 +11,6 @@ export default {
     PlayList: PlayList,
     /** 关联歌词 */
     AssociateLrc,
-    /** 音质选择 */
-    MusicQuality,
     /** 歌单tag */
     SheetTags,
     /** 搜索歌词 */
