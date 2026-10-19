@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
         marginTop: 5,
         lineHeight: 22,
     },
-    /* 当前音质标识：居中、小字、次级色（跟随歌名/歌手布局，不挤压标题） */
+    /* 当前音质标识：居中、小字、次级色 + 细边框圆角框（QQ 音乐式），不挤压标题 */
     qualityTag: {
         alignSelf: "center",
         includeFontPadding: false,
