@@ -110,8 +110,8 @@ function Dialog(props: IDialogProps) {
         <>
             {/* 全屏触摸拦截层：覆盖 100% 整屏（含左播放区），点击任意非弹窗区域=关闭浮窗，
                 不再穿透触发下层进全屏导航（tabletPanel playContent onPress）。
-                与 backContainer 同级同 elevation、渲染在前 → backContainer（弹窗本体）触摸优先；
-                纯透明 View，不显示暗色（平板不遮挡播放区视觉） */}
+                拦截层 elevation 16300 位于弹窗本体（dialogContainer elevation 16310）之下，
+                弹窗按钮可正常点击，仅非弹窗区域命中本层；纯透明不显示暗色（平板不遮挡播放区视觉） */}
             <TouchableWithoutFeedback onPress={onDismiss}>
                 <View style={styles.screenTouchBlock} />
             </TouchableWithoutFeedback>
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     },
     backContainer: {
         position: "absolute",
-        zIndex: 16299,
+        zIndex: 16301,
         // Android 原生绘制顺序由 elevation 决定（RN zIndex 不跨父容器生效）：
         // 页面内带 elevation 的元素（如播放条 MusicBar elevation=6）会盖过无 elevation 的遮罩，
         // 导致点击穿透（如点击播放条误进全屏播放器且浮窗不关闭）；这里用大值 elevation 把整个浮窗层压到最上
@@ -415,7 +415,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.35,
         shadowRadius: 10,
 
-        elevation: 8,
+        // Android 触摸优先级由 elevation 决定：必须高于全屏拦截层 screenTouchBlock（16300），
+        // 否则弹窗本体触摸被拦截层抢走（弹窗选项点不到、点任意位置=关闭）。16310 保证本体最上。
+        elevation: 16310,
     },
 
     defaultFontStyle: {
