@@ -19,6 +19,7 @@
     - **弹窗外部点击退出**（`dialogs/components/base/index.tsx`）：根因=backContainer（position:absolute + elevation 16300 + 全屏容器）盖住 screenTouchBlock 拦截层——平板 tabletBound 时 backContainer 被裁剪为右 70%（左 30% 播放区命中拦截层可退出、右 70% 内容区命中 backContainer 空容器**不可退出**）；全屏播放/手机时 backContainer 整屏，点击任何弹窗外区域都不退出。修复=backContainer 内补全区域 `TouchableWithoutFeedback(onPress=onDismiss)`（`StyleSheet.absoluteFill` 垫在淡入层与弹窗本体之下）+ 视觉淡入层 `container` 补 `pointerEvents="none"`（避免全屏透明动画层拦截命中下方关闭层）；点击弹窗本体（dialogContainer 16310 在上）不触发、点击外部命中关闭层=退出。平板左 30% 播放区仍走 screenTouchBlock 关闭
     - **本地音乐不显示音质切换标识**（`pages/musicDetail/index.tsx` + `components/musicBar/musicInfo.tsx`）：本地文件无多音质，`changeQuality` 走插件 `getMediaSource` 返回同一本地 URL、切换无实际效果——本地音乐（`LocalMusicSheet.isLocalMusic`）隐藏音质标识（全屏播放页标题下方 + 迷你条"标题·音质"），不再出现可点击的"低/标准/高/超高音质"标签
     - 验证：tsc 0、eslint 0 error（7 个 warning 均为既有 inline-style/react-hooks）
+12. 【改动】**本地音乐音质标识改为"显示但禁用点击"**（`pages/musicDetail/index.tsx` + `components/musicBar/musicInfo.tsx`）：上一条（#11）本地音乐隐藏音质标识→按用户确认改为**显示当前音质标签但不响应点击**——本地文件单音质，标签保留（用户可见"标准/高音质"框），`onPress` 条件化：`!isLocalMusic` 才执行 `changeQuality(getNextQuality)`，本地音乐传 `undefined` 点击无反应。验证：tsc 0、eslint 0 error（3 个 warning 均为既有 react-hooks）
 
 `2026.10.19 0.6.2.16（已发版）`
 > 本次为 **0.6.2.16 正式发版**（versionName 0.6.2.15→0.6.2.16，versionCode 400026→400027）：并入此前「未发版改动」25 项——含平板浮窗穿透彻底根治（交互层全屏覆盖、暗色层限右 70% 内容区、Dialog 全屏拦截层）、音源订阅清单修复（plugins.json 99→98）、音质标识、JamesDSP 竞态加锁等。已装 0.6.2.15 的用户会收到更新提示。
