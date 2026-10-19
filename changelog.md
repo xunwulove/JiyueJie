@@ -4,7 +4,8 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
-`2026.10.17（未发版改动）`
+`2026.10.19 0.6.2.16（已发版）`
+> 本次为 **0.6.2.16 正式发版**（versionName 0.6.2.15→0.6.2.16，versionCode 400026→400027）：并入此前「未发版改动」25 项——含平板浮窗穿透彻底根治（交互层全屏覆盖、暗色层限右 70% 内容区、Dialog 全屏拦截层）、音源订阅清单修复（plugins.json 99→98）、音质标识、JamesDSP 竞态加锁等。已装 0.6.2.15 的用户会收到更新提示。
 1. 【变更】去掉算法混响预设列表首项"关闭"胶囊（`src/core/jamesdsp.ts` `REVERB_PRESETS` 20→19 项，UI 索引 0 从此即"小房间"）：UI 与存储的 **UI 索引语义不变**（`jdsp.reverbPreset` 0=小房间），选中态比较与 `applyReverb(true, 0, idx)` 调用处逻辑未动；**底层映射**在 `applyReverb` 算法引擎分支与启动恢复（`applyAllConfig`）下发原生预设号 = UI 索引 + 1（跳过原生 None/0，点"小房间"下发 1、点"水下"下发 19），卷积混响映射不受影响。**老用户数据偏移说明**：同版本号重发、无版本迁移钩子，本地历史 `jdsp.reverbPreset` 读取时整体偏移一格（旧 0=关闭→新 0=小房间；旧 1=小房间→新 1=中房间……），无法区分新旧值，按接受偏移处理；旧值 19（水下）在新 19 项列表越界，读取时 clamp 到 18（水下）兜底，避免无高亮/原生预设越界
 2. 【优化】音效页大胶囊**平板档改固定 dp 小尺寸**（`soundEffectSetting.tsx` `chipLarge`）：rpx 按屏幕短边等比放大，平板短边 600→高 40.5dp、900→64.8dp 导致胶囊过大而文字 15sp 不缩放；平板（`src/utils/tablet` `isTabletScreen()`，对齐 sw600dp）时改用固定 height 36dp / paddingHorizontal 16dp / borderRadius 18dp，文字仍 15sp 不变；手机端保持 rpx(54/24/27) 原状；`importChip` 虚线框叠加关系不变，各胶囊选中态逻辑未动
 3. 【优化】**首页推荐歌单胶囊与音效页统一**（`homeBody/recommendSection.tsx` `tag`、`recommendSheets/index.tsx` `tagCapsule`）：此前为全设备固定 dp 54/24/27（手机上偏大、平板比音效胶囊 36 还大），改为与 `chipLarge` 同一套逻辑——手机档 rpx(54)/rpx(24)/rpx(27) 随屏缩放、平板档固定 height 36dp / paddingHorizontal 16dp / borderRadius 18dp；文字仍 body(15sp) 不变，`tag` 的 marginRight:8 与 `tagCapsule` 的 alignItems/justifyContent 等其余属性照旧
