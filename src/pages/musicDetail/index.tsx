@@ -20,8 +20,9 @@ import ImmersiveLayer, {
 } from "./components/immersiveLayer";
 import Config from "@/core/appConfig";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
-import { useCurrentMusic } from "@/core/trackPlayer";
+import { useCurrentMusic, useMusicQuality } from "@/core/trackPlayer";
 import useColors from "@/hooks/useColors";
+import { qualityText } from "@/utils/qualities";
 
 /**
  * 全屏播放页 - 对齐 APlayer PlayingPage：
@@ -38,6 +39,7 @@ export default function MusicDetail() {
     const { height: winH } = useWindowDimensions();
     const compact = winH < 600;
     const musicItem = useCurrentMusic();
+    const quality = useMusicQuality();
     const colors = useColors();
 
     useEffect(() => {
@@ -83,6 +85,22 @@ export default function MusicDetail() {
                 ]}>
                 {musicItem?.artist}
             </Text>
+            {/* 当前音质标识：qualityText[当前音质]（无歌曲时随 musicItem 隐藏） */}
+            {musicItem && (
+                <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={[
+                        styles.qualityTag,
+                        isTablet
+                            ? styles.qualityTagTablet
+                            : styles.qualityTagPhone,
+                        compact && styles.qualityTagCompact,
+                        { color: colors.textSecondary },
+                    ]}>
+                    {qualityText[quality]}
+                </Text>
+            )}
         </View>
     );
 
@@ -188,5 +206,27 @@ const styles = StyleSheet.create({
         fontSize: 15,
         marginTop: 5,
         lineHeight: 22,
+    },
+    /* 当前音质标识：居中、小字、次级色（跟随歌名/歌手布局，不挤压标题） */
+    qualityTag: {
+        alignSelf: "center",
+        includeFontPadding: false,
+        textAlign: "center",
+    },
+    qualityTagTablet: {
+        fontSize: 14,
+        lineHeight: 20,
+        marginTop: 6,
+    },
+    qualityTagPhone: {
+        fontSize: 11,
+        lineHeight: 16,
+        marginTop: 4,
+    },
+    /* 矮屏紧凑：12sp，行高 17 收紧 */
+    qualityTagCompact: {
+        fontSize: 12,
+        lineHeight: 17,
+        marginTop: 3,
     },
 });

@@ -10,7 +10,7 @@ import useIsTablet from "@/hooks/useIsTablet";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
 import { fullPlayingAtom } from "@/core/tabletNav";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import TrackPlayer, { usePlayList } from "@/core/trackPlayer";
+import TrackPlayer, { useMusicQuality, usePlayList } from "@/core/trackPlayer";
 import Animated, {
     SharedValue,
     runOnJS,
@@ -20,6 +20,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { timingConfig } from "@/constants/commonConst";
+import { qualityText } from "@/utils/qualities";
 
 interface IBarMusicItemProps {
     musicItem: IMusic.IMusicItem | null;
@@ -30,6 +31,7 @@ function _BarMusicItem(props: IBarMusicItemProps) {
     const { musicItem, activeIndex, transformSharedValue } = props;
     const colors = useColors();
     const safeAreaInsets = useSafeAreaInsets();
+    const quality = useMusicQuality();
 
     const animatedStyles = useAnimatedStyle(() => {
         return {
@@ -63,6 +65,16 @@ function _BarMusicItem(props: IBarMusicItemProps) {
                 <ThemeText fontSize="content" fontColor="musicBarText">
                     {musicItem?.title}
                 </ThemeText>
+                {/* 当前音质标识：`标题 ·高音质`，description 小字、musicBarText 半透明（与 artist 同款） */}
+                {musicItem && quality && (
+                    <ThemeText
+                        fontSize="description"
+                        color={Color(colors.musicBarText)
+                            .alpha(0.6)
+                            .toString()}>
+                        {" "}·{qualityText[quality]}
+                    </ThemeText>
+                )}
                 {musicItem?.artist && (
                     <ThemeText
                         fontSize="description"
