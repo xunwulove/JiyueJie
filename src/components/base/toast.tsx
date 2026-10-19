@@ -162,10 +162,10 @@ const styles = StyleSheet.create({
         top: rpx(128),
         width: "100%",
         alignItems: "center",
-        zIndex: 20000,
-        // Android 绘制顺序由 elevation 主导：补大值 elevation 盖过面板(15310)/弹窗(16310)，
-        // 否则浮窗打开期间 Toast 被遮住（"点了删除、弹窗关闭后才看到提示"）
-        elevation: 16320,
+        zIndex: 1301,
+        // Android 绘制顺序由 elevation 主导：层级编码规范主层 13（Toast 最高层），
+        // 盖过弹窗层(0909)/次级界面层(0513)；否则浮窗打开期间 Toast 被遮住（"点了删除、弹窗关闭后才看到提示"）
+        elevation: 1301,
     },
     contentContainer: {
         minWidth: rpx(420),

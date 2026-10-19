@@ -185,7 +185,9 @@ const style = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 15000,
+        // 层级编码规范：主层 05 次级界面层、面板遮罩 0509（zIndex=elevation 统一）
+        zIndex: 509, // 概念编码 0509（JS 数值去前导零）
+        elevation: 509,
     },
     mask: {
         backgroundColor: "#000",
@@ -197,10 +199,13 @@ const style = StyleSheet.create({
         height: "100%",
         bottom: 0,
         right: 0,
-        zIndex: 15010,
+        // 层级编码规范：面板本体 0513（高于遮罩 0509）
+        zIndex: 513, // 概念编码 0513（JS 数值去前导零）
+        elevation: 513,
         flexDirection: "column",
     },
     kbContainer: {
-        zIndex: 15010,
+        zIndex: 513, // 概念编码 0513（JS 数值去前导零）
+        elevation: 513,
     },
 });

@@ -101,7 +101,7 @@ function FullOverlay({ children }: { children: React.ReactNode }) {
             style={[
                 StyleSheet.absoluteFill,
                 animatedStyle,
-                { zIndex: 1000 },
+                { zIndex: 501 }, // 层级编码 0501（JS 数值去前导零）
             ]}>
             {/* 背景：覆盖层自绘 PageBackground（不透明渐变）——遮挡下方一级内容 + 与一级同款渐变；
                 传入 screenInsets 后背景图/渐变按整屏几何渲染，与全局背景完全重叠（不错位） */}

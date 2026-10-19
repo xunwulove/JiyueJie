@@ -831,3 +831,53 @@ albumDetail、artistDetail、pluginSheetDetail、recommendSheets、searchMusicLi
 | 7. docs/手机横屏尺寸适配核查报告.md | 六、QQ/网易云对照（车机前提/策略对照/启示） | 6.4 |
 | 7. docs/手机横屏尺寸适配核查报告.md | 七、合格判定表 + 总体不合格 | 6.5 |
 | 7. docs/手机横屏尺寸适配核查报告.md | 八、修复建议（P0/P1/P2/策略 A/B/C）+ 九、附录（文件清单/对照产物/核查约束） | 6.5 |
+
+## 第8章 浮窗层级编码规范（2026-10-20 定稿并迁移）
+
+### 8.1 编码规则
+
+- **4 位数字编码**：`前两位 = 主层级`，`后两位 = 同层近似区分`。
+- **主层级用间隔 4**：`01 / 05 / 09 / 13 / 17 / 21`——每段之间留 3 个空位，未来插层无需重排既有值。
+- **近似区分用间隔 4**：`01 / 05 / 09 / 13`——同层内成员按数值从小到大排（低在下、高在上）。
+- **数值越大越靠上**；**zIndex 与 elevation 统一使用同一编码**（消除此前 zIndex/elevation 不一致，如 Dialog 容器 zIndex 16301 / elevation 16300）。
+- **主层语义**：01=页面内容（最底层）→ 05=次级界面层 → 09=弹窗层 → 13=Toast（最高层）→ 17/21=预留。
+- **页面内元素**（播放条 MusicBar elevation=6、FAB、页面内 zIndex 等）属 01 层内部细节，不纳入编码、不参与浮窗层级语义。
+- **代码中数值写法**：JS 数字字面量不支持前导零（`0501` 会被解析为八进制字面量报 TS1121），实际 zIndex/elevation 使用**去前导零的十进制**（0501→`501`、0901→`901`）；概念编码（0501 等四位写法）仅用于文档与注释的可读性。
+- **全屏播放页语义**：与播放区/内容区互斥替换（同档内容），但渲染上作为浮层**必须高于二级页面**（编码 0505），否则平板右 70% 二级页面会压在全屏播放页上。
+- **沉浸播放区**：指全屏播放页内的沉浸 UI（隐藏按钮/信息的沉浸状态），编码 0506（0505 沉浸播放层内部高一档）；不是独立外部层级。
+
+### 8.2 编码表（2026-10-20 迁移完成）
+
+| 主层 | 成员 | 编码 | 组件/文件 |
+|---|---|---|---|
+| 01 | 页面内容（播放区/内容区） | 0101 | 页面子树（现有 elevation 不改） |
+| 05 | 二级页面 | 0501 | `pages/home/components/subPageOverlay.tsx` |
+| 05 | 沉浸播放（全屏播放页） | 0505 | `pages/home/index.tsx` fullPlayingLayer |
+| 05 | 沉浸播放内沉浸 UI | 0506 | `pages/musicDetail/components/immersiveLayer.tsx` |
+| 05 | Panel 遮罩 | 0509 | `components/panels/base/panelBase.tsx` maskWrapper / `panelFullscreen.tsx` |
+| 05 | Panel 本体 | 0513 | `panelBase.tsx` wrapper/kbContainer / `panelFullscreen.tsx` |
+| 09 | Dialog 拦截层 | 0901 | `components/dialogs/components/base/index.tsx` screenTouchBlock |
+| 09 | Dialog 容器（含淡入层） | 0905 | `base/index.tsx` backContainer / container |
+| 09 | Dialog 本体 | 0909 | `base/index.tsx` dialogContainer |
+| 13 | Toast | 1301 | `components/base/toast.tsx` |
+
+**排序验证**：0101 < 0501 < 0505 < 0506 < 0509 < 0513 < 0901 < 0905 < 0909 < 1301
+
+### 8.3 各页面浮窗层级记录
+
+| 页面 | 浮窗 | 层/编码 |
+|---|---|---|
+| 首页 | 推荐源/新建歌单/排序/加入歌单等 Dialog；播放队列 Panel | 09 弹窗层 / 05 面板层 |
+| 歌单页 | 歌曲三点 MusicItemOptionsDialog、编辑歌单 Dialog | 09 弹窗层 |
+| 全屏播放页 | 三点 MusicItemLyricOptionsDialog、沉浸设置/倍速/定时/音量/音质/搜索歌词/封面/队列 | 09 弹窗层 / 05 面板层 |
+| 搜索页 | 歌曲三点 MusicItemOptionsDialog | 09 弹窗层 |
+| 设置页 | 主题/权限/歌词颜色/WebDAV/文件选择/插件/下载设置等 34 个 Dialog | 09 弹窗层 |
+| 播放列表（队列） | Panel | 05 面板层（0509/0513） |
+| 二级页面（平板） | SubPageOverlay 容器 | 05 次级界面（0501） |
+| 沉浸播放（平板） | FullPlayingLayer 容器 | 05 次级界面（0505） |
+
+### 8.4 备注
+
+- Toast 内层卡片阴影 elevation=2 为卡片自身阴影，非层级编码，不动。
+- `components/base/portal.tsx` PortalHost 为备用宿主（当前无 portal 内容），zIndex 20000 未纳入编码；启用时按宿主语义定值。
+- Panel/Dialog/Toast elevation 由 1.5 万级降至 513~1301：Android 阴影在高值区饱和，观感差异预计很小（装机确认）。

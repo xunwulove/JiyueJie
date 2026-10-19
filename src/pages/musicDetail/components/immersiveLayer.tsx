@@ -699,7 +699,8 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 15000,
+        // 沉浸播放区（全屏播放页内沉浸 UI）：层级编码规范 0505 沉浸播放层内部高一档 → 0506
+        zIndex: 506, // 概念编码 0506（JS 数值去前导零）
         overflow: "hidden",
     },
     pressArea: {

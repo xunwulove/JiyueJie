@@ -118,7 +118,7 @@ function Dialog(props: IDialogProps) {
         <>
             {/* 全屏触摸拦截层：覆盖 100% 整屏（含左播放区），点击任意非弹窗区域=关闭浮窗，
                 不再穿透触发下层进全屏导航（tabletPanel playContent onPress）。
-                拦截层 elevation 16300 位于弹窗本体（dialogContainer elevation 16310）之下，
+                拦截层 elevation 0901 位于弹窗本体（dialogContainer elevation 0909）之下，
                 弹窗按钮可正常点击，仅非弹窗区域命中本层；纯透明不显示暗色（平板不遮挡播放区视觉） */}
             <TouchableWithoutFeedback onPress={onDismiss}>
                 <View style={styles.screenTouchBlock} />
@@ -137,9 +137,9 @@ function Dialog(props: IDialogProps) {
                         : null,
                 ]}>
                 {/* 弹窗外区域点击=关闭：覆盖 backContainer 全区域（平板右 70% 内容区 / 全屏播放页整屏），
-                    垫在淡入层与弹窗本体之下（zIndex 默认 0 < 16300/16310）。
+                    垫在淡入层与弹窗本体之下（zIndex 默认 0 < 0901/0909）。
                     此前该区域命中 backContainer 空容器（无响应者）导致点击不退出；
-                    点击弹窗本体（dialogContainer 16310 在上）不触发本层，点击外部命中本层=关闭 */}
+                    点击弹窗本体（dialogContainer 0909 在上）不触发本层，点击外部命中本层=关闭 */}
                 <TouchableWithoutFeedback onPress={onDismiss}>
                     <View style={StyleSheet.absoluteFill} />
                 </TouchableWithoutFeedback>
@@ -384,11 +384,12 @@ const styles = StyleSheet.create({
     },
     backContainer: {
         position: "absolute",
-        zIndex: 16301,
+        zIndex: 905, // 概念编码 0905（JS 数值去前导零）
         // Android 原生绘制顺序由 elevation 决定（RN zIndex 不跨父容器生效）：
         // 页面内带 elevation 的元素（如播放条 MusicBar elevation=6）会盖过无 elevation 的遮罩，
-        // 导致点击穿透（如点击播放条误进全屏播放器且浮窗不关闭）；这里用大值 elevation 把整个浮窗层压到最上
-        elevation: 16300,
+        // 导致点击穿透（如点击播放条误进全屏播放器且浮窗不关闭）；
+        // 层级编码规范：主层 09 弹窗层——拦截层 0901 / 容器 0905 / 本体 0909，elevation 与 zIndex 同值
+        elevation: 905,
         width: "100%",
         height: "100%",
         left: 0,
@@ -397,7 +398,8 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     container: {
-        zIndex: 16300,
+        // 层级编码规范：弹窗层容器内淡入层 0905（backContainer 内：关闭层 0 < 淡入层 0905 < 本体 0909）
+        zIndex: 905, // 概念编码 0905（JS 数值去前导零）
         position: "absolute",
         width: "100%",
         height: "100%",
@@ -406,22 +408,23 @@ const styles = StyleSheet.create({
         // 无遮盖：弹窗直接浮在当前页面上（保留透明点击层，点弹窗外部空白仍可关闭）
         backgroundColor: "transparent",
     },
-    /** 全屏触摸拦截层：与 backContainer 同级同 elevation（16300）、渲染在前
+    /** 全屏触摸拦截层：与 backContainer 同级同 elevation（0901）、渲染在前
      *  → backContainer（弹窗本体）触摸优先，弹窗外任意区域（含左播放区）命中本层=关闭。
-     *  纯透明不显示暗色：平板不遮挡左播放区视觉（tabletBound 设计保留） */
+     *  纯透明不显示暗色：平板不遮挡左播放区视觉（tabletBound 设计保留）。
+     *  层级编码规范：弹窗层拦截层 0901（主层 09） */
     screenTouchBlock: {
         position: "absolute",
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 16300,
-        elevation: 16300,
+        zIndex: 901, // 概念编码 0901（JS 数值去前导零）
+        elevation: 901,
     },
     dialogContainer: {
         position: "absolute",
         width: "80%",
-        zIndex: 16310,
+        zIndex: 909, // 概念编码 0909（JS 数值去前导零）
         borderRadius: 20, // 对齐 APlayer Level3Dialog 圆角 20dp
         borderWidth: 0.5, // 对齐 APlayer 细边框（outlineVariant α0.35）
         borderColor: "rgba(0,0,0,0.16)",
@@ -433,9 +436,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.35,
         shadowRadius: 10,
 
-        // Android 触摸优先级由 elevation 决定：必须高于全屏拦截层 screenTouchBlock（16300），
-        // 否则弹窗本体触摸被拦截层抢走（弹窗选项点不到、点任意位置=关闭）。16310 保证本体最上。
-        elevation: 16310,
+        // Android 触摸优先级由 elevation 决定：必须高于全屏拦截层 screenTouchBlock（901），
+        // 否则弹窗本体触摸被拦截层抢走（弹窗选项点不到、点任意位置=关闭）。909 保证本体最上。
+        elevation: 909,
     },
 
     defaultFontStyle: {

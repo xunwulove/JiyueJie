@@ -20,6 +20,7 @@
     - **本地音乐不显示音质切换标识**（`pages/musicDetail/index.tsx` + `components/musicBar/musicInfo.tsx`）：本地文件无多音质，`changeQuality` 走插件 `getMediaSource` 返回同一本地 URL、切换无实际效果——本地音乐（`LocalMusicSheet.isLocalMusic`）隐藏音质标识（全屏播放页标题下方 + 迷你条"标题·音质"），不再出现可点击的"低/标准/高/超高音质"标签
     - 验证：tsc 0、eslint 0 error（7 个 warning 均为既有 inline-style/react-hooks）
 12. 【改动】**本地音乐音质标识改为"显示但禁用点击"**（`pages/musicDetail/index.tsx` + `components/musicBar/musicInfo.tsx`）：上一条（#11）本地音乐隐藏音质标识→按用户确认改为**显示当前音质标签但不响应点击**——本地文件单音质，标签保留（用户可见"标准/高音质"框），`onPress` 条件化：`!isLocalMusic` 才执行 `changeQuality(getNextQuality)`，本地音乐传 `undefined` 点击无反应。验证：tsc 0、eslint 0 error（3 个 warning 均为既有 react-hooks）
+13. 【规范】**浮窗层级编码规范落地（4 位编码：主层 01/05/09/13 间隔 4 + 近似区分 01/05/09/13，zIndex=elevation 统一）**：6 文件迁移——Toast **1301**（原 20000/16320）、Dialog 拦截层 **0901** / 容器(backContainer+淡入层) **0905** / 本体 **0909**（原 16300/16301/16310）、Panel 遮罩 **0509** / 本体 **0513**（原 15000/15300/15010/15310；panelFullscreen 原仅 zIndex、补 elevation 同值）、二级页面 **0501**（原 1000）、沉浸播放 **0505**（原 2000）、沉浸 UI **0506**（原 15000）；页面内元素（MusicBar=6 等）与 Toast 卡片阴影(elevation 2)不改、portal 备用宿主不纳入；注释同步更新；`docs/UI与适配核查记录.md` 新增第8章（编码规则/编码表/各页面浮窗层级/备注）。验证：tsc 0、eslint 0 error
 
 `2026.10.19 0.6.2.16（已发版）`
 > 本次为 **0.6.2.16 正式发版**（versionName 0.6.2.15→0.6.2.16，versionCode 400026→400027）：并入此前「未发版改动」25 项——含平板浮窗穿透彻底根治（交互层全屏覆盖、暗色层限右 70% 内容区、Dialog 全屏拦截层）、音源订阅清单修复（plugins.json 99→98）、音质标识、JamesDSP 竞态加锁等。已装 0.6.2.15 的用户会收到更新提示。
