@@ -10,6 +10,7 @@ import LocalMusicSheet from "@/core/localMusicSheet";
 import pluginReliability from "@/core/pluginReliability";
 import lyricManager from "@/core/lyricManager";
 import musicHistory from "@/core/musicHistory";
+import playEvents from "@/core/playEvents";
 import MusicSheet from "@/core/musicSheet";
 import PluginManager from "@/core/pluginManager";
 import Theme from "@/core/theme";
@@ -95,6 +96,9 @@ async function bootstrapImpl() {
         }),
         musicHistory.setup().then(() => {
             logger.mark("musicHistory");
+        }),
+        playEvents.setup().then(() => {
+            logger.mark("playEvents");
         }),
     ]);
     trace("配置初始化完成");
