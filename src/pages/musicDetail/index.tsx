@@ -22,8 +22,8 @@ import Config from "@/core/appConfig";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import TrackPlayer, { useCurrentMusic, useMusicQuality } from "@/core/trackPlayer";
 import useColors from "@/hooks/useColors";
-import { qualityText } from "@/utils/qualities";
-import { showPanel } from "@/components/panels/usePanel";
+import Color from "color";
+import { getNextQuality, qualityText } from "@/utils/qualities";
 
 /**
  * 全屏播放页 - 对齐 APlayer PlayingPage：
@@ -86,8 +86,8 @@ export default function MusicDetail() {
                 ]}>
                 {musicItem?.artist}
             </Text>
-            {/* 当前音质标识：qualityText[当前音质]（无歌曲时随 musicItem 隐藏）；
-                点击弹播放音质面板，切换后无缝替换音源、保持进度 */}
+            {/* 当前音质标识（QQ 音乐式带框标签）：qualityText[当前音质]（无歌曲时随 musicItem 隐藏）；
+                点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板 */}
             {musicItem && (
                 <Text
                     numberOfLines={1}
@@ -98,16 +98,15 @@ export default function MusicDetail() {
                             ? styles.qualityTagTablet
                             : styles.qualityTagPhone,
                         compact && styles.qualityTagCompact,
-                        { color: colors.textSecondary },
+                        {
+                            color: colors.textSecondary,
+                            borderColor: Color(colors.textSecondary)
+                                .alpha(0.35)
+                                .toString(),
+                        },
                     ]}
                     onPress={() => {
-                        showPanel("MusicQuality", {
-                            musicItem,
-                            type: "play",
-                            async onQualityPress(q) {
-                                await TrackPlayer.changeQuality(q);
-                            },
-                        });
+                        TrackPlayer.changeQuality(getNextQuality(quality));
                     }}>
                     {qualityText[quality]}
                 </Text>
@@ -223,6 +222,9 @@ const styles = StyleSheet.create({
         alignSelf: "center",
         includeFontPadding: false,
         textAlign: "center",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderRadius: 4,
+        paddingHorizontal: 4,
     },
     qualityTagTablet: {
         fontSize: 14,

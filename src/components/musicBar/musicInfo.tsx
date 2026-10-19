@@ -20,8 +20,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { timingConfig } from "@/constants/commonConst";
-import { qualityText } from "@/utils/qualities";
-import { showPanel } from "@/components/panels/usePanel";
+import { getNextQuality, qualityText } from "@/utils/qualities";
 
 interface IBarMusicItemProps {
     musicItem: IMusic.IMusicItem | null;
@@ -66,22 +65,24 @@ function _BarMusicItem(props: IBarMusicItemProps) {
                 <ThemeText fontSize="content" fontColor="musicBarText">
                     {musicItem?.title}
                 </ThemeText>
-                {/* 当前音质标识：`标题 ·高音质`，description 小字、musicBarText 半透明（与 artist 同款）；
-                    点击弹播放音质面板，切换后无缝替换音源、保持进度 */}
+                {/* 当前音质标识（QQ 音乐式带框标签）：`标题 ·高音质`，description 小字、musicBarText 半透明；
+                    点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板 */}
                 {musicItem && quality && (
                     <ThemeText
                         fontSize="description"
                         color={Color(colors.musicBarText)
                             .alpha(0.6)
                             .toString()}
+                        style={{
+                            borderWidth: StyleSheet.hairlineWidth,
+                            borderRadius: 4,
+                            paddingHorizontal: 4,
+                            borderColor: Color(colors.musicBarText)
+                                .alpha(0.35)
+                                .toString(),
+                        }}
                         onPress={() => {
-                            showPanel("MusicQuality", {
-                                musicItem,
-                                type: "play",
-                                async onQualityPress(q) {
-                                    await TrackPlayer.changeQuality(q);
-                                },
-                            });
+                            TrackPlayer.changeQuality(getNextQuality(quality));
                         }}>
                         {" "}·{qualityText[quality]}
                     </ThemeText>
