@@ -13,6 +13,7 @@ import TrackPlayer, { useCurrentMusic, usePlayList, useRepeatMode } from "@/core
 import repeatModeConst from "@/constants/repeatModeConst";
 import { FlashList } from "@shopify/flash-list";
 import { useI18N } from "@/core/i18n";
+import { showDialog } from "@/components/dialogs/useDialog";
 
 // 对齐媒体行规范：行高 64dp（固定值，跨设备一致），左右 padding 16dp
 const ITEM_HEIGHT = 64;
@@ -80,6 +81,17 @@ function _PlayListItem(props: IPlayListProps) {
                     播放中
                 </ThemeText>
             ) : null}
+            <IconButton
+                style={{ marginLeft: 8 }}
+                name="ellipsis-vertical"
+                sizeType="small"
+                onPress={() => {
+                    // 队列歌曲三点：复用歌曲选项弹窗（无 musicSheet → 不显示"删除"选项）
+                    showDialog("MusicItemOptionsDialog", {
+                        musicItem: item,
+                    });
+                }}
+            />
             <IconButton
                 style={{ marginLeft: 8 }}
                 name="x-mark"

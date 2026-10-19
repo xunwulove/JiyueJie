@@ -11,7 +11,6 @@ import FastImage from "@/components/base/fastImage";
 import Toast from "@/utils/toast";
 import LocalMusicSheet from "@/core/localMusicSheet";
 import { localMusicSheetId, musicHistorySheetId } from "@/constants/commonConst";
-import { ROUTE_PATH } from "@/core/router";
 
 import { hideDialog, showDialog } from "@/components/dialogs/useDialog";
 import { showPanel } from "@/components/panels/usePanel";
@@ -35,8 +34,6 @@ interface IMusicItemOptionsDialogProps {
     musicItem: IMusic.IMusicItem;
     /** 歌曲所在歌单 */
     musicSheet?: IMusic.IMusicSheetItem;
-    /** 来源 */
-    from?: string;
 }
 
 const ITEM_HEIGHT = 48;
@@ -57,7 +54,7 @@ interface IOption {
 export default function MusicItemOptionsDialog(
     props: IMusicItemOptionsDialogProps,
 ) {
-    const { musicItem, musicSheet, from } = props ?? {};
+    const { musicItem, musicSheet } = props ?? {};
     const { t } = useI18N();
 
     const downloaded = LocalMusicSheet.isLocalMusic(musicItem);
@@ -123,7 +120,7 @@ export default function MusicItemOptionsDialog(
             title: t("musicListEditor.addToSheet"),
             onPress: () => {
                 hideDialog();
-                // 浮窗切换需延迟：hideDialog 同步清 store，立即 showDialog 会被清掉
+                // hideDialog/showDialog 同写 dialogInfoStore 单值，延迟一拍避免时序竞态
                 setTimeout(() => {
                     showDialog("AddToMusicSheetDialog", { musicItem });
                 }, 0);
@@ -154,16 +151,32 @@ export default function MusicItemOptionsDialog(
             icon: "trash-outline",
             title: t("common.delete"),
             show: !!musicSheet,
-            onPress: async () => {
-                if (musicSheet?.id === localMusicSheetId) {
-                    await LocalMusicSheet.removeMusic(musicItem);
-                } else if (musicSheet?.id === musicHistorySheetId) {
-                    await musicHistory.removeMusic(musicItem);
-                } else {
-                    await MusicSheet.removeMusic(musicSheet!.id, musicItem);
-                }
-                Toast.success(t("toast.deleteSuccess"));
+            onPress: () => {
                 hideDialog();
+                // 删除前加确认浮窗（本地音乐库移除不删文件，仍确认防误触）
+                setTimeout(() => {
+                    showDialog("SimpleDialog", {
+                        title: t("common.delete"),
+                        content: t("panel.musicItemOptions.deleteConfirm", {
+                            title: musicItem.title ?? "",
+                        }),
+                        onOk: async () => {
+                            if (musicSheet?.id === localMusicSheetId) {
+                                await LocalMusicSheet.removeMusic(musicItem);
+                            } else if (
+                                musicSheet?.id === musicHistorySheetId
+                            ) {
+                                await musicHistory.removeMusic(musicItem);
+                            } else {
+                                await MusicSheet.removeMusic(
+                                    musicSheet!.id,
+                                    musicItem,
+                                );
+                            }
+                            Toast.success(t("toast.deleteSuccess"));
+                        },
+                    });
+                }, 0);
             },
         },
         {
@@ -216,17 +229,6 @@ export default function MusicItemOptionsDialog(
                 lyricManager.unassociateLyric(musicItem);
                 Toast.success(t("panel.musicItemOptions.unassociateLyricSuccess"));
                 hideDialog();
-            },
-        },
-        {
-            icon: "alarm-outline",
-            title: t("panel.musicItemOptions.timingClose"),
-            show: from === ROUTE_PATH.MUSIC_DETAIL,
-            onPress: () => {
-                hideDialog();
-                setTimeout(() => {
-                    showDialog("TimingCloseDialog");
-                }, 0);
             },
         },
         {

@@ -32,8 +32,8 @@ interface IAppBarMoreProps {
 
 /**
  * 顶栏"三点(ellipsis-vertical)"通用三级菜单面板。
- * 与歌曲行三点（MusicItemOptions）/ 歌词三点（MusicItemLyricOptions）同款：
- * 手机底部上滑、平板右滑入且限内容区不盖 tab；行 = ListItem small(48) + 图标 light(20)
+ * 与歌曲选项弹窗（MusicItemOptionsDialog）/ 全屏页歌曲弹窗（MusicItemLyricOptionsDialog）
+ * 条目样式同款：行 = ListItem small(48) + 图标 light(20)
  * + Content 标题（ThemeText 默认 content 16sp regular）。替代旧 AppBar 内建锚定下拉气泡。
  */
 export default function AppBarMore(props: IAppBarMoreProps) {
