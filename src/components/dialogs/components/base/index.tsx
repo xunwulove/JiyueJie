@@ -18,6 +18,8 @@ import Animated, {
 import { timingConfig } from "@/constants/commonConst";
 import useColors from "@/hooks/useColors";
 import useIsTablet from "@/hooks/useIsTablet";
+import { useAtomValue } from "jotai";
+import { fullPlayingAtom } from "@/core/tabletNav";
 import ThemeText from "@/components/base/themeText";
 import { ScrollView } from "react-native-gesture-handler";
 import LinearGradient from "react-native-linear-gradient";
@@ -44,12 +46,16 @@ function Dialog(props: IDialogProps) {
     const onBackPressRef = useRef(onBackPress);
     onDismissRef.current = onDismiss;
     onBackPressRef.current = onBackPress;
-    // 平板：弹窗限制在右内容区（左 30% 播放区 + 顶部 tab 栏不被遮挡）
+    // 平板：弹窗限制在右内容区（左 30% 播放区 + 顶部 tab 栏不被遮挡）；
+    // 全屏播放层激活时（fullPlaying）整屏居中——与 panelBase 的 tabletBound 语义对齐，
+    // 否则平板全屏播放页弹出的弹窗仍落进右 70% 盒（中心偏右约 15% 屏宽 + 顶部多 56dp）
     const isTablet = useIsTablet();
+    const fullPlaying = useAtomValue(fullPlayingAtom);
+    const tabletBound = isTablet && !fullPlaying;
 
     // 对话框宽度（对齐 APlayer Level3Dialog：平板 = 内容区宽 60%，手机 = 屏宽 86%）
     const dialogContainerStyle: ViewStyle =
-        isTablet
+        tabletBound
             ? {
                 width: "60%",
             }
@@ -118,7 +124,7 @@ function Dialog(props: IDialogProps) {
             <View
                 style={[
                     styles.backContainer,
-                    isTablet
+                    tabletBound
                         ? {
                             left: "30%",
                             width: "70%",
