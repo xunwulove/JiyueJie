@@ -120,10 +120,12 @@
 - **第三次 0.6.2.15 同版本号重新发布**（2026-10-18 深夜）：**两次闪退修复打包生效**（此前 6aaa13c 提交未打包、用户端复现崩溃后紧急重发）+ 底部面板（Panel）遮罩/面板补 elevation 15300/15310（对称 Dialog 侧修复：三点菜单等 Panel 浮窗被播放条等 elevation 元素盖住唤不出、点击穿透）+ 搜索失败音源改进（翻页从失败页重试、同轮失败自动重试一次）；gitee 双 release 重建 + GitHub main 同步推送；同版本号更新盲区同上
 - **第四次 0.6.2.15 同版本号重新发布**（2026-10-19）：**播放页与迷你播放条显示当前音质标识**（`useMusicQuality()` jotai 原子实时刷新；全屏播放页 titleBlock 歌手行下居中标签，迷你播放条 `标题 ·高音质`）；gitee 双 release 重建 + GitHub main 同步推送；同版本号更新盲区同上
 - **第五次 0.6.2.15 同版本号重新发布**（2026-10-19）：**平板浮窗穿透修复**——Panel/Dialog 浮窗（tabletBound 右 70% 遮罩）时左 30% 播放区补透明触摸拦截层（`panelBase.tsx` + `dialogs/base/index.tsx` 的 `tabletLeftBlocker`），点击播放区/播放条只关闭浮窗、不再穿透触发 MusicBar tapGesture 进全屏播放页；elevation 15300/15310/16300 层级未动；gitee 双 release 重建 + GitHub main 同步推送；同版本号更新盲区同上
+- **0.6.2.16 正式发版**（2026-10-19）：**平板浮窗穿透彻底根治**——Panel 遮罩交互层改 100% 全屏覆盖（点击浮窗外任意区域关闭浮窗，视觉暗色层仍限右 70% 内容区、不压暗左播放区）、Dialog 新增与弹窗本体同级同 elevation 16300 的全屏点击拦截层 `screenTouchBlock`，删除早期两个 blocker 补丁层；plugins.json 99→98（8 个死链更新 + 移除腾讯音乐源）；gitee 双 release 重建 + GitHub main 同步推送；已装 0.6.2.15 用户收到更新提示
+- **第七次 0.6.2.16 同版本号重新发布**（2026-10-19）：**歌单歌曲列表与全屏播放页三点菜单改为三级浮窗 Dialog**（`MusicItemOptionsDialog`/`MusicItemLyricOptionsDialog`，根治底部面板被 KeyboardAvoidingView/覆盖层压住只见阴影的问题）+ 核查问题批量修复——本地歌单详情页补 Header（收藏/批量入口恢复）、全屏版三点菜单文案走 i18n（9 新 key 三处同步）、Toast 补 elevation 16320（浮窗打开期间可见）、播放队列歌曲行加三点菜单、歌单删除加确认弹窗、平板全屏播放页弹窗整屏居中（Dialog 平板分支读 `fullPlayingAtom` 对齐 panelBase）；**下载音质选择改三级弹窗并高亮当前音质**（`MusicQualityDialog`，play=播放音质/download=默认下载音质）；底部面板标题圆角直角阴影修复（wrapper `overflow:"hidden"` 裁剪直角渐变标题）；gitee 双 release 重建 + GitHub main 同步推送；同版本号更新盲区同上
 
 **待办/未决**：
-- 已装 0.6.2.15 的用户收不到本次重发提示（同版本号），如需覆盖提示需在下次升版本时发布
-- 下一次发版应**升版本号**（0.6.2.16），避免同版本号重发的更新盲区
+- 已装 0.6.2.16 的用户收不到第七次重发提示（同版本号），如需覆盖提示需在下次升版本时发布
+- 下一次发版应**升版本号**（0.6.2.17），避免同版本号重发的更新盲区
 
 **已闭环（原待办，经代码核对确认）**：
 - 卡顿问题已解决，不再卡顿
