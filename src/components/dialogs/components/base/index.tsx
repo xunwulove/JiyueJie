@@ -54,12 +54,14 @@ function Dialog(props: IDialogProps) {
     const tabletBound = isTablet && !fullPlaying;
 
     // 对话框宽度（对齐 APlayer Level3Dialog：平板 = 内容区宽 60%，手机 = 屏宽 86%）
-    // 平板全屏播放时弹窗宽度跟随外面弹窗（60% 限定），不因 fullPlaying 放大为 86%：
-    // 全屏播放层只改弹窗位置（整屏居中），不改弹窗宽度
+    // 平板全屏播放页宽度与外面（普通页）弹窗一致：弹窗宽度是相对 backContainer 的百分比，
+    // 普通页 backContainer 只占右 70% 内容区（60%→全屏 42%），全屏播放页 backContainer 为整屏——
+    // 若仍写 60% 会放大为全屏 60%（弹窗明显更宽）。全屏播放页改 42%（= 内容区 70% × 60%），
+    // 保证两种场景下弹窗相对全屏宽度完全一致；手机 backContainer 始终全屏、86% 不变
     const dialogContainerStyle: ViewStyle =
         isTablet
             ? {
-                width: "60%",
+                width: tabletBound ? "60%" : "42%",
             }
             : {
                 width: "86%",
