@@ -222,6 +222,7 @@ export default function MusicItemOptions(props: IMusicItemOptionsProps) {
 
     return (
         <PanelBase
+            keyboardAvoidBehavior="none"
             renderBody={() => (
                 <>
                     <View style={style.header}>

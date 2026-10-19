@@ -240,6 +240,9 @@ export default function (props: IPanelBaseProps) {
                 panelBody
             ) : (
                 <KeyboardAvoidingView
+                    // 全屏 absolute 容器叠在 mask 拦截层之上：必须 box-none（自身不接触摸、子级面板正常接收），
+                    // 否则无处理器的全屏 View 会挡住 mask 的 onPress、点面板外无法关闭浮窗（对齐 panelFullscreen.tsx:162 同款范式）
+                    pointerEvents="box-none"
                     style={style.kbContainer}
                     behavior={keyboardAvoidBehavior || "position"}>
                     {panelBody}
@@ -286,6 +289,15 @@ const style = StyleSheet.create({
         elevation: 15310,
     },
     kbContainer: {
+        // 与 Dialog backContainer(ef98369 / 717b872) 同构：必须 position absolute + 全屏 100%，
+        // elevation(15310) 才在 Android 生效、把整个面板子树抬到全屏 Pressable 拦截层(15300)之上。
+        // 此前 kbContainer 无 position/无尺寸(0x0)，elevation 不生效，面板子树仍落在普通绘制序，
+        // 被已 elevation 的全屏暗色拦截层盖住 → 实测只显示一片阴影、面板内容不可见。
+        // 全屏 absolute 后它叠在 mask 之上：触控穿透由外层 KeyboardAvoidingView 的
+        // pointerEvents="box-none" 保证（自身不接触摸、子级面板正常），面板外点击仍达 mask 关闭浮窗。
+        position: "absolute",
+        width: "100%",
+        height: "100%",
         zIndex: 15010,
         elevation: 15310,
     },

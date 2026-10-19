@@ -36,3 +36,17 @@ export function getQualityOrder(
         return [qualityKey, ...left.reverse(), ...right];
     }
 }
+
+/**
+ * 下一个音质（QQ 音乐式循环切换）：low→standard→high→super→low…
+ * 未知/末位音质回绕到首位，用于音质标识点击自动切换
+ */
+export function getNextQuality(
+    current: IMusic.IQualityKey | undefined,
+): IMusic.IQualityKey {
+    const idx = current ? qualityKeys.indexOf(current) : -1;
+    if (idx < 0 || idx === qualityKeys.length - 1) {
+        return qualityKeys[0];
+    }
+    return qualityKeys[idx + 1];
+}
