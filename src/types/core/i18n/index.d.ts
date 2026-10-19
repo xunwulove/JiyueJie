@@ -502,19 +502,27 @@ export interface ILanguageData {
     "panel.musicItemLyricOptions.deleteLocalLyric": string; // 删除本地歌词
     "panel.musicItemLyricOptions.settingFail": string; // 设置失败
     "panel.musicItemLyricOptions.deleteFail": string; // 删除失败
+    "panel.musicItemLyricOptions.showTranslation": string; // 歌词翻译
+    "panel.musicItemLyricOptions.showTranslationOn": string; // 开启
+    "panel.musicItemLyricOptions.showTranslationOff": string; // 关闭
+    "panel.musicItemLyricOptions.lyricSettings": string; // 歌词设置
+    "panel.musicItemLyricOptions.removeFromPlaylist": string; // 从该播放列表移除
+    "panel.musicItemLyricOptions.removedFromPlaylist": string; // 已从播放列表移除
+    "panel.musicItemLyricOptions.permanentDelete": string; // 永久删除
+    "panel.musicItemLyricOptions.permanentDeleteConfirm": string; // 永久删除确认
+    "panel.musicItemLyricOptions.unknownSong": string; // 未知歌曲
 
     // 面板相关 - 音乐项选项    
     "panel.musicItemOptions.author": string; // 作者
     "panel.musicItemOptions.album": string; // 专辑
     "panel.musicItemOptions.downloaded": string; // 已下载
-    "panel.musicItemOptions.readComment": string; // 查看评论
+    "panel.musicItemOptions.deleteConfirm": string; // 从歌单删除确认
     "panel.musicItemOptions.deleteLocalDownload": string; // 删除本地下载
     "panel.musicItemOptions.deleteLocalDownloadConfirm": string; // 删除本地下载确认
     "panel.musicItemOptions.associatedLyric": string; // 已关联歌词
     "panel.musicItemOptions.associateLyric": string; // 关联歌词
     "panel.musicItemOptions.unassociateLyric": string; // 解除关联歌词    
     "panel.musicItemOptions.unassociateLyricSuccess": string; // 已解除关联歌词
-    "panel.musicItemOptions.timingClose": string; // 定时关闭
     "panel.musicItemOptions.clearPluginCache": string; // 清除插件缓存
     "panel.musicItemOptions.cacheCleared": string; // 缓存已清除
     "panel.musicItemOptions.deleteFailed": string; // 删除失败

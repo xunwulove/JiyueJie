@@ -1,5 +1,6 @@
 import React from "react";
 import NavBar from "./components/navBar";
+import Header from "./components/header";
 import MusicBar from "@/components/musicBar";
 import SheetMusicList from "./components/sheetMusicList";
 import StatusBar from "@/components/base/statusBar";
@@ -11,6 +12,7 @@ export default function SheetDetail() {
         <VerticalSafeAreaView style={globalStyle.fwflex1}>
             <StatusBar />
             <NavBar />
+            <Header />
             <SheetMusicList />
             <MusicBar />
         </VerticalSafeAreaView>

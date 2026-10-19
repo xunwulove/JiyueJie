@@ -80,7 +80,7 @@ export default function MusicItemLyricOptionsDialog(
                     Clipboard.setString(musicItem.artist.toString());
                     Toast.success(t("toast.copiedToClipboard"));
                 } catch {
-                    Toast.success(t("toast.copiedToClipboardFailed"));
+                    Toast.warn(t("toast.copiedToClipboardFailed"));
                 }
                 hideDialog();
             },
@@ -94,14 +94,14 @@ export default function MusicItemLyricOptionsDialog(
                     Clipboard.setString(musicItem.album.toString());
                     Toast.success(t("toast.copiedToClipboard"));
                 } catch {
-                    Toast.success(t("toast.copiedToClipboardFailed"));
+                    Toast.warn(t("toast.copiedToClipboardFailed"));
                 }
                 hideDialog();
             },
         },
         {
             icon: "motion-play",
-            title: "下一首播放",
+            title: t("musicListEditor.addToNextPlay"),
             onPress: () => {
                 TrackPlayer.addNext(musicItem);
                 hideDialog();
@@ -109,9 +109,10 @@ export default function MusicItemLyricOptionsDialog(
         },
         {
             icon: "folder-plus",
-            title: "加入歌单",
+            title: t("musicListEditor.addToSheet"),
             onPress: () => {
                 hideDialog();
+                // hideDialog/showDialog 同写 dialogInfoStore 单值，延迟一拍避免时序竞态
                 setTimeout(() => {
                     showDialog("AddToMusicSheetDialog", { musicItem });
                 }, 0);
@@ -119,9 +120,13 @@ export default function MusicItemLyricOptionsDialog(
         },
         {
             icon: "translation",
-            title: `歌词翻译：${
-                showTranslation ? "开启" : "关闭"
-            }`,
+            title: t("panel.musicItemLyricOptions.showTranslation", {
+                status: t(
+                    showTranslation
+                        ? "panel.musicItemLyricOptions.showTranslationOn"
+                        : "panel.musicItemLyricOptions.showTranslationOff",
+                ),
+            }),
             onPress: () => {
                 PersistStatus.set(
                     "lyric.showTranslation",
@@ -133,7 +138,7 @@ export default function MusicItemLyricOptionsDialog(
         // 全屏功能区移入：字体大小（三级浮窗）
         {
             icon: "font-size",
-            title: "字体大小",
+            title: t("basicSettings.lyric.fontSize"),
             onPress: () => {
                 hideDialog();
                 setTimeout(() => {
@@ -150,7 +155,7 @@ export default function MusicItemLyricOptionsDialog(
         // 歌词设置（三级浮窗）：歌词偏移 + 关联方式 + 自动搜索歌词（悬浮歌词设置已移回设置页）
         {
             icon: "lyric",
-            title: "歌词设置",
+            title: t("panel.musicItemLyricOptions.lyricSettings"),
             onPress: () => {
                 hideDialog();
                 setTimeout(() => {
@@ -161,38 +166,44 @@ export default function MusicItemLyricOptionsDialog(
         // B6：全屏页歌曲菜单补删除（两项：从该播放列表移除 + 永久删除本地文件）
         {
             icon: "minus",
-            title: "从该播放列表移除",
+            title: t("panel.musicItemLyricOptions.removeFromPlaylist"),
             show: !!TrackPlayer.isInPlayList(musicItem),
             onPress: async () => {
                 await TrackPlayer.remove(musicItem);
-                Toast.success("已从播放列表移除");
+                Toast.success(t("panel.musicItemLyricOptions.removedFromPlaylist"));
                 hideDialog();
             },
         },
         {
             icon: "trash-outline",
-            title: "永久删除",
+            title: t("panel.musicItemLyricOptions.permanentDelete"),
             show: !!LocalMusicSheet.isLocalMusic(musicItem),
             onPress: () => {
                 hideDialog();
                 setTimeout(() => {
                     showDialog("SimpleDialog", {
-                        title: "永久删除",
-                        content: `确定从设备删除「${
-                            musicItem.title ?? "未知歌曲"
-                        }」？\n将从设备中删除文件，此操作不可恢复。`,
-                        okText: "删除",
+                        title: t("panel.musicItemLyricOptions.permanentDelete"),
+                        content: t(
+                            "panel.musicItemLyricOptions.permanentDeleteConfirm",
+                            {
+                                title:
+                                    musicItem.title ??
+                                    t("panel.musicItemLyricOptions.unknownSong"),
+                            },
+                        ),
+                        okText: t("common.delete"),
                         onOk: async () => {
                             try {
                                 await LocalMusicSheet.removeMusic(
                                     musicItem,
                                     true,
                                 );
-                                Toast.success("删除成功");
-                                hideDialog();
+                                Toast.success(t("toast.deleteSuccess"));
                             } catch (e: any) {
                                 Toast.warn(
-                                    `删除失败 ${e?.message ?? e}`,
+                                    t("panel.musicItemLyricOptions.deleteFail", {
+                                        reason: e?.message ?? e,
+                                    }),
                                 );
                             }
                         },

@@ -4,8 +4,6 @@ import MusicQuality from "./musicQuality";
 import PlayList from "./playList";
 import SearchLrc from "./searchLrc";
 import SheetTags from "./sheetTags";
-import SimpleInput from "./simpleInput";
-import SimpleSelect from "./simpleSelect";
 
 export default {
     /** 顶栏三点通用菜单 */
@@ -14,14 +12,10 @@ export default {
     PlayList: PlayList,
     /** 关联歌词 */
     AssociateLrc,
-    /** 简单的输入 */
-    SimpleInput,
     /** 音质选择 */
     MusicQuality,
     /** 歌单tag */
     SheetTags,
     /** 搜索歌词 */
     SearchLrc,
-    /** 简单的选择 */
-    SimpleSelect,
 };
