@@ -3,7 +3,6 @@ import { StyleSheet, View } from "react-native";
 import rpx from "@/utils/rpx";
 import { iconSizeConst } from "@/constants/uiConst";
 import useColors from "@/hooks/useColors";
-import { showPanel } from "@/components/panels/usePanel";
 import { showDialog } from "@/components/dialogs/useDialog";
 import useOrientation from "@/hooks/useOrientation";
 import HeartIcon from "../heartIcon";
@@ -107,7 +106,7 @@ export default function LyricOperations(_props: ILyricOperationsProps) {
                         if (!currentMusic) {
                             return;
                         }
-                        showPanel("MusicQuality", {
+                        showDialog("MusicQualityDialog", {
                             musicItem: currentMusic,
                             type: "download",
                             async onQualityPress(quality) {

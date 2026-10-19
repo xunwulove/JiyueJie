@@ -132,14 +132,16 @@ export default function MusicItemOptionsDialog(
             show: !downloaded,
             onPress: () => {
                 hideDialog();
-                // 音质选择仍为底部面板（不同 store，直接切换安全）
-                showPanel("MusicQuality", {
-                    musicItem,
-                    type: "download",
-                    async onQualityPress(quality) {
-                        downloader.download(musicItem, quality);
-                    },
-                });
+                // 音质选择弹窗：与当前弹窗同写 dialogInfoStore，延迟一拍避免时序竞态
+                setTimeout(() => {
+                    showDialog("MusicQualityDialog", {
+                        musicItem,
+                        type: "download",
+                        async onQualityPress(quality) {
+                            downloader.download(musicItem, quality);
+                        },
+                    });
+                }, 0);
             },
         },
         {
