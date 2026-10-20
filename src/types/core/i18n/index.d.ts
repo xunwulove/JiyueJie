@@ -307,7 +307,13 @@ export interface ILanguageData {
     "basicSettings.associateLyricType.input": string; // 输入
     "basicSettings.associateLyricType.search": string; // 搜索
     "basicSettings.showExitOnNotification": string; // 通知中显示退出
-    "basicSettings.sheetAndAlbum": string; // 歌单和专辑
+    "basicSettings.sheetAndAlbum": string; // 歌曲和歌单/专辑
+    "coverBase.title": string; // 自制封面底图（设置项）
+    "coverBase.notSet": string; // 未设置
+    "coverBase.choose": string; // 选择本地图片
+    "coverBase.clear": string; // 清除底图
+    "coverBase.position": string; // 取图位置
+    "coverBase.position.hint": string; // 取图位置操作提示（正方形选框+沿长边滑动）
     "basicSettings.clickMusicInSearch": string; // 点击搜索中的音乐
     "basicSettings.clickMusicInSearch.playMusic": string; // 播放歌曲
     "basicSettings.clickMusicInSearch.playMusicAndReplace": string; // 播放歌曲并替换播放列表

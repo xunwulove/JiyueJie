@@ -5,6 +5,7 @@ import useColors from "@/hooks/useColors";
 import Icon from "@/components/base/icon.tsx";
 import ThemeText from "@/components/base/themeText";
 import FastImage from "@/components/base/fastImage";
+import SongCover from "@/components/base/songCover";
 import { ImgAsset } from "@/constants/assetsConst";
 import TrackPlayer, {
     useCurrentMusic,
@@ -166,7 +167,8 @@ export default function TabletPanel() {
                 style={styles.playContent}
                 onPress={() => setFullPlaying(true)}>
                 {musicItem ? (
-                    <FastImage
+                    <SongCover
+                        musicItem={musicItem}
                         style={[
                             styles.cover,
                             {
@@ -174,8 +176,6 @@ export default function TabletPanel() {
                                 height: coverSize,
                             },
                         ]}
-                        source={musicItem.artwork}
-                        placeholderSource={ImgAsset.albumDefault}
                     />
                 ) : (
                     /* 无歌曲占位封面（对齐 APlayer 空态：灰卡 + ♪） */

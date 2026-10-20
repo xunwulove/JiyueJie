@@ -1,8 +1,7 @@
 import React, { memo, useLayoutEffect, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSetAtom } from "jotai";
-import FastImage from "../base/fastImage";
-import { ImgAsset } from "@/constants/assetsConst";
+import SongCover from "../base/songCover";
 import Color from "color";
 import ThemeText from "../base/themeText";
 import useColors from "@/hooks/useColors";
@@ -53,10 +52,9 @@ function _BarMusicItem(props: IBarMusicItemProps) {
                 },
                 animatedStyles,
             ]}>
-            <FastImage
+            <SongCover
+                musicItem={musicItem}
                 style={styles.artworkImg}
-                source={musicItem.artwork}
-                placeholderSource={ImgAsset.albumDefault}
             />
             <Text
                 ellipsizeMode="tail"

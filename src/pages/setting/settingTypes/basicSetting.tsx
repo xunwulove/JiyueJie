@@ -4,9 +4,11 @@ import ListItem from "@/components/base/listItem";
 import { ListDivider } from "@/components/base/divider";
 import ThemeSwitch from "@/components/base/switch";
 import ThemeText from "@/components/base/themeText";
+import FastImage from "@/components/base/fastImage";
 import { showDialog } from "@/components/dialogs/useDialog";
 import { SortType } from "@/constants/commonConst.ts";
 import Config, { useAppConfig } from "@/core/appConfig";
+import { useCoverBase, setCoverBase } from "@/core/coverBase";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
 import { useI18N } from "@/core/i18n";
 import useColors from "@/hooks/useColors";
@@ -17,9 +19,10 @@ import { clearCache, getCacheSize, sizeFormatter } from "@/utils/fileUtils";
 import { qualityKeys } from "@/utils/qualities";
 import rpx from "@/utils/rpx";
 import Toast from "@/utils/toast";
+import { launchImageLibrary } from "react-native-image-picker";
 import Slider from "@react-native-community/slider";
 import React, { useCallback, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, Image } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 
 export function createSwitch(
@@ -139,6 +142,8 @@ export default function BasicSetting() {
     const colors = useColors();
 
     const [cacheSize, refreshCacheSize, cacheQueried] = useCacheSize();
+
+    const coverBase = useCoverBase();
 
     // ===== 播放 =====
     const playbackGroup = {
@@ -415,6 +420,98 @@ export default function BasicSetting() {
                     [SortType.Oldest]: t("basicSettings.musicOrderInLocalSheet.oldest"),
                 },
             ),
+            // 自制封面底图：无封面歌曲展示「本地底图 + 歌名」合成封面（仅界面展示）
+            {
+                title: t("coverBase.title"),
+                right: coverBase.path ? (
+                    <FastImage style={styles.coverThumb} source={coverBase.path} />
+                ) : (
+                    <ThemeText
+                        fontSize="description"
+                        fontColor="textSecondary">
+                        {t("coverBase.notSet")}
+                    </ThemeText>
+                ),
+                onPress() {
+                    // 取图位置：预览底图，按短边取最大内接正方形，沿长边（竖图沿高/横图沿宽）滑动选择截取位置
+                    const openCoverPosition = () => {
+                        if (!coverBase.path) {
+                            return;
+                        }
+                        showDialog("CoverBasePositionDialog", {
+                            path: coverBase.path,
+                            imgW: coverBase.imgW,
+                            imgH: coverBase.imgH,
+                            initialOffset: coverBase.offset,
+                            onConfirm(offset: number) {
+                                setCoverBase(
+                                    coverBase.path as string,
+                                    {
+                                        w: coverBase.imgW,
+                                        h: coverBase.imgH,
+                                    },
+                                    offset,
+                                );
+                            },
+                        });
+                    };
+
+                    const content: Array<{ label: string; value: string }> = [
+                        { label: t("coverBase.choose"), value: "choose" },
+                    ];
+                    if (coverBase.path) {
+                        content.push({
+                            label: t("coverBase.position"),
+                            value: "position",
+                        });
+                    }
+                    content.push({ label: t("coverBase.clear"), value: "clear" });
+
+                    showDialog("RadioDialog", {
+                        title: t("coverBase.title"),
+                        content,
+                        onOk(val) {
+                            if (val === "clear") {
+                                setCoverBase(null);
+                                return;
+                            }
+                            if (val === "position") {
+                                openCoverPosition();
+                                return;
+                            }
+                            launchImageLibrary({ mediaType: "photo" })
+                                .then(res => {
+                                    const uri = res.assets?.[0]?.uri;
+                                    if (!uri) {
+                                        return;
+                                    }
+                                    // 取图片固有宽高（供长边方向平移），并弹出取图位置选择器
+                                    Image.getSize(
+                                        uri,
+                                        (w, h) => {
+                                            setCoverBase(uri, { w, h });
+                                            showDialog("CoverBasePositionDialog", {
+                                                path: uri,
+                                                imgW: w,
+                                                imgH: h,
+                                                initialOffset: 0.5,
+                                                onConfirm(offset: number) {
+                                                    setCoverBase(
+                                                        uri,
+                                                        { w, h },
+                                                        offset,
+                                                    );
+                                                },
+                                            });
+                                        },
+                                        () => setCoverBase(uri),
+                                    );
+                                })
+                                .catch(() => undefined);
+                        },
+                    });
+                },
+            },
         ],
     };
 
@@ -538,6 +635,11 @@ const styles = StyleSheet.create({
     centerText: {
         textAlignVertical: "center",
         maxWidth: rpx(400),
+    },
+    coverThumb: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
     },
     group: {
         marginTop: rpx(8),
