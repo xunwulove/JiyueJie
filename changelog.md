@@ -4,6 +4,9 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.20（第九次同版本号重新发布 0.6.2.16，版本号不变）`
+1. 【修复】**自制封面「左右显示一半」+ 合成封面改纯底图**（`components/base/syntheticCover.tsx` + `components/base/songCover.tsx`）：① 播放页/全屏播放页合成封面左右各露出一半背景——根因=FastImage 用 `StyleSheet.absoluteFill`（显示尺寸=容器 box），但取图位置平移量按「真实图 cover 缩放溢出量」计算（`overX/overY=真实图cover后-容器`），导致把只有 box 大小的 view 移出容器露出背景；修复=FastImage 显示尺寸改显式 cover 缩放真实尺寸（`drawW×drawH`）+ `position:absolute;left/top:0` 定位，容器 overflow hidden 裁掉溢出一侧后再 transform 平移 offset。② 合成封面去掉歌名文字与底部压暗遮罩（`rgba(0,0,0,0.36)`），纯底图展示；`songCover` 无封面分支不再传 `title`。③ 沉浸播放页保持不显示自选图（`immersiveLayer` 无封面回退主题主色，不集成自制封面）。验证：tsc 0、eslint 0 error
+
 `2026.10.19（未发版改动）`
 1. 【变更】**自动搜索歌词默认开启**（`components/dialogs/components/lyricSettingDialog.tsx` + `core/lyricManager.ts`）：`lyric.autoSearchLyric` 默认值 false→true——设置开关初始值 `?? false` 改 `?? true`，歌词加载逻辑 `getConfig("lyric.autoSearchLyric")` 改 `?? true`（未显式配置时歌词缺失自动搜索）。语义：未设置过该键的用户默认开启（含老用户未手动关闭过的）；显式关闭过的用户存储 false、读取仍为关，不受影响
 2. 【修复】**底部面板（Panel）弹出只显示一片阴影、菜单内容不可见**（`panels/base/panelBase.tsx`）：根因=ef2a839 给 Panel 补 elevation 时，面板容器 `kbContainer`（KeyboardAvoidingView 根）只设了 `zIndex/elevation:15310` 却**没有 position、没有尺寸（0×0）**——对照 Dialog 侧 `backContainer`（ef98369/717b872 同范式：`position:absolute + width/height:100%` 全屏容器才带 elevation），0×0 静态 View 的 elevation 在 Android 不生效，面板子树仍落回普通绘制序，被已 elevation 的全屏 Pressable 暗色拦截层（`maskWrapper` 15300）盖住；mask 不透明度（`snapPoint×0.5`）与面板 `translateY`（`(1-snapPoint)×base`）虽同源驱动、mask 已显示说明 snapPoint 动画走完，但面板被压在暗色层之下故"只见阴影"。修复=`kbContainer` 补齐 `position:absolute + width/height:100%`（与 Dialog `backContainer` 同构），elevation 15310 生效、把整个面板子树抬到拦截层 15300 之上；数值不变（仍 Panel 15300/15310 < Dialog 16300 层级语义）；kbContainer 补全屏后叠在 mask 之上，外层 KeyboardAvoidingView 设 `pointerEvents="box-none"`（自身不接触摸、子级面板正常接收，对齐 `panelFullscreen.tsx:162` 同款范式），面板外点击穿透到全屏拦截层仍可关闭浮窗
