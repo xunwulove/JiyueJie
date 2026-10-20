@@ -512,59 +512,63 @@ class PluginManager implements IPluginManager, IInjectable {
                 Expires: "0",
             };
             const needDownload: string[] = [];
-            for (const item of urlItems) {
-                const url: string | undefined = item?.url;
-                if (!url) {
-                    continue;
-                }
-                try {
-                    const text = (
-                        await axios.get(url, { headers: noCacheHeaders })
-                    ).data;
-                    let list: Array<{
-                        name?: string;
-                        version?: string;
-                        url?: string;
-                    }> = [];
-                    if (url.endsWith(".json")) {
-                        list = (text?.plugins ?? []).map((it: any) => ({
-                            name: it?.name,
-                            version: it?.version,
-                            url: it?.url,
-                        }));
-                    } else {
-                        list = [{ url }];
+            await runWithConcurrency(
+                urlItems,
+                PLUGIN_UPDATE_CONCURRENCY,
+                async item => {
+                    const url: string | undefined = item?.url;
+                    if (!url) {
+                        return;
                     }
-                    const installed = this.getPlugins();
-                    for (const p of list) {
-                        if (!p?.url) {
-                            continue;
+                    try {
+                        const text = (
+                            await axios.get(url, { headers: noCacheHeaders })
+                        ).data;
+                        let list: Array<{
+                            name?: string;
+                            version?: string;
+                            url?: string;
+                        }> = [];
+                        if (url.endsWith(".json")) {
+                            list = (text?.plugins ?? []).map((it: any) => ({
+                                name: it?.name,
+                                version: it?.version,
+                                url: it?.url,
+                            }));
+                        } else {
+                            list = [{ url }];
                         }
-                        const old = installed.find(
-                            _ => _.name === p.name,
-                        );
-                        if (old && p.version) {
-                            try {
-                                if (
-                                    compare(
-                                        old.instance.version ?? "",
-                                        p.version,
-                                        ">=",
-                                    )
-                                ) {
-                                    // 已装版本不低于清单版本 → 跳过
-                                    continue;
-                                }
-                            } catch {
-                                // 版本不可比 → 走下载，保守更新
+                        const installed = this.getPlugins();
+                        for (const p of list) {
+                            if (!p?.url) {
+                                continue;
                             }
+                            const old = installed.find(
+                                _ => _.name === p.name,
+                            );
+                            if (old && p.version) {
+                                try {
+                                    if (
+                                        compare(
+                                            old.instance.version ?? "",
+                                            p.version,
+                                            ">=",
+                                        )
+                                    ) {
+                                        // 已装版本不低于清单版本 → 跳过
+                                        continue;
+                                    }
+                                } catch {
+                                    // 版本不可比 → 走下载，保守更新
+                                }
+                            }
+                            needDownload.push(p.url);
                         }
-                        needDownload.push(p.url);
+                    } catch {
+                        // 清单拉取失败静默
                     }
-                } catch {
-                    // 清单拉取失败静默
-                }
-            }
+                },
+            );
             if (needDownload.length) {
                 await runWithConcurrency(
                     needDownload,
