@@ -30,5 +30,5 @@ export default function SongCover(props: IProps) {
             />
         );
     }
-    return <SyntheticCover title={musicItem?.title} style={style} />;
+    return <SyntheticCover style={style} />;
 }
