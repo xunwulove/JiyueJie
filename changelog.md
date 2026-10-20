@@ -4,6 +4,9 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.20（第十次同版本号重新发布 0.6.2.16，版本号不变）`
+1. 【修复】**沉浸播放页右边封面占位无封面时显示默认封面**（`src/pages/musicDetail/components/immersiveLayer.tsx`）：coverBlock 无 `artwork` 时由 ♪ 占位改为显示默认封面 `ImgAsset.albumDefault`；背景深色渐变/流光光效保持原样（不集成自制合成封面底图）。验证：eslint 0 error
+
 `2026.10.20（第九次同版本号重新发布 0.6.2.16，版本号不变）`
 1. 【修复】**自制封面「左右显示一半」+ 合成封面改纯底图**（`components/base/syntheticCover.tsx` + `components/base/songCover.tsx`）：① 播放页/全屏播放页合成封面左右各露出一半背景——根因=FastImage 用 `StyleSheet.absoluteFill`（显示尺寸=容器 box），但取图位置平移量按「真实图 cover 缩放溢出量」计算（`overX/overY=真实图cover后-容器`），导致把只有 box 大小的 view 移出容器露出背景；修复=FastImage 显示尺寸改显式 cover 缩放真实尺寸（`drawW×drawH`）+ `position:absolute;left/top:0` 定位，容器 overflow hidden 裁掉溢出一侧后再 transform 平移 offset。② 合成封面去掉歌名文字与底部压暗遮罩（`rgba(0,0,0,0.36)`），纯底图展示；`songCover` 无封面分支不再传 `title`。③ 沉浸播放页保持不显示自选图（`immersiveLayer` 无封面回退主题主色，不集成自制封面）。验证：tsc 0、eslint 0 error
 
