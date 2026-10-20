@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ImgAsset } from "@/constants/assetsConst";
-import FastImage from "@/components/base/fastImage";
+import SongCover from "@/components/base/songCover";
 import useOrientation from "@/hooks/useOrientation";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useCurrentMusic } from "@/core/trackPlayer";
@@ -87,18 +86,16 @@ export default function AlbumCover(props: IProps) {
                                 styles.horizontalWrapper,
                                 horizontalCover ?? null,
                             ]}>
-                            <FastImage
+                            <SongCover
+                                musicItem={musicItem}
                                 style={styles.fullImage}
-                                source={musicItem?.artwork}
-                                placeholderSource={ImgAsset.albumDefault}
                                 resizeMode="contain"
                             />
                         </View>
                     ) : (
-                        <FastImage
+                        <SongCover
+                            musicItem={musicItem}
                             style={artworkStyle}
-                            source={musicItem?.artwork}
-                            placeholderSource={ImgAsset.albumDefault}
                             resizeMode="contain"
                         />
                     )}

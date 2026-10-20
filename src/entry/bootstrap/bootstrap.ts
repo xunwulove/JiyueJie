@@ -11,6 +11,7 @@ import pluginReliability from "@/core/pluginReliability";
 import lyricManager from "@/core/lyricManager";
 import musicHistory from "@/core/musicHistory";
 import playEvents from "@/core/playEvents";
+import { setupCoverBase } from "@/core/coverBase";
 import MusicSheet from "@/core/musicSheet";
 import PluginManager from "@/core/pluginManager";
 import Theme from "@/core/theme";
@@ -99,6 +100,10 @@ async function bootstrapImpl() {
         }),
         playEvents.setup().then(() => {
             logger.mark("playEvents");
+        }),
+        Promise.resolve().then(() => {
+            setupCoverBase();
+            logger.mark("coverBase");
         }),
     ]);
     trace("配置初始化完成");
