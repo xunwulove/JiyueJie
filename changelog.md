@@ -4,6 +4,9 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.20（第十一次同版本号重新发布 0.6.2.16，版本号不变）`
+1. 【优化】**更新订阅清单拉取改为并发**（`src/core/pluginManager/index.ts` `updatePluginsFromSubscription`）：阶段1 订阅清单由串行 `for` 循环改为 `runWithConcurrency` worker 池并发拉取（并发上限 10），多个订阅地址同时拉取，不再被慢地址拖住整批；`needDownload` 并发 push 原子安全，版本对比逻辑不变。验证：eslint 0 error
+
 `2026.10.20（第十次同版本号重新发布 0.6.2.16，版本号不变）`
 1. 【修复】**沉浸播放页右边封面占位无封面时显示默认封面**（`src/pages/musicDetail/components/immersiveLayer.tsx`）：coverBlock 无 `artwork` 时由 ♪ 占位改为显示默认封面 `ImgAsset.albumDefault`；背景深色渐变/流光光效保持原样（不集成自制合成封面底图）。验证：eslint 0 error
 
