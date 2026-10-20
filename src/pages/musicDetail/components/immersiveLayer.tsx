@@ -44,6 +44,7 @@ import useOrientation from "@/hooks/useOrientation";
 import useColors from "@/hooks/useColors";
 import KaraokeText from "@/components/base/karaokeText";
 import { fontWeightConst } from "@/constants/uiConst";
+import { ImgAsset } from "@/constants/assetsConst";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -558,9 +559,11 @@ export default function ImmersiveLayer() {
                     resizeMode="cover"
                 />
             ) : (
-                <View style={[styles.cover, styles.coverPlaceholder]}>
-                    <Text style={styles.coverPlaceholderText}>♪</Text>
-                </View>
+                <Image
+                    source={ImgAsset.albumDefault}
+                    style={styles.cover}
+                    resizeMode="cover"
+                />
             )}
         </View>
     ) : null;
