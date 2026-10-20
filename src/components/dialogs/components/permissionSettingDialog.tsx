@@ -4,15 +4,14 @@ import { AppState } from "react-native";
 import ThemeText from "@/components/base/themeText";
 import ListItem from "@/components/base/listItem";
 import ThemeSwitch from "@/components/base/switch";
+import { ListDivider } from "@/components/base/divider";
 import { useI18N } from "@/core/i18n";
 import LyricUtil from "@/native/lyricUtil";
 import NativeUtils from "@/native/utils";
 import Toast from "@/utils/toast";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
-
 type IPermissionTypes = "floatingWindow" | "fileStorage";
-
 /**
  * 权限管理三级浮窗（原权限管理二级页压缩为浮窗）：
  * 说明 + 悬浮窗/文件读写两行开关（点击行申请对应权限），返回前台自动重查状态
@@ -26,7 +25,6 @@ export default function PermissionSettingDialog() {
         fileStorage: false,
     });
     const { t } = useI18N();
-
     async function checkPermission(type?: IPermissionTypes) {
         // 函数式更新读取最新 state，避免 useEffect([]) 首帧闭包
         // 在兜底 setTimeout 里把另一项权限闪回 false
@@ -55,7 +53,6 @@ export default function PermissionSettingDialog() {
             }
         }
     }
-
     useEffect(() => {
         checkPermission();
         const subscription = AppState.addEventListener(
@@ -70,12 +67,10 @@ export default function PermissionSettingDialog() {
                 appState.current = nextAppState;
             },
         );
-
         return () => {
             subscription.remove();
         };
     }, []);
-
     // 申请悬浮窗权限：系统会跳转设置页，返回前台由 AppState 监听重查；
     // 此处再兜底一次，保证立即返回时开关状态也刷新
     const requestFloatingWindow = () => {
@@ -89,7 +84,6 @@ export default function PermissionSettingDialog() {
                 }, 500);
             });
     };
-
     // 申请存储权限：系统对话框在应用内弹出（Android 13+），
     // 弹框会让应用失焦触发 AppState 重查；此处延时兜底刷新
     const requestFileStorage = () => {
@@ -98,10 +92,9 @@ export default function PermissionSettingDialog() {
             checkPermission("fileStorage");
         }, 800);
     };
-
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider>
+            <Dialog.Title>
                 {t("permissionSetting.title")}
             </Dialog.Title>
             <Dialog.Content>
@@ -126,6 +119,8 @@ export default function PermissionSettingDialog() {
                         onValueChange={requestFloatingWindow}
                     />
                 </ListItem>
+                {/* 2026-10-21 统一：列表项之间加 ListDivider */}
+                <ListDivider marginLeft={16} />
                 <ListItem
                     withHorizontalPadding
                     heightType="small"
@@ -156,7 +151,6 @@ export default function PermissionSettingDialog() {
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     description: {
         paddingHorizontal: 0,

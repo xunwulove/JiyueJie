@@ -1,7 +1,6 @@
 import React from "react";
-import { Pressable, StyleSheet } from "react-native";
+import { View } from "react-native";
 import ThemeText from "@/components/base/themeText";
-import Icon from "@/components/base/icon.tsx";
 import { iconSizeConst } from "@/constants/uiConst";
 import { qualityKeys, qualityText } from "@/utils/qualities";
 import { sizeFormatter } from "@/utils/fileUtils";
@@ -9,6 +8,8 @@ import { useI18N } from "@/core/i18n";
 import Config from "@/core/appConfig";
 import useColors from "@/hooks/useColors";
 import { useMusicQuality } from "@/core/trackPlayer";
+import ListItem from "@/components/base/listItem";
+import { ListDivider } from "@/components/base/divider";
 import Dialog from "./base";
 import { hideDialog } from "../useDialog";
 
@@ -45,7 +46,6 @@ export default function MusicQualityDialog(
     return (
         <Dialog onDismiss={hideDialog}>
             <Dialog.Title
-                withDivider
                 stringContent
                 containerStyle={{ paddingHorizontal: 0 }}>
                 {t("panel.musicQuality.title", {
@@ -57,68 +57,53 @@ export default function MusicQualityDialog(
             </Dialog.Title>
             <Dialog.Content
                 needScroll
-                style={{ paddingHorizontal: 0, paddingTop: 8, paddingBottom: 8 }}>
-                {qualityKeys.map(key => {
+                style={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 12 }}>
+                {qualityKeys.map((key, i) => {
                     const isCurrent = key === currentQuality;
                     return (
-                        <Pressable
-                            key={key}
-                            style={({ pressed }) => [
-                                style.item,
-                                pressed
-                                    ? { backgroundColor: colors.background }
-                                    : null,
-                            ]}
-                            onPress={() => {
-                                onQualityPress(key, musicItem);
-                                hideDialog();
-                            }}>
-                            <ThemeText
-                                fontColor={
-                                    isCurrent ? "primary" : "text"
-                                }
-                                fontWeight={
-                                    isCurrent ? "bold" : "regular"
-                                }>
-                                {qualityText[key]}
-                                {musicItem.qualities?.[key]?.size
-                                    ? ` (${sizeFormatter(
-                                        musicItem.qualities[key].size!,
-                                    )})`
-                                    : ""}
-                            </ThemeText>
-                            {isCurrent ? (
-                                <Icon
-                                    name="check"
-                                    size={iconSizeConst.normal}
-                                    color={colors.primary}
+                        <View key={key}>
+                            <ListItem
+                                withHorizontalPadding
+                                heightType="small"
+                                onPress={() => {
+                                    onQualityPress(key, musicItem);
+                                    hideDialog();
+                                }}>
+                                <ListItem.Content
+                                    title={
+                                        <ThemeText
+                                            fontColor={
+                                                isCurrent ? "primary" : "text"
+                                            }
+                                            fontWeight={
+                                                isCurrent ? "bold" : "regular"
+                                            }
+                                            numberOfLines={1}>
+                                            {qualityText[key]}
+                                            {musicItem.qualities?.[key]?.size
+                                                ? ` (${sizeFormatter(
+                                                    musicItem.qualities[key].size!,
+                                                )})`
+                                                : ""}
+                                        </ThemeText>
+                                    }
                                 />
+                                {isCurrent ? (
+                                    <ListItem.ListItemIcon
+                                        icon="check"
+                                        iconSize={iconSizeConst.normal}
+                                        color={colors.primary}
+                                    />
+                                ) : null}
+                            </ListItem>
+                            {/* 2026-10-21 统一：列表项之间加 ListDivider */}
+                            {i < qualityKeys.length - 1 ? (
+                                <ListDivider marginLeft={16} />
                             ) : null}
-                        </Pressable>
+                        </View>
                     );
                 })}
             </Dialog.Content>
-            <Dialog.Actions
-                actions={[
-                    {
-                        title: t("common.cancel"),
-                        type: "normal",
-                        onPress() {
-                            hideDialog();
-                        },
-                    },
-                ]}
-            />
         </Dialog>
     );
 }
-
-const style = StyleSheet.create({
-    item: {
-        height: 48,
-        paddingHorizontal: 24,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-});

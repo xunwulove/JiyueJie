@@ -28,6 +28,7 @@ import Svg, {
 import ImageColors from "react-native-image-colors";
 import Color from "color";
 import { useAppConfig } from "@/core/appConfig";
+import { useCoverBase } from "@/core/coverBase";
 import {
     MusicState,
     useCurrentMusic,
@@ -43,8 +44,8 @@ import { IParsedLrcItem } from "@/utils/lrcParser";
 import useOrientation from "@/hooks/useOrientation";
 import useColors from "@/hooks/useColors";
 import KaraokeText from "@/components/base/karaokeText";
+import SyntheticCover from "@/components/base/syntheticCover";
 import { fontWeightConst } from "@/constants/uiConst";
-import { ImgAsset } from "@/constants/assetsConst";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -107,8 +108,11 @@ export default function ImmersiveLayer() {
     /* 光效配色跟随主题主色（白天品牌蓝 #2F6FED / 深色 #5A8FFF）；封面主色可用时优先（贴合歌曲氛围） */
     const colors = useColors();
 
-    /* 封面主色提取：从当前歌曲封面异步取 2 个主色，失败/无封面回退主题主色 */
+    /* 封面主色提取：自选封面（coverBase）优先，其次歌曲原始封面；
+       两者皆无/取色失败回退主题主色 */
     const artwork = musicItem?.artwork;
+    const { path: coverBasePath } = useCoverBase();
+    const paletteSource = coverBasePath ?? artwork;
     const [coverPalette, setCoverPalette] = useState<{
         cA: string;
         cB: string;
@@ -117,15 +121,15 @@ export default function ImmersiveLayer() {
         let cancelled = false;
         const primary = colors.primary;
         const fallbackB = Color(primary).rotate(42).saturate(0.15).hex();
-        if (!artwork) {
+        if (!paletteSource) {
             setCoverPalette({ cA: primary, cB: fallbackB });
             return;
         }
         setCoverPalette(null);
-        ImageColors.getColors(artwork, {
+        ImageColors.getColors(paletteSource, {
             fallback: primary,
             cache: true,
-            key: artwork,
+            key: paletteSource,
         })
             .then(result => {
                 if (cancelled) {
@@ -151,7 +155,7 @@ export default function ImmersiveLayer() {
             cancelled = true;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [artwork]);
+    }, [paletteSource]);
 
     const blobColorA = coverPalette?.cA ?? colors.primary;
     const blobColorB = coverPalette?.cB ?? Color(colors.primary).rotate(42).saturate(0.15).hex();
@@ -549,21 +553,19 @@ export default function ImmersiveLayer() {
         </Animated.View>
     );
 
-    /* 右下封面（仅平板/横屏左右分栏时展示）；无封面时显示可见占位 */
+    /* 右下封面（仅平板/横屏左右分栏时展示）；无真实封面时复用全屏页同一套
+       SyntheticCover（自选封面 → 无则默认封面完整显示），不再单独 fallback albumDefault + cover 放大 */
     const coverBlock = isTablet ? (
         <View style={styles.coverPane}>
-            {musicItem?.artwork ? (
+            {typeof musicItem?.artwork === "string" &&
+            musicItem.artwork.length > 0 ? (
                 <Image
                     source={{ uri: musicItem.artwork }}
                     style={styles.cover}
                     resizeMode="cover"
                 />
             ) : (
-                <Image
-                    source={ImgAsset.albumDefault}
-                    style={styles.cover}
-                    resizeMode="cover"
-                />
+                <SyntheticCover style={styles.cover} />
             )}
         </View>
     ) : null;

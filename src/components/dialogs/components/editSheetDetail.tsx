@@ -15,21 +15,16 @@ import { fontSizeConst } from "@/constants/uiConst";
 import { copyAsync, deleteAsync, getInfoAsync } from "expo-file-system";
 import MusicSheet from "@/core/musicSheet";
 import { useI18N } from "@/core/i18n";
-
 interface IEditSheetDetailProps {
     musicSheet: IMusic.IMusicSheetItem;
 }
 export default function EditSheetDetailDialog(props: IEditSheetDetailProps) {
     const { musicSheet } = props;
     const colors = useColors();
-
     const [coverImg, setCoverImg] = useState(musicSheet?.coverImg);
     const [title, setTitle] = useState(musicSheet?.title);
-
     const { t } = useI18N();
-
     // onCover
-
     const onChangeCoverPress = async () => {
         try {
             const result = await launchImageLibrary({
@@ -45,18 +40,15 @@ export default function EditSheetDetailDialog(props: IEditSheetDetailProps) {
             console.log(e);
         }
     };
-
     function onTitleChange(_: string) {
         setTitle(_);
     }
-
     async function onConfirm() {
         // 判断是否相同
         if (coverImg === musicSheet?.coverImg && title === musicSheet?.title) {
             hideDialog();
             return;
         }
-
         let newCoverImg = coverImg;
         if (coverImg && coverImg !== musicSheet?.coverImg) {
             newCoverImg = addFileScheme(
@@ -87,14 +79,13 @@ export default function EditSheetDetailDialog(props: IEditSheetDetailProps) {
             coverImg: newCoverImg ? addRandomHash(newCoverImg) : undefined,
             title: _title,
         }).then(() => {
-            Toast.success("更新歌单信息成功~");
+            Toast.success(t("toast.updateSheetInfoSuccess"));
         });
         hideDialog();
     }
-
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider>
+            <Dialog.Title>
                 {t("panel.editMusicSheetInfo.title")}
             </Dialog.Title>
             <Dialog.Content>
@@ -147,7 +138,6 @@ export default function EditSheetDetailDialog(props: IEditSheetDetailProps) {
         </Dialog>
     );
 }
-
 const style = StyleSheet.create({
     row: {
         marginTop: 28,

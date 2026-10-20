@@ -121,7 +121,7 @@ export default function SheetManager() {
             content: `确认取消收藏「${sheet.title ?? ""}」吗？`,
             onOk: async () => {
                 await MusicSheet.unstarMusicSheet(sheet);
-                Toast.success("已取消收藏");
+                Toast.success(t("toast.hasUnstarred"));
             },
         });
     };

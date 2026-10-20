@@ -5,6 +5,7 @@ import pathConst from "@/constants/pathConst";
 import { getFileName } from "@/utils/fileUtils";
 import { errorLog, trace } from "@/utils/log";
 import Toast from "@/utils/toast";
+import i18n from "@/core/i18n";
 import { setEqualizer as jdspSetEqualizer, setPostGain, setBassBoost, setStereoEnhancement, setReverb, setVacuumTube, setCrossfeed, setConvolver, loadBuiltinIR, loadIR, IR_PRESETS, DDC_HEADPHONES, REVERB_PRESETS } from "@/core/jamesdsp";
 
 /** 将旧版 N 段毫分贝(millibel)转换为 JamesDSP 15段 dB，线性插值 */
@@ -413,7 +414,7 @@ export async function applyDdc(enabled: boolean, selection: number) {
             setConvolver(true);
         } else {
             setConvolver(false);
-            Toast.warn("IR 加载失败，请使用 16bit/48kHz WAV");
+            Toast.warn(i18n.t("toast.irLoadFail"));
         }
     } else {
         setConvolver(false);
@@ -451,7 +452,7 @@ export async function applyReverb(enabled: boolean, engine: number, preset: numb
         if (!p) return;
         const loaded = await loadBuiltinIR(p.file);
         if (!loaded) {
-            Toast.warn("IR 加载失败，请使用 16bit/48kHz WAV");
+            Toast.warn(i18n.t("toast.irLoadFail"));
             return;
         }
         Config.setConfig("jdsp.convolverEnabled", true);

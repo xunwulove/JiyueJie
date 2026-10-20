@@ -2,7 +2,6 @@ import React from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import rpx from "@/utils/rpx";
 import ThemeText from "@/components/base/themeText";
-
 import { setCloseAfterPlayEnd, setScheduleClose, useCloseAfterPlayEnd, useScheduleCloseCountDown } from "@/utils/scheduleClose";
 import timeformat from "@/utils/timeformat";
 import Divider from "@/components/base/divider";
@@ -13,9 +12,7 @@ import { showDialog } from "../useDialog";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import { fontSizeConst, fontWeightConst } from "@/constants/uiConst";
-
 const shortCutTimes = [10, 20, 30, 45, 60] as const;
-
 /**
  * 定时关闭三级浮窗（全屏功能区"定时关闭"按钮）：
  * 快捷时长行 + 自定义时长 + 播完自动关闭 + 取消定时（原 TimingClose 面板逻辑迁移为三级浮窗）
@@ -24,12 +21,10 @@ export default function TimingCloseDialog() {
     const closeAfterPlay = useCloseAfterPlayEnd();
     const countDown = useScheduleCloseCountDown();
     const { t } = useI18N();
-
     const isCountingDown = countDown !== null;
-
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider>
+            <Dialog.Title>
                 {countDown === null
                     ? t("sidebar.scheduleClose")
                     : t("panel.timingClose.countdown", { time: timeformat(countDown) })}
@@ -107,7 +102,6 @@ export default function TimingCloseDialog() {
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     bodyContainer: {
         width: "100%",

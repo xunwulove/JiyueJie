@@ -250,7 +250,7 @@ async function extraMakeup() {
                         PluginManager.installPluginFromUrl(it).catch(emptyFunction),
                     ),
                 );
-                Toast.success("安装成功~");
+                Toast.success(i18n.t("toast.pluginInstallSuccess"));
             } else if (url.endsWith(".js")) {
                 PluginManager.installPluginFromLocalFile(url, {
                     notCheckVersion: Config.getConfig(
@@ -259,14 +259,22 @@ async function extraMakeup() {
                 })
                     .then(res => {
                         if (res.success) {
-                            Toast.success(`插件「${res.pluginName}」安装成功~`);
+                            Toast.success(
+                                i18n.t("toast.pluginInstallSuccessNamed", {
+                                    name: res.pluginName,
+                                }),
+                            );
                         } else {
-                            Toast.warn("安装失败: " + res.message);
+                            Toast.warn(
+                                i18n.t("toast.pluginInstallFail", {
+                                    message: res.message,
+                                }),
+                            );
                         }
                     })
                     .catch(e => {
                         console.log(e);
-                        Toast.warn(e?.message ?? "无法识别此插件");
+                        Toast.warn(e?.message ?? i18n.t("toast.unknownPlugin"));
                     });
             } else if (supportLocalMediaType.some(it => url.endsWith(it))) {
                 // 本地播放
@@ -302,7 +310,7 @@ function bindEvents() {
     // 下载事件
     downloader.on(DownloaderEvent.DownloadError, (reason) => {
         if (reason === DownloadFailReason.NetworkOffline) {
-            Toast.warn("当前无网络连接，请等待网络恢复后重试");
+            Toast.warn(i18n.t("toast.networkOffline"));
         } else if (reason === DownloadFailReason.NotAllowToDownloadInCellular) {
             if (getCurrentDialog()?.name !== "SimpleDialog") {
                 showDialog("SimpleDialog", {
@@ -313,8 +321,14 @@ function bindEvents() {
         }
     });
 
-    downloader.on(DownloaderEvent.DownloadQueueCompleted, () => {
-        Toast.success("下载任务已完成");
+    downloader.on(DownloaderEvent.DownloadQueueCompleted, ({ hasError }) => {
+        // 2026-10-20 修复：原队列清空无论成败都提示"下载任务已完成"；
+        // 现按队列中是否存在失败任务区分提示
+        if (hasError) {
+            Toast.warn(i18n.t("toast.downloadQueuePartialFail"));
+        } else {
+            Toast.success(i18n.t("toast.downloadQueueCompleted"));
+        }
     });
 }
 

@@ -5,7 +5,6 @@ import { StyleSheet } from "react-native";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import { useI18N } from "@/core/i18n";
-
 interface ILoadingDialogProps<T extends any = any> {
     promise?: Promise<T>;
     task?: () => Promise<T>;
@@ -18,9 +17,7 @@ interface ILoadingDialogProps<T extends any = any> {
 export default function LoadingDialog(props: ILoadingDialogProps) {
     const { title, loadingText, onResolve, onReject, promise, task, onCancel } =
         props;
-    
     const { t } = useI18N();
-
     useEffect(() => {
         const _promise = promise || task?.();
         _promise
@@ -31,7 +28,6 @@ export default function LoadingDialog(props: ILoadingDialogProps) {
                 onReject?.(e, hideDialog);
             });
     }, []);
-
     return (
         <Dialog
             onDismiss={() => {
@@ -56,7 +52,6 @@ export default function LoadingDialog(props: ILoadingDialogProps) {
         </Dialog>
     );
 }
-
 const style = StyleSheet.create({
     content: {
         height: rpx(280),

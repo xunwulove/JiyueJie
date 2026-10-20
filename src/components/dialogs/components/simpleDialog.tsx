@@ -2,7 +2,6 @@ import React from "react";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import { useI18N } from "@/core/i18n";
-
 interface ISimpleDialogProps {
     title: string;
     content: string | JSX.Element;
@@ -12,9 +11,7 @@ interface ISimpleDialogProps {
 }
 export default function SimpleDialog(props: ISimpleDialogProps) {
     const { title, content, onOk, okText, cancelText } = props;
-
     const { t } = useI18N();
-
     const actions = onOk
         ? [
             {
@@ -40,10 +37,9 @@ export default function SimpleDialog(props: ISimpleDialogProps) {
                 },
             },
         ] as any);
-
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider>{title}</Dialog.Title>
+            <Dialog.Title>{title}</Dialog.Title>
             <Dialog.Content needScroll>{content}</Dialog.Content>
             <Dialog.Actions actions={actions} />
         </Dialog>

@@ -8,16 +8,14 @@ import MusicList from "@/pages/musicListEditor/components/musicList";
 import { useI18N } from "@/core/i18n";
 import downloader from "@/core/downloader";
 import TrackPlayer from "@/core/trackPlayer";
-
 import Dialog from "./base";
+import { ListDivider } from "@/components/base/divider";
 import { hideDialog, showDialog } from "../useDialog";
-
 interface IMusicListEditorDialogProps {
     /** 歌单标题（接口/插件歌单无本地 id，删除/保存不适用） */
     musicSheet?: { title?: string; id?: string };
     musicList: IMusic.IMusicItem[];
 }
-
 /**
  * 批量编辑 - 三级浮窗（对齐 Level3Dialog 规范：渐变标题行 + 内容区 + 底部等高同渐变操作行）。
  * 原为二级页面跳转（二级页内再压二级页），按"二级再进则为三级"规范改为浮窗。
@@ -28,11 +26,9 @@ export default function MusicListEditorDialog(
 ) {
     const { t } = useI18N();
     const { musicSheet, musicList } = props ?? {};
-
     const [editingMusicList, setEditingMusicList] =
         useAtom(editingMusicListAtom);
     const setMusicListChanged = useSetAtom(musicListChangedAtom);
-
     useEffect(() => {
         setEditingMusicList(
             (musicList ?? []).map(_ => ({ musicItem: _, checked: false })),
@@ -43,12 +39,10 @@ export default function MusicListEditorDialog(
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
     const selectedItems = useMemo(
         () => editingMusicList.filter(_ => _.checked).map(_ => _.musicItem),
         [editingMusicList],
     );
-
     function resetChecked() {
         setEditingMusicList(
             editingMusicList.map(_ => ({
@@ -57,17 +51,18 @@ export default function MusicListEditorDialog(
             })),
         );
     }
-
     const allChecked = editingMusicList.length > 0 &&
         selectedItems.length === editingMusicList.length;
-
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider>
+            <Dialog.Title>
                 {musicSheet?.title ?? "批量编辑"}
             </Dialog.Title>
-            <Dialog.Content needScroll>
+            {/* 2026-10-21 修复卡顿：去掉 needScroll（ScrollView 会吞掉 FlashList 虚拟化，
+                歌曲多时全量渲染卡顿）；改由 Content 限高（maxHeight 70vh + flexShrink）+ FlashList 自身滚动 */ }
+            <Dialog.Content>
                 <View style={style.header}>
+                    {/* 全选行保持规范 16sp（content），按钮行与列表行同高 48 */}
                     <Button
                         onPress={() => {
                             if (allChecked) {
@@ -94,7 +89,9 @@ export default function MusicListEditorDialog(
                         })})`}
                     </Button>
                 </View>
-                <MusicList marginTop={0} />
+                {/* 2026-10-21 统一：全选行与歌曲列表之间加分割线 */}
+                <ListDivider marginLeft={16} />
+                <MusicList marginTop={0} showItemSeparator />
             </Dialog.Content>
             <Dialog.Actions
                 actions={[
@@ -137,7 +134,6 @@ export default function MusicListEditorDialog(
         </Dialog>
     );
 }
-
 const style = StyleSheet.create({
     header: {
         flexDirection: "row",

@@ -2,7 +2,7 @@ import ListItem from "@/components/base/listItem";
 import Toast from "@/utils/toast";
 import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-
+import { ListDivider } from "@/components/base/divider";
 import Dialog from "./base";
 import { hideDialog, showDialog } from "../useDialog";
 import Input from "@/components/base/input";
@@ -14,12 +14,10 @@ import PluginManager, { Plugin } from "@/core/pluginManager";
 import { platformMatches } from "@/core/playMatcher";
 import { useI18N } from "@/core/i18n";
 import useColors from "@/hooks/useColors";
-
 /** 链接类型：歌单 / 单曲 */
 type ImportType = "sheet" | "music";
 /** 面板状态：粘贴识别 / 手动选源 / 指定插件解析 */
 type Mode = "input" | "choose" | "plugin-input";
-
 /** 链接 → 平台名（供 platformMatches 匹配对应插件；识别不到返回空） */
 function detectPlatform(link: string): string {
     const l = link.toLowerCase();
@@ -51,7 +49,6 @@ function detectPlatform(link: string): string {
     }
     return "";
 }
-
 /** 链接 → 类型：歌单特征 → sheet；单曲特征 → music；否则默认 sheet */
 function detectType(link: string): ImportType {
     const l = link.toLowerCase();
@@ -63,7 +60,6 @@ function detectType(link: string): ImportType {
     }
     return "sheet";
 }
-
 /** 网易链接 → 歌单/单曲 id（支持 ?id=、#/playlist?id=、/playlist/、/song/ 等格式） */
 function extractNeteaseId(link: string): string {
     const q = link.match(/[?&]id=(\d+)/);
@@ -76,7 +72,6 @@ function extractNeteaseId(link: string): string {
     }
     return "";
 }
-
 /**
  * 导入歌单/单曲 - 三级浮窗（对话框体系：居中缩放 + 渐变标题行 + 底部等高同渐变按钮行）。
  * 内置优先（网易直连）→ 插件兜底 → 识别失败手动选源（选源后浮窗内输入，不叠加新层）。
@@ -84,11 +79,9 @@ function extractNeteaseId(link: string): string {
 export default function ImportMusicSheetDialog() {
     const { t } = useI18N();
     const colors = useColors();
-
     const [mode, setMode] = useState<Mode>("input");
     const [query, setQuery] = useState("");
     const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
-
     const sheetPlugins = useMemo(
         () =>
             PluginManager.getSortedPluginsWithAbility("importMusicSheet"),
@@ -99,7 +92,6 @@ export default function ImportMusicSheetDialog() {
             PluginManager.getSortedPluginsWithAbility("importMusicItem"),
         [],
     );
-
     /** 手动选源兜底列表：支持导入歌单/单曲的插件（去重） */
     const allPlugins = useMemo(() => {
         const merged = [...sheetPlugins];
@@ -110,7 +102,6 @@ export default function ImportMusicSheetDialog() {
         });
         return merged;
     }, [sheetPlugins, musicPlugins]);
-
     /** 导入结果统一收尾：成功 → 关闭浮窗 → 提示 → 加入歌单（仍为三级浮窗） */
     function finishImport(
         type: ImportType,
@@ -166,7 +157,6 @@ export default function ImportMusicSheetDialog() {
             }
         }
     }
-
     /** 插件解析（指定插件） */
     async function importByPlugin(plugin: Plugin, text: string) {
         Toast.success(t("panel.importMusicSheet.importing"));
@@ -182,7 +172,6 @@ export default function ImportMusicSheetDialog() {
         }
         finishImport(type, result, plugin.name);
     }
-
     /** 内置解析（仅网易云：歌单 getSheetDetail / 单曲 getSongDetail；失败返回 null） */
     async function builtinImport(
         type: ImportType,
@@ -197,7 +186,6 @@ export default function ImportMusicSheetDialog() {
             return null;
         }
     }
-
     /** 提交链接：内置优先（网易云）→ 插件兜底 → 识别失败切手动选源 */
     async function onInputSubmit() {
         const text = (query ?? "").trim();
@@ -207,7 +195,6 @@ export default function ImportMusicSheetDialog() {
         const platform = detectPlatform(text);
         const type = detectType(text);
         const pool = type === "music" ? musicPlugins : sheetPlugins;
-
         // ① 内置优先：仅网易云（QQ 直连已确认全反爬，见 api/qq.ts 注释）
         if (platform === "网易云音乐") {
             const id = extractNeteaseId(text);
@@ -237,7 +224,6 @@ export default function ImportMusicSheetDialog() {
         // ③ 识别失败：切手动选源
         setMode("choose");
     }
-
     /** 底部按钮行（与标题行等高同渐变；随模式变化语义） */
     function renderActions() {
         if (mode === "choose") {
@@ -284,7 +270,6 @@ export default function ImportMusicSheetDialog() {
             },
         ];
     }
-
     return (
         <Dialog
             onDismiss={hideDialog}
@@ -303,7 +288,7 @@ export default function ImportMusicSheetDialog() {
                 }
                 return false;
             }}>
-            <Dialog.Title withDivider>
+            <Dialog.Title>
                 {t("panel.importMusicSheet.title")}
             </Dialog.Title>
             <Dialog.Content needScroll>
@@ -375,18 +360,25 @@ export default function ImportMusicSheetDialog() {
                             style={styles.hint}>
                             {t("panel.importMusicSheet.chooseSource")}
                         </ThemeText>
-                        {allPlugins.map(plugin => (
-                            <ListItem
-                                withHorizontalPadding
-                                heightType="small"
-                                key={plugin.hash}
-                                onPress={() => {
-                                    setSelectedPlugin(plugin);
-                                    setMode("plugin-input");
-                                    setQuery("");
-                                }}>
-                                <ListItem.Content title={plugin.name} />
-                            </ListItem>
+                        {allPlugins.map((plugin, i, arr) => (
+                            <View key={plugin.hash}>
+                                <ListItem
+                                    withHorizontalPadding
+                                    heightType="small"
+                                    onPress={() => {
+                                        setSelectedPlugin(plugin);
+                                        setMode("plugin-input");
+                                        setQuery("");
+                                    }}>
+                                    <ListItem.Content
+                                        title={plugin.name}
+                                    />
+                                </ListItem>
+                                {/* 2026-10-21 统一：列表项之间加 ListDivider */}
+                                {i < arr.length - 1 ? (
+                                    <ListDivider marginLeft={16} />
+                                ) : null}
+                            </View>
                         ))}
                     </View>
                 ) : (
@@ -401,7 +393,6 @@ export default function ImportMusicSheetDialog() {
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     input: {
         borderRadius: 12,

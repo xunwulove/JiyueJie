@@ -6,7 +6,6 @@ import Input from "@/components/base/input";
 import ThemeText from "@/components/base/themeText";
 import { useI18N } from "@/core/i18n";
 import { fontSizeConst } from "@/constants/uiConst";
-
 interface ISimpleInputDialogProps {
     title?: string;
     placeholder?: string;
@@ -17,7 +16,6 @@ interface ISimpleInputDialogProps {
     onOk: (text: string, close: () => void) => void;
     onCancel?: () => void;
 }
-
 /** 通用输入三级浮窗（对齐 APlayer Level3Dialog：输入框 + 取消/确定）。
  * 由底部 SimpleInput 面板同语义迁移：设置项点输入类操作（如音乐缓存上限）应弹三级浮窗而非底部面板 */
 export default function SimpleInputDialog(props: ISimpleInputDialogProps) {
@@ -31,9 +29,7 @@ export default function SimpleInputDialog(props: ISimpleInputDialogProps) {
         onOk,
         onCancel,
     } = props;
-
     const [input, setInput] = useState("");
-
     return (
         <Dialog
             onDismiss={() => {
@@ -41,7 +37,7 @@ export default function SimpleInputDialog(props: ISimpleInputDialogProps) {
                 onCancel?.();
                 hideDialog();
             }}>
-            <Dialog.Title withDivider>{title ?? ""}</Dialog.Title>
+            <Dialog.Title>{title ?? ""}</Dialog.Title>
             <Dialog.Content>
                 <Input
                     value={input}
@@ -87,7 +83,6 @@ export default function SimpleInputDialog(props: ISimpleInputDialogProps) {
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     input: {
         borderRadius: 12,

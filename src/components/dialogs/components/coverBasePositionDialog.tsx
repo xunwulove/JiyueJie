@@ -77,7 +77,7 @@ export default function CoverBasePositionDialog(
 
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider stringContent>
+            <Dialog.Title stringContent>
                 {t("coverBase.position")}
             </Dialog.Title>
             <Dialog.Content

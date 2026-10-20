@@ -169,7 +169,7 @@ export default function PluginList() {
             async onOk() {
                 const text = networkUrl.trim();
                 if (!text) {
-                    Toast.warn("请输入插件链接");
+                    Toast.warn(t("toast.needInputPluginUrl"));
                     return;
                 }
                 setLoading(true);
@@ -362,7 +362,7 @@ export default function PluginList() {
                 version: p.instance.version ?? "",
             }));
         if (!exportList.length) {
-            Toast.warn("没有可导出的插件（仅支持导出有来源 URL 的插件）");
+            Toast.warn(t("toast.noExportablePlugin"));
             return;
         }
         try {
@@ -377,10 +377,12 @@ export default function PluginList() {
                     dialogTitle: "导出插件清单",
                 });
             } else {
-                Toast.warn("当前设备不支持系统分享，无法导出");
+                Toast.warn(t("toast.shareNotSupported"));
             }
         } catch (e: any) {
-            Toast.warn(`导出失败：${e?.message ?? e}`);
+            Toast.warn(
+                t("toast.exportFail", { reason: e?.message ?? e }),
+            );
         }
     }
 

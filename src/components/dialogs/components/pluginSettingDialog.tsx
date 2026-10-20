@@ -46,7 +46,7 @@ export default function PluginSettingDialog(
 
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider>
+            <Dialog.Title>
                 {plugin?.name ?? t("pluginSetting.pluginSetting.title")}
             </Dialog.Title>
             <Dialog.Content

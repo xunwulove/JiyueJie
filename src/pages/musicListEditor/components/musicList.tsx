@@ -12,6 +12,7 @@ import {
 import SortableFlatList from "@/components/base/SortableFlatList";
 
 import CheckBox from "@/components/base/checkbox";
+import { ListDivider } from "@/components/base/divider";
 import useColors from "@/hooks/useColors";
 import Empty from "@/components/base/empty";
 
@@ -57,8 +58,12 @@ const MusicEditorItem = memo(
 
 /** 音乐列表 */
 const marginTop = rpx(88) * 2 + (StatusBar.currentHeight ?? 0);
-export default function MusicList(props: { marginTop?: number }) {
-    const { marginTop: outerMarginTop } = props ?? {};
+export default function MusicList(props: {
+    marginTop?: number;
+    /** 歌曲行之间显示分隔线（批量编辑三级浮窗用；页面默认无） */
+    showItemSeparator?: boolean;
+}) {
+    const { marginTop: outerMarginTop, showItemSeparator } = props ?? {};
     const [editingMusicList, setEditingMusicList] =
         useAtom(editingMusicListAtom);
     const setMusicListChanged = useSetAtom(musicListChangedAtom);
@@ -78,6 +83,11 @@ export default function MusicList(props: { marginTop?: number }) {
             data={editingMusicList}
             renderItem={renderItem}
             itemHeight={ITEM_HEIGHT}
+            itemSeparatorComponent={
+                showItemSeparator
+                    ? () => <ListDivider marginLeft={16} />
+                    : null
+            }
             onSortEnd={newData => {
                 setEditingMusicList(newData);
                 setMusicListChanged(true);

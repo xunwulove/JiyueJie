@@ -7,26 +7,21 @@ import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import { ImgAsset } from "@/constants/assetsConst";
 import { useI18N } from "@/core/i18n";
-
 interface ILyricColorDialogProps {
     /** 标题（调用方传入：如 文本颜色 / 文本背景色） */
     title?: string;
     defaultColor?: string;
     onSelected?: (color: Color) => void;
 }
-
 /** 色板固定尺寸（标准固定值方案，避免 rpx 在平板/车机漂移） */
 const areaSize = 200;
-
 /**
  * 歌词颜色选择三级浮窗（悬浮歌词设置 → 文本颜色 / 文本背景色）。
  * 由原 ColorPicker 面板改造：底部滑出面板 → 居中缩放浮窗（渐变标题行 + 渐变操作行）。
  */
 export default function LyricColorDialog(props: ILyricColorDialogProps) {
     const { title, defaultColor = "#66ccff", onSelected } = props;
-
     const { t } = useI18N();
-
     const [currentHue, setCurrentHue] = useState(Color(defaultColor).hue());
     const [currentSaturation, setCurrentSaturation] = useState(
         Color(defaultColor).saturationl(),
@@ -37,80 +32,65 @@ export default function LyricColorDialog(props: ILyricColorDialogProps) {
     const [currentAlpha, setCurrentAlpha] = useState(
         Color(defaultColor).alpha(),
     );
-
     const [inputValue, setInputValue] = useState(() =>
         Color(defaultColor).rgb().hexa().toString(),
     );
-
     const hueColor = useMemo(
         () => Color.hsl(currentHue, 100, 50),
         [currentHue],
     );
-
     const currentColor = useMemo(
         () => Color.hsl(currentHue, currentSaturation, currentLightness),
         [currentHue, currentSaturation, currentLightness],
     );
-
     const currentColorWithAlpha = useMemo(
         () => currentColor.alpha(currentAlpha),
         [currentColor, currentAlpha],
     );
-
     const hueColorString = useMemo(() => hueColor.toString(), [hueColor]);
     const currentColorString = useMemo(() => currentColor.toString(), [currentColor]);
     const currentColorWithAlphaString = useMemo(() => currentColorWithAlpha.toString(), [currentColorWithAlpha]);
     const currentColorAlpha0String = useMemo(() => currentColor.alpha(0).toString(), [currentColor]);
     const colorHexString = useMemo(() => currentColorWithAlpha.rgb().hexa().toString(), [currentColorWithAlpha]);
-
     // 同步colorHexString到inputValue
     const syncInputValue = useCallback(() => {
         setInputValue(colorHexString);
     }, [colorHexString]);
-
     // 当颜色通过滑块改变时，同步输入框
     useEffect(() => {
         syncInputValue();
     }, [syncInputValue]);
-
     const slThumbStyle = useMemo(() => ({
         left: -7.5 + (currentSaturation / 100) * areaSize,
         bottom: -7.5 + (currentLightness / 100) * areaSize,
         backgroundColor: currentColorString,
     }), [currentSaturation, currentLightness, currentColorString]);
-
     const hueThumbStyle = useMemo(() => ({
         top: -3.5 + (currentHue / 360) * areaSize,
     }), [currentHue]);
-
     const alphaThumbStyle = useMemo(() => ({
         top: -3.5 + (1 - currentAlpha) * areaSize,
     }), [currentAlpha]);
-
     const handleSLUpdate = useCallback((x: number, y: number) => {
         const xRate = Math.min(1, Math.max(0, x / areaSize));
         const yRate = Math.min(1, Math.max(0, y / areaSize));
         setCurrentSaturation(xRate * 100);
         setCurrentLightness((1 - yRate) * 100);
     }, []);
-
     const handleHueUpdate = useCallback((y: number) => {
         const yRate = Math.min(1, Math.max(0, y / areaSize));
         setCurrentHue(yRate * 360);
     }, []);
-
     const handleAlphaUpdate = useCallback((y: number) => {
         const yRate = Math.min(1, Math.max(0, y / areaSize));
         setCurrentAlpha(1 - yRate);
     }, []);
-
     const slTap = Gesture.Tap()
         .onStart(event => {
             const { x, y } = event;
             handleSLUpdate(x, y);
         })
         .runOnJS(true);
-
     const lastTimestampRef = useRef(Date.now());
     const slPan = Gesture.Pan()
         .onUpdate(event => {
@@ -122,50 +102,40 @@ export default function LyricColorDialog(props: ILyricColorDialogProps) {
             }
         })
         .runOnJS(true);
-
     const slComposed = Gesture.Race(slTap, slPan);
-
     const hueTap = Gesture.Tap()
         .onStart(event => {
             const { y } = event;
             handleHueUpdate(y);
         })
         .runOnJS(true);
-
     const huePan = Gesture.Pan()
         .onUpdate(event => {
             const { y } = event;
             handleHueUpdate(y);
         })
         .runOnJS(true);
-
     const hueComposed = Gesture.Race(hueTap, huePan);
-
     const alphaTap = Gesture.Tap()
         .onStart(event => {
             const { y } = event;
             handleAlphaUpdate(y);
         })
         .runOnJS(true);
-
     const alphaPan = Gesture.Pan()
         .onUpdate(event => {
             const { y } = event;
             handleAlphaUpdate(y);
         })
         .runOnJS(true);
-
     const alphaComposed = Gesture.Race(alphaTap, alphaPan);
-
     const handleColorInputChange = useCallback((text: string) => {
         setInputValue(text);
     }, []);
-
     const handleColorInputSubmit = useCallback(() => {
         try {
             const color = Color(inputValue);
             const hsl = color.hsl();
-
             setCurrentHue(hsl.hue() || 0);
             setCurrentSaturation(hsl.saturationl());
             setCurrentLightness(hsl.lightness());
@@ -175,23 +145,19 @@ export default function LyricColorDialog(props: ILyricColorDialogProps) {
             setInputValue(colorHexString);
         }
     }, [inputValue, colorHexString]);
-
     const handleColorInputBlur = useCallback(() => {
         handleColorInputSubmit();
     }, [handleColorInputSubmit]);
-
     /** 应用选中颜色（输入框与当前色不一致时以输入值为准）并关闭浮窗 */
     const applyColor = useCallback(() => {
         if (inputValue !== colorHexString) {
             try {
                 const color = Color(inputValue);
                 const hsl = color.hsl();
-
                 setCurrentHue(hsl.hue() || 0);
                 setCurrentSaturation(hsl.saturationl());
                 setCurrentLightness(hsl.lightness());
                 setCurrentAlpha(color.alpha());
-
                 onSelected?.(color);
             } catch (error) {
                 onSelected?.(currentColorWithAlpha);
@@ -201,7 +167,6 @@ export default function LyricColorDialog(props: ILyricColorDialogProps) {
         }
         hideDialog();
     }, [inputValue, colorHexString, currentColorWithAlpha, onSelected]);
-
     return (
         <Dialog onDismiss={hideDialog}>
             <Dialog.Title>{title ?? t("panel.colorPicker.title")}</Dialog.Title>
@@ -331,7 +296,6 @@ export default function LyricColorDialog(props: ILyricColorDialogProps) {
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     container: {
         width: "100%",

@@ -5,6 +5,9 @@ import ListItem from "@/components/base/listItem";
 import ThemeText from "@/components/base/themeText";
 import { ImgAsset } from "@/constants/assetsConst";
 import Clipboard from "@react-native-clipboard/clipboard";
+import LinearGradient from "react-native-linear-gradient";
+import Color from "color";
+import useColors from "@/hooks/useColors";
 
 import { getMediaUniqueKey } from "@/utils/mediaUtils";
 import FastImage from "@/components/base/fastImage";
@@ -15,8 +18,8 @@ import TrackPlayer from "@/core/trackPlayer";
 import { IIconName } from "@/components/base/icon.tsx";
 import { hideDialog, showDialog } from "@/components/dialogs/useDialog";
 import LocalMusicSheet from "@/core/localMusicSheet";
-import PersistStatus from "@/utils/persistStatus";
 import Divider from "@/components/base/divider";
+import { ListDivider } from "@/components/base/divider";
 import { FlatList } from "react-native-gesture-handler";
 import { useI18N } from "@/core/i18n";
 import Dialog from "./base";
@@ -26,9 +29,8 @@ interface IMusicItemLyricOptionsDialogProps {
     musicItem: IMusic.IMusicItem;
 }
 
-// 行高用 ListItem 紧凑档位 smallest(36)（规范：big64/normal56/small48/smallest36），
-// 与下方 ListItem heightType="smallest" 保持一致，缩短弹窗总高
-const ITEM_HEIGHT = 36;
+// 行高用 ListItem 常规档位 small(48)，与歌曲菜单（musicItemOptionsDialog）同构统一
+const ITEM_HEIGHT = 48;
 
 interface IOption {
     icon: IIconName;
@@ -47,12 +49,7 @@ export default function MusicItemLyricOptionsDialog(
 ) {
     const { musicItem } = props ?? {};
     const { t } = useI18N();
-
-    // 歌词翻译开关（原全屏页翻译按钮移入此处；默认开启）
-    const showTranslation = PersistStatus.useValue(
-        "lyric.showTranslation",
-        true,
-    );
+    const colors = useColors();
 
     const options: IOption[] = [
         {
@@ -120,41 +117,8 @@ export default function MusicItemLyricOptionsDialog(
                 }, 0);
             },
         },
-        {
-            icon: "translation",
-            title: t("panel.musicItemLyricOptions.showTranslation", {
-                status: t(
-                    showTranslation
-                        ? "panel.musicItemLyricOptions.showTranslationOn"
-                        : "panel.musicItemLyricOptions.showTranslationOff",
-                ),
-            }),
-            onPress: () => {
-                PersistStatus.set(
-                    "lyric.showTranslation",
-                    !showTranslation,
-                );
-                hideDialog();
-            },
-        },
-        // 全屏功能区移入：字体大小（三级浮窗）
-        {
-            icon: "font-size",
-            title: t("basicSettings.lyric.fontSize"),
-            onPress: () => {
-                hideDialog();
-                setTimeout(() => {
-                    showDialog("SetFontSizeDialog", {
-                        defaultSelect:
-                            PersistStatus.get("lyric.detailFontSize") ?? 1,
-                        onSelectChange(value) {
-                            PersistStatus.set("lyric.detailFontSize", value);
-                        },
-                    });
-                }, 0);
-            },
-        },
-        // 歌词设置（三级浮窗）：歌词偏移 + 关联方式 + 自动搜索歌词（悬浮歌词设置已移回设置页）
+        // 歌词设置（三级浮窗）：歌词偏移 + 关联方式 + 自动搜索歌词 + 更换歌词 + 字体大小
+        // （字体大小、歌词翻译已移入歌词设置，此处不再保留快捷入口，单一入口）
         {
             icon: "lyric",
             title: t("panel.musicItemLyricOptions.lyricSettings"),
@@ -220,14 +184,30 @@ export default function MusicItemLyricOptionsDialog(
             <Dialog.Content
                 needScroll
                 style={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 0 }}>
-                <View style={style.header}>
+                <LinearGradient
+                    colors={[
+                        Color(colors.primary).alpha(0.10).toString(),
+                        Color(
+                            (colors as any).primaryContainer ?? colors.primary,
+                        )
+                            .alpha(0.07)
+                            .toString(),
+                        "rgba(0,0,0,0.016)",
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={style.header}>
                     <FastImage
                         style={style.artwork}
                         source={musicItem?.artwork}
                         placeholderSource={ImgAsset.albumDefault}
                     />
                     <View style={style.content}>
-                        <ThemeText numberOfLines={2} style={style.title}>
+                        <ThemeText
+                            fontSize="title"
+                            fontWeight="bold"
+                            numberOfLines={2}
+                            style={style.title}>
                             {musicItem?.title}
                         </ThemeText>
                         <ThemeText
@@ -238,7 +218,7 @@ export default function MusicItemLyricOptionsDialog(
                             {musicItem?.album ? `- ${musicItem.album}` : ""}
                         </ThemeText>
                     </View>
-                </View>
+                </LinearGradient>
                 <Divider />
                 <FlatList
                     data={options}
@@ -250,11 +230,14 @@ export default function MusicItemLyricOptionsDialog(
                     ListFooterComponent={<View style={style.footer} />}
                     style={style.listWrapper}
                     keyExtractor={_ => _.title}
+                    ItemSeparatorComponent={() => (
+                        <ListDivider marginLeft={16} />
+                    )}
                     renderItem={({ item }) =>
                         item.show !== false ? (
                             <ListItem
                                 withHorizontalPadding
-                                heightType="smallest"
+                                heightType="small"
                                 onPress={item.onPress}>
                                 <ListItem.ListItemIcon
                                     width={28}
@@ -267,17 +250,6 @@ export default function MusicItemLyricOptionsDialog(
                     }
                 />
             </Dialog.Content>
-            <Dialog.Actions
-                actions={[
-                    {
-                        title: t("common.cancel"),
-                        type: "normal",
-                        onPress() {
-                            hideDialog();
-                        },
-                    },
-                ]}
-            />
         </Dialog>
     );
 }
@@ -309,6 +281,6 @@ const style = StyleSheet.create({
     },
     footer: {
         width: "100%",
-        height: rpx(30),
+        height: rpx(12), // 2026-10-21 统一：列表末项距底栏 12（原 30）
     },
 });

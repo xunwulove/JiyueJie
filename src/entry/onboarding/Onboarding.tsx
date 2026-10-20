@@ -23,6 +23,7 @@ import LocalMusicSheet from "@/core/localMusicSheet";
 import { defaultScanFolders } from "@/core/scanSettings";
 import PluginManager from "@/core/pluginManager";
 import Toast from "@/utils/toast";
+import i18n from "@/core/i18n";
 import { isTabletScreen } from "@/utils/tablet";
 import Config from "@/core/appConfig";
 
@@ -165,9 +166,13 @@ export default function Onboarding() {
             if (folders.length) {
                 LocalMusicSheet.importLocal(folders)
                     .then(count =>
-                        Toast.success(`扫描完成，共 ${count} 首歌曲`),
+                        Toast.success(
+                            i18n.t("toast.scanComplete", { count }),
+                        ),
                     )
-                    .catch(() => Toast.warn("扫描失败，可稍后到音乐库重试"));
+                    .catch(() =>
+                        Toast.warn(i18n.t("toast.scanFailOnboard")),
+                    );
             }
         }
     };

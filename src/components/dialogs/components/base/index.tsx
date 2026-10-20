@@ -475,8 +475,8 @@ const styles = StyleSheet.create({
     contentContainer: {
         width: "100%",
         paddingHorizontal: 24,
-        paddingTop: 16,
-        paddingBottom: 16,
+        paddingTop: 12, // 2026-10-21 统一：列表首项与标题分割线间距（原 16，与歌曲菜单 12 对齐）
+        paddingBottom: 12, // 2026-10-21 统一：列表末项与底部按钮分割线间距
     },
     /** actions */
     actionsContainer: {

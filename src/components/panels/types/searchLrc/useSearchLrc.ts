@@ -25,7 +25,9 @@ export default function useSearchLrc() {
             const tgtPlugin = PluginManager.getByHash(pluginHash);
             tgtPlugin && (plugins = [tgtPlugin]);
         } else {
-            plugins = PluginManager.getSearchablePlugins("lyric");
+            // 歌曲搜索：插件普遍不实现 "lyric" 搜索类型（实测 58 个源插件 search 均无 lyric 分支），
+            // 改用 "music" 搜歌曲候选，选中后经 associateLyric → getLyric 取词
+            plugins = PluginManager.getSearchablePlugins("music");
         }
         if (plugins.length === 0) {
             searchResultStore.setValue(
@@ -95,7 +97,7 @@ export default function useSearchLrc() {
                 const result = await plugin?.methods?.search?.(
                     query,
                     page,
-                    "lyric",
+                    "music",
                 );
                 /** 如果搜索结果不是本次结果 */
                 if (currentQueryRef.current !== query) {

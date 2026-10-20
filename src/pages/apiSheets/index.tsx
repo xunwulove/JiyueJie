@@ -23,6 +23,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Color from "color";
 import MusicSheet, { useSheetIsStarred } from "@/core/musicSheet";
 import Toast from "@/utils/toast";
+import { useI18N } from "@/core/i18n";
 
 /**
  * 网易/QQ 双 tab 列表页（推荐歌单 / 排行榜共用）
@@ -126,6 +127,7 @@ interface IApiSheetListProps {
 
 function ApiSheetList(props: IApiSheetListProps) {
     const { type, loader, onError, onPress } = props;
+    const { t } = useI18N();
     const [sheets, setSheets] = useState<IMusic.IMusicSheetItemBase[]>([]);
     const [state, setState] = useState(RequestStateCode.PENDING_FIRST_PAGE);
     const orientation = useOrientation();
@@ -240,6 +242,7 @@ function SheetCard({
     type: ApiPageType;
     onPress: () => void;
 }) {
+    const { t } = useI18N();
     const starred = useSheetIsStarred(item as IMusic.IMusicSheetItem);
 
     const toggleStar = async () => {
@@ -247,10 +250,10 @@ function SheetCard({
             await MusicSheet.starMusicSheet(
                 item as IMusic.IMusicSheetItem,
             );
-            Toast.success("已收藏");
+            Toast.success(t("toast.hasStarred"));
         } else {
             await MusicSheet.unstarMusicSheet(item);
-            Toast.success("已取消收藏");
+            Toast.success(t("toast.hasUnstarred"));
         }
     };
 

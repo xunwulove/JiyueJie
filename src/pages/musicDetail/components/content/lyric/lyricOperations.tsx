@@ -87,14 +87,15 @@ export default function LyricOperations(_props: ILyricOperationsProps) {
             />
             {/* 横屏操作行显示"我喜欢"爱心（竖屏顶部已有 HeartIcon，不重复） */}
             {orientation !== "vertical" ? <HeartIcon /> : null}
-            {/* 下载：未下载显示下载箭头（弹音质选择）；已下载显示灰色对勾 */}
+            {/* 下载：非本地歌曲显示下载箭头（弹音质选择）；本地歌曲显示灰色对勾，
+                点击提示"已是本地音乐"（原误用"设置成功"文案） */}
             {isLocal ? (
                 <Icon
                     name="check-circle-outline"
                     size={iconSizeConst.normal}
                     color={colors.textSecondary}
                     onPress={() => {
-                        Toast.success(t("toast.settingSuccess"));
+                        Toast.success(t("toast.musicIsLocal"));
                     }}
                 />
             ) : (

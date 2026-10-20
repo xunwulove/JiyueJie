@@ -76,7 +76,7 @@ export default function RecommendSheets() {
     const handleAutoSwitch = useCallback(() => {
         setIndex(prev => {
             if (prev + 1 < routes.length) {
-                Toast.warn("该音源推荐歌单不可用，已切换到下一个音源");
+                Toast.warn(t("toast.recommendSourceSwitch"));
                 return prev + 1;
             }
             return prev;

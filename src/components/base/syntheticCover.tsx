@@ -74,6 +74,10 @@ export default function SyntheticCover(props: IProps) {
                 style={[styles.image, translate]}
                 source={base.path ?? ImgAsset.albumDefault}
                 placeholderSource={ImgAsset.albumDefault}
+                /* 有自选封面：cover 缩放 + translate 取图（translate 已按 drawW/drawH 计算）；
+                   无自选封面（albumDefault 正方形音符图）：contain 完整显示，避免非正方形容器
+                   cover 放大裁切导致音符占比过大 */
+                resizeMode={base.path ? "cover" : "contain"}
             />
         </View>
     );

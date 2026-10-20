@@ -9,19 +9,15 @@ import Dialog from "./base";
 import PersistStatus from "@/utils/persistStatus";
 import NativeUtils from "@/native/utils";
 import { useI18N } from "@/core/i18n";
-
 export default function CheckStorage() {
     const [skipState, setSkipState] = useState(false);
-
     const { t } = useI18N();
-
     const onCancel = () => {
         if (skipState) {
             PersistStatus.set("app.skipBootstrapStorageDialog", true);
         }
         hideDialog();
     };
-
     return (
         <Dialog onDismiss={onCancel}>
             <Dialog.Title stringContent>{t("dialog.checkStorage.title")}</Dialog.Title>
@@ -39,7 +35,6 @@ export default function CheckStorage() {
                     {t("dialog.checkStorage.content.3")}
                 </ThemeText>
             </ScrollView>
-
             <TouchableOpacity
                 style={styles.checkBox}
                 onPress={() => {
@@ -50,7 +45,6 @@ export default function CheckStorage() {
                     <ThemeText style={styles.checkboxHint}>{t("dialog.checkStorage.button.doNotShowAgain")}</ThemeText>
                 </View>
             </TouchableOpacity>
-
             <Dialog.Actions
                 actions={[
                     {
@@ -71,17 +65,17 @@ export default function CheckStorage() {
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     item: {
         marginBottom: 8,
         fontSize: 13, // 对齐 Dialog.Content 正文 13sp（Level3Dialog）
         lineHeight: 21, // 对齐 Dialog.Content 正文行高 21
     },
-
     scrollView: {
         maxHeight: vh(40),
         paddingHorizontal: 13,
+        paddingTop: 12, // 2026-10-21 统一：正文首行距标题分割线 12
+        paddingBottom: 12, // 2026-10-21 统一：正文末行与下方区域间距 12
     },
     checkBox: {
         marginHorizontal: rpx(24),

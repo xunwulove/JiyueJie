@@ -9,55 +9,43 @@ import useColors from "@/hooks/useColors";
 import { useI18N } from "@/core/i18n";
 import PersistStatus from "@/utils/persistStatus";
 import { fontSizeConst, fontWeightConst } from "@/constants/uiConst";
-
 interface ISetScheduleCloseTimeDialogProps {
     onOk?: (minutes: number) => void;
 }
-
 export default function SetScheduleCloseTimeDialog(
     props: ISetScheduleCloseTimeDialogProps,
 ) {
     const { onOk } = props;
     const [timeInput, setTimeInput] = useState("");
-    
     const colors = useColors();
     const { t } = useI18N();
-
     // Get last custom time as placeholder
     const lastCustomTime = PersistStatus.get("app.scheduleCloseTime");
     const placeholder = lastCustomTime ? String(lastCustomTime) : "";
-
     const handleConfirm = () => {
         let minutes = 0;
-        
         if (timeInput.trim()) {
             minutes = parseInt(timeInput.trim(), 10);
         } else if (placeholder) {
             minutes = parseInt(placeholder, 10);
         }
-        
         // Validate input
         if (isNaN(minutes) || minutes <= 0 || minutes > 1440) {
             return;
         }
-        
         // Save to persistent storage
         PersistStatus.set("app.scheduleCloseTime", minutes);
-        
         onOk?.(minutes);
         hideDialog();
     };
-
     const inputStyles = {
         backgroundColor: colors.card,
         borderColor: colors.divider,
         color: colors.text,
     };
-
     const containerStyles = {
         backgroundColor: colors.backdrop,
     };
-
     return (
         <Dialog onDismiss={hideDialog}>
             <Dialog.Title>{t("dialog.setScheduleCloseTime.title")}</Dialog.Title>
@@ -115,7 +103,6 @@ export default function SetScheduleCloseTimeDialog(
         </Dialog>
     );
 }
-
 const style = StyleSheet.create({
     dialogContent: {
         paddingHorizontal: 0,

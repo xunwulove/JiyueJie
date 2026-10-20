@@ -19,6 +19,7 @@ import TrackPlayer from "@/core/trackPlayer";
 import LocalSongCover from "@/components/mediaItem/localSongCover";
 import { showDialog } from "@/components/dialogs/useDialog";
 import Toast from "@/utils/toast";
+import { useI18N } from "@/core/i18n";
 import { ListDivider } from "@/components/base/divider";
 import appConfig from "@/core/appConfig";
 import { useMusicHistory } from "@/core/musicHistory";
@@ -82,6 +83,7 @@ function readSortConfig(): {
 export default function LibraryTab() {
     const navigate = useNavigate();
     const colors = useColors();
+    const { t } = useI18N();
     const isTablet = useIsTablet();
     const primary = colors.primary;
 
@@ -183,7 +185,7 @@ export default function LibraryTab() {
                 const list = sortedList;
                 if (!list.length) {
                     Toast.warn(
-                        "暂无本地音乐，可通过「扫描」添加媒体来源",
+                        t("toast.noLocalMusic"),
                     );
                     return;
                 }
@@ -443,6 +445,7 @@ function LocalSongItem({
     item: IMusic.IMusicItem;
     list: IMusic.IMusicItem[];
 }) {
+    const { t } = useI18N();
     const colors = useColors();
     const primary = colors.primary;
 
@@ -479,7 +482,7 @@ function LocalSongItem({
                 switch (value) {
                 case "next":
                     TrackPlayer.addNext(item);
-                    Toast.success("已加入下一首播放");
+                    Toast.success(t("toast.addToNextPlay"));
                     break;
                 case "playlist":
                     showDialog("AddToMusicSheetDialog", {
@@ -554,10 +557,10 @@ function LocalSongItem({
                                     item,
                                     true,
                                 );
-                                Toast.success("已删除");
+                                Toast.success(t("toast.deleteSuccess"));
                             } catch (e: any) {
                                 Toast.warn(
-                                    e?.message ?? "删除失败",
+                                    e?.message ?? t("toast.deleteFail"),
                                 );
                             }
                         },

@@ -10,7 +10,6 @@ import Checkbox from "@/components/base/checkbox";
 import Dialog from "./base";
 import PersistStatus from "@/utils/persistStatus";
 import { useI18N } from "@/core/i18n";
-
 interface IDownloadDialogProps {
     version: string;
     content: string[];
@@ -20,9 +19,7 @@ interface IDownloadDialogProps {
 export default function DownloadDialog(props: IDownloadDialogProps) {
     const { content, fromUrl, backUrl, version } = props;
     const [skipState, setSkipState] = useState(false);
-
     const { t } = useI18N();
-
     return (
         <Dialog
             onDismiss={() => {
@@ -112,7 +109,6 @@ export default function DownloadDialog(props: IDownloadDialogProps) {
         </Dialog>
     );
 }
-
 const style = StyleSheet.create({
     item: {
         marginBottom: 8,
@@ -126,6 +122,8 @@ const style = StyleSheet.create({
     scrollView: {
         maxHeight: vh(40),
         paddingHorizontal: 13,
+        paddingTop: 12, // 2026-10-21 统一：正文首行距标题分割线 12
+        paddingBottom: 12, // 2026-10-21 统一：正文末行与下方区域间距 12
     },
     checkboxRow: {
         paddingTop: 12,

@@ -38,7 +38,7 @@ export default function WebDAVSettingDialog(props: IWebdavSettingDialogProps) {
                 onCancel?.();
                 hideDialog();
             }}>
-            <Dialog.Title withDivider>{t("backupAndResume.webdavSettings")}</Dialog.Title>
+            <Dialog.Title>{t("backupAndResume.webdavSettings")}</Dialog.Title>
             <Dialog.Content>
                 {fields.map(it => (
                     <View key={it.key} style={styles.fieldRow}>

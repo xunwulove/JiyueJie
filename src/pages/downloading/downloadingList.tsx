@@ -11,6 +11,7 @@ import {
 import downloader from "@/core/downloader";
 import { FlashList } from "@shopify/flash-list";
 import useColors from "@/hooks/useColors";
+import { useI18N } from "@/core/i18n";
 import ThemeText from "@/components/base/themeText";
 import Icon, { IIconName } from "@/components/base/icon.tsx";
 import Color from "color";
@@ -171,6 +172,7 @@ function DownloadingListItem(props: { musicItem: IMusic.IMusicItem }) {
 /** 已下载歌曲行（已完成）：勾图标 + 歌手 · 已完成 + 右端删除（删文件+删记录） */
 function DownloadedListItem(props: { musicItem: IMusic.IMusicItem }) {
     const { musicItem } = props;
+    const { t } = useI18N();
     const colors = useColors();
 
     return (
@@ -213,7 +215,7 @@ function DownloadedListItem(props: { musicItem: IMusic.IMusicItem }) {
                                         await downloader.removeDownloadedRecord(
                                             musicItem,
                                         );
-                                        Toast.success("已删除下载记录");
+                                        Toast.success(t("toast.downloadRecordDeleted"));
                                     },
                                 },
                                 {
@@ -223,7 +225,7 @@ function DownloadedListItem(props: { musicItem: IMusic.IMusicItem }) {
                                         await downloader.removeDownloaded(
                                             musicItem,
                                         );
-                                        Toast.success("已删除下载记录及文件");
+                                        Toast.success(t("toast.downloadRecordAndFileDeleted"));
                                     },
                                 },
                             ],
