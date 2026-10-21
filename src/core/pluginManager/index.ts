@@ -395,7 +395,7 @@ class PluginManager implements IPluginManager, IInjectable {
      * 阶段 2 逐个挂载，每个插件挂载后让出一段空闲（delay 50ms）让 UI 渲染插队，
      * 从根上避免「多个 jsjiami 混淆插件同步求值」把 JS 线程打满导致界面冻结/安装假死。
      * @param urls - 待安装插件 URL 列表
-     * @param onProgress - 进度回调：{phase: "download"|"mount", done, total}
+     * @param onProgress - 进度回调：{phase: "download"|"mount", done, total, name?}
      */
     async installPluginsFromUrls(
         urls: string[],
@@ -403,6 +403,7 @@ class PluginManager implements IPluginManager, IInjectable {
             phase: "download" | "mount";
             done: number;
             total: number;
+            name?: string;
         }) => void,
         config?: IInstallPluginConfig,
     ): Promise<{
@@ -416,7 +417,8 @@ class PluginManager implements IPluginManager, IInjectable {
             Pragma: "no-cache",
             Expires: "0",
         };
-        // 阶段 1：并发下载（不挂载）
+        // 阶段 1：并发下载（不挂载；慢源（如 hebijunge 大混淆插件）放宽到 30s，
+        // 不被 plugin.ts 的全局 2s 默认超时误杀）
         const downloads: Array<{ url: string; code: string }> = [];
         let downloaded = 0;
         await runWithConcurrency(
@@ -425,7 +427,10 @@ class PluginManager implements IPluginManager, IInjectable {
             async url => {
                 try {
                     const code = (
-                        await axios.get(url, { headers: noCacheHeaders })
+                        await axios.get(url, {
+                            headers: noCacheHeaders,
+                            timeout: 30_000,
+                        })
                     ).data;
                     if (code) {
                         downloads.push({ url, code });
@@ -449,6 +454,7 @@ class PluginManager implements IPluginManager, IInjectable {
         let mounted = 0;
         for (let i = 0; i < downloads.length; ++i) {
             const { url, code } = downloads[i];
+            const pluginName = url.split("/").pop()?.slice(0, 40) ?? url;
             try {
                 results.push(await this.installFromCode(code, url, config));
             } catch (e: any) {
@@ -459,7 +465,12 @@ class PluginManager implements IPluginManager, IInjectable {
                 });
             }
             mounted++;
-            onProgress?.({ phase: "mount", done: mounted, total: downloads.length });
+            onProgress?.({
+                phase: "mount",
+                done: mounted,
+                total: downloads.length,
+                name: pluginName,
+            });
             await delay(50);
         }
         const success = results.filter(r => r.success).length;

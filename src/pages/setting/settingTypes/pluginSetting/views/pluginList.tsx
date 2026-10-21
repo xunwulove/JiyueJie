@@ -51,11 +51,12 @@ export default function PluginList() {
     const colors = useColors();
 
     const [loading, setLoading] = useState(false);
-    // 批量安装进度：{phase:"download"|"mount", done, total}，null 表示无安装任务
+    // 批量安装进度：{phase:"download"|"mount", done, total, name?}，null 表示无安装任务
     const [installProgress, setInstallProgress] = useState<{
         phase: "download" | "mount";
         done: number;
         total: number;
+        name?: string;
     } | null>(null);
     // 从网络安装：输入框组件级状态（三级浮窗 SimpleDialog 内，关闭重开不丢失）
     const [networkUrl, setNetworkUrl] = useState("");
@@ -488,6 +489,9 @@ export default function PluginList() {
                                         : t("pluginSetting.installProgressMount", {
                                             done: installProgress.done,
                                             total: installProgress.total,
+                                            pluginName: installProgress.name
+                                                ? " · " + installProgress.name
+                                                : "",
                                         })}
                                 </Text>
                             ) : null}
