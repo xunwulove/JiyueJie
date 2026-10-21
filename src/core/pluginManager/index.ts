@@ -194,6 +194,11 @@ class PluginManager implements IPluginManager, IInjectable {
                                     : e?.message ?? e,
                             );
                         }
+                        // 分批让出 JS 线程：混淆插件逐个求值会把主线程打满，
+                        // 每挂载 2 个让出一帧，UI 保持可响应（冷启动不冻结）
+                        if (i % 2 === 1) {
+                            await delay(16);
+                        }
                     }
                 }
             }).catch((e: any) => {
@@ -308,6 +313,166 @@ class PluginManager implements IPluginManager, IInjectable {
      * @param config.notCheckVersion - 为true时跳过版本检查
      * @returns 安装结果，包含成功状态和相关信息
      */
+    /**
+     * 挂载已下载的插件代码并落盘（installPluginFromUrl 与批量安装共用的核心逻辑）
+     * @param funcCode - 已下载的插件源码
+     * @param url - 插件来源 URL（用于结果回显与版本检查）
+     * @param config - 安装配置选项
+     */
+    private async installFromCode(
+        funcCode: string,
+        url?: string,
+        config?: IInstallPluginConfig,
+    ): Promise<IInstallPluginResult> {
+        const plugin = new Plugin(funcCode, "");
+        let allPlugins = [...this.getPlugins()];
+        const pluginIndex = allPlugins.findIndex(
+            p => p.hash === plugin.hash,
+        );
+        if (pluginIndex !== -1) {
+            // 静默忽略
+            return {
+                success: true,
+                message: "插件已安装",
+                pluginName: plugin.name,
+                pluginHash: plugin.hash,
+                pluginUrl: url,
+            };
+        }
+        const oldVersionPlugin = allPlugins.find(
+            p => p.name === plugin.name,
+        );
+        if (oldVersionPlugin && !config?.notCheckVersion) {
+            if (
+                compare(
+                    oldVersionPlugin.instance.version ?? "",
+                    plugin.instance.version ?? "",
+                    ">",
+                )
+            ) {
+                return {
+                    success: false,
+                    message: "已安装更新版本的插件",
+                    pluginName: plugin.name,
+                    pluginHash: plugin.hash,
+                    pluginUrl: url,
+                };
+            }
+        }
+
+        if (plugin.hash !== "") {
+            const fn = nanoid();
+            const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
+            await writeFile(_pluginPath, funcCode, "utf8");
+            plugin.path = _pluginPath;
+            allPlugins = allPlugins.concat(plugin);
+            if (oldVersionPlugin) {
+                allPlugins = allPlugins.filter(
+                    _ => _.hash !== oldVersionPlugin.hash,
+                );
+                try {
+                    await unlink(oldVersionPlugin.path);
+                } catch {}
+            }
+            this.setPlugins(allPlugins);
+            return {
+                success: true,
+                pluginName: plugin.name,
+                pluginHash: plugin.hash,
+                pluginUrl: url,
+            };
+        }
+        return {
+            success: false,
+            message: "插件无法解析",
+            pluginUrl: url,
+        };
+    }
+
+    /**
+     * 批量安装插件（订阅拉取专用）：下载与挂载分离。
+     * 阶段 1 限并发下载（网络等待，不占 JS 线程）；
+     * 阶段 2 逐个挂载，每个插件挂载后让出一段空闲（delay 50ms）让 UI 渲染插队，
+     * 从根上避免「多个 jsjiami 混淆插件同步求值」把 JS 线程打满导致界面冻结/安装假死。
+     * @param urls - 待安装插件 URL 列表
+     * @param onProgress - 进度回调：{phase: "download"|"mount", done, total}
+     */
+    async installPluginsFromUrls(
+        urls: string[],
+        onProgress?: (p: {
+            phase: "download" | "mount";
+            done: number;
+            total: number;
+        }) => void,
+        config?: IInstallPluginConfig,
+    ): Promise<{
+        results: IInstallPluginResult[];
+        success: number;
+        failed: number;
+    }> {
+        const results: IInstallPluginResult[] = [];
+        const noCacheHeaders = {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+            Expires: "0",
+        };
+        // 阶段 1：并发下载（不挂载）
+        const downloads: Array<{ url: string; code: string }> = [];
+        let downloaded = 0;
+        await runWithConcurrency(
+            urls,
+            PLUGIN_UPDATE_CONCURRENCY,
+            async url => {
+                try {
+                    const code = (
+                        await axios.get(url, { headers: noCacheHeaders })
+                    ).data;
+                    if (code) {
+                        downloads.push({ url, code });
+                    }
+                } catch (e: any) {
+                    results.push({
+                        success: false,
+                        message: e?.message ?? "",
+                        pluginUrl: url,
+                    });
+                }
+                downloaded++;
+                onProgress?.({
+                    phase: "download",
+                    done: downloaded,
+                    total: urls.length,
+                });
+            },
+        );
+        // 阶段 2：逐个挂载，每个后让出空闲（混淆插件求值量大，UI 在间隙渲染）
+        let mounted = 0;
+        for (let i = 0; i < downloads.length; ++i) {
+            const { url, code } = downloads[i];
+            try {
+                results.push(await this.installFromCode(code, url, config));
+            } catch (e: any) {
+                results.push({
+                    success: false,
+                    message: e?.message ?? "",
+                    pluginUrl: url,
+                });
+            }
+            mounted++;
+            onProgress?.({ phase: "mount", done: mounted, total: downloads.length });
+            await delay(50);
+        }
+        const success = results.filter(r => r.success).length;
+        return { results, success, failed: results.length - success };
+    }
+
+    /**
+     * 从URL安装插件
+     * @param url - 下载插件的URL
+     * @param config - 安装配置选项
+     * @param config.notCheckVersion - 为true时跳过版本检查
+     * @returns 安装结果，包含成功状态和相关信息
+     */
     async installPluginFromUrl(
         url: string,
         config?: IInstallPluginConfig,
@@ -323,69 +488,7 @@ class PluginManager implements IPluginManager, IInjectable {
                 })
             ).data;
             if (funcCode) {
-                const plugin = new Plugin(funcCode, "");
-                let allPlugins = [...this.getPlugins()];
-                const pluginIndex = allPlugins.findIndex(
-                    p => p.hash === plugin.hash,
-                );
-                if (pluginIndex !== -1) {
-                    // 静默忽略
-                    return {
-                        success: true,
-                        message: "插件已安装",
-                        pluginName: plugin.name,
-                        pluginHash: plugin.hash,
-                        pluginUrl: url,
-                    };
-                }
-                const oldVersionPlugin = allPlugins.find(
-                    p => p.name === plugin.name,
-                );
-                if (oldVersionPlugin && !config?.notCheckVersion) {
-                    if (
-                        compare(
-                            oldVersionPlugin.instance.version ?? "",
-                            plugin.instance.version ?? "",
-                            ">",
-                        )
-                    ) {
-                        return {
-                            success: false,
-                            message: "已安装更新版本的插件",
-                            pluginName: plugin.name,
-                            pluginHash: plugin.hash,
-                            pluginUrl: url,
-                        };
-                    }
-                }
-
-                if (plugin.hash !== "") {
-                    const fn = nanoid();
-                    const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
-                    await writeFile(_pluginPath, funcCode, "utf8");
-                    plugin.path = _pluginPath;
-                    allPlugins = allPlugins.concat(plugin);
-                    if (oldVersionPlugin) {
-                        allPlugins = allPlugins.filter(
-                            _ => _.hash !== oldVersionPlugin.hash,
-                        );
-                        try {
-                            await unlink(oldVersionPlugin.path);
-                        } catch {}
-                    }
-                    this.setPlugins(allPlugins);
-                    return {
-                        success: true,
-                        pluginName: plugin.name,
-                        pluginHash: plugin.hash,
-                        pluginUrl: url,
-                    };
-                }
-                return {
-                    success: false,
-                    message: "插件无法解析",
-                    pluginUrl: url,
-                };
+                return await this.installFromCode(funcCode, url, config);
             } else {
                 return {
                     success: false,
@@ -570,14 +673,9 @@ class PluginManager implements IPluginManager, IInjectable {
                 },
             );
             if (needDownload.length) {
-                await runWithConcurrency(
-                    needDownload,
-                    PLUGIN_UPDATE_CONCURRENCY,
-                    async url => {
-                        await this.installPluginFromUrl(url).catch(
-                            emptyFunction,
-                        );
-                    },
+                // 下载/挂载分离 + 分批让出：不再并发同步挂载（多个混淆插件同步求值会把 JS 线程打满）
+                await this.installPluginsFromUrls(needDownload).catch(
+                    emptyFunction,
                 );
             }
         } catch {

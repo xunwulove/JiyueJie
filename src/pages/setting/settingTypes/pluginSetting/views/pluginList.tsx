@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import rpx from "@/utils/rpx";
 import Loading from "@/components/base/loading";
+import useColors from "@/hooks/useColors";
+import { fontSizeConst } from "@/constants/uiConst";
 
 import PluginManager, { useSortedPlugins } from "@/core/pluginManager";
 import { trace } from "@/utils/log";
@@ -46,8 +48,15 @@ export default function PluginList() {
     const plugins = useSortedPlugins();
     const { t } = useI18N();
     const isTablet = useIsTablet();
+    const colors = useColors();
 
     const [loading, setLoading] = useState(false);
+    // 批量安装进度：{phase:"download"|"mount", done, total}，null 表示无安装任务
+    const [installProgress, setInstallProgress] = useState<{
+        phase: "download" | "mount";
+        done: number;
+        total: number;
+    } | null>(null);
     // 从网络安装：输入框组件级状态（三级浮窗 SimpleDialog 内，关闭重开不丢失）
     const [networkUrl, setNetworkUrl] = useState("");
 
@@ -242,6 +251,7 @@ export default function PluginList() {
             Config.getConfig("plugin.subscribeUrl") ??
             JSON.stringify([{ url: DEFAULT_PLUGIN_SUBSCRIPTION_URL }]);
         setLoading(true);
+        setInstallProgress(null);
 
         const successResults: IInstallPluginResult[] = [];
         const failResults: IInstallPluginResult[] = [];
@@ -249,16 +259,55 @@ export default function PluginList() {
         try {
             const urlItems = JSON.parse(urls!);
             if (Array.isArray(urlItems)) {
+                // 收集全部订阅清单的插件 URL（去重），统一批量安装（下载并发 + 挂载分批让出）
+                const allUrls: string[] = [];
+                const noCacheHeaders = {
+                    "Cache-Control": "no-cache",
+                    Pragma: "no-cache",
+                    Expires: "0",
+                };
                 for (let i = 0; i < urlItems.length; ++i) {
-                    const result = await installPluginFromUrl(urlItems[i].url);
-                    if (result[0]) {
-                        if (result[0].success) {
-                            successResults.push(result[0]);
+                    const url = urlItems[i]?.url;
+                    if (!url) {
+                        continue;
+                    }
+                    try {
+                        if (url.endsWith(".json")) {
+                            const text = (
+                                await axios.get(url, {
+                                    headers: noCacheHeaders,
+                                })
+                            ).data;
+                            (text?.plugins ?? []).forEach((p: any) => {
+                                if (p?.url) {
+                                    allUrls.push(p.url);
+                                }
+                            });
                         } else {
-                            failResults.push(result[0]);
+                            allUrls.push(url);
                         }
+                    } catch {
+                        // 单条订阅地址拉取失败静默（与其他地址互不影响）
                     }
                 }
+                const uniqueUrls = [...new Set(allUrls)];
+                const { results } =
+                    await PluginManager.installPluginsFromUrls(
+                        uniqueUrls,
+                        p => setInstallProgress(p),
+                        {
+                            notCheckVersion: Config.getConfig(
+                                "basic.notCheckPluginVersion",
+                            ),
+                        },
+                    );
+                results.forEach(it => {
+                    if (it.success) {
+                        successResults.push(it);
+                    } else {
+                        failResults.push(it);
+                    }
+                });
             } else {
                 throw new Error();
             }
@@ -284,7 +333,7 @@ export default function PluginList() {
 
         } catch {
             if (urls?.length) {
-                const result = await installPluginFromUrl(urls);
+                const result = await installPluginFromUrl(urls, p => setInstallProgress(p));
                 if (result[0]) {
                     if (result[0].success) {
                         Toast.success(t("toast.installPluginSuccess"));
@@ -299,6 +348,7 @@ export default function PluginList() {
             }
         }
         setLoading(false);
+        setInstallProgress(null);
     }
 
     async function onUpdateAllClick() {
@@ -422,7 +472,26 @@ export default function PluginList() {
             <HorizontalSafeAreaView style={style.wrapper}>
                 <>
                     {loading ? (
-                        <Loading />
+                        <View style={style.loadingWrap}>
+                            <Loading />
+                            {installProgress ? (
+                                <Text
+                                    style={[
+                                        style.loadingText,
+                                        { color: colors.textSecondary },
+                                    ]}>
+                                    {installProgress.phase === "download"
+                                        ? t("pluginSetting.installProgressDownload", {
+                                            done: installProgress.done,
+                                            total: installProgress.total,
+                                        })
+                                        : t("pluginSetting.installProgressMount", {
+                                            done: installProgress.done,
+                                            total: installProgress.total,
+                                        })}
+                                </Text>
+                            ) : null}
+                        </View>
                     ) : (
                         <FlatList
                             ListEmptyComponent={Empty}
@@ -525,11 +594,28 @@ const style = StyleSheet.create({
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: "rgba(128,128,128,0.3)",
     },
+    /** 安装中：转圈 + 进度文案垂直居中 */
+    loadingWrap: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    loadingText: {
+        marginTop: rpx(12),
+        fontSize: fontSizeConst.description,
+    },
 });
 
 
 
-async function installPluginFromUrl(text: string): Promise<IInstallPluginResult[]> {
+async function installPluginFromUrl(
+    text: string,
+    onProgress?: (p: {
+        phase: "download" | "mount";
+        done: number;
+        total: number;
+    }) => void,
+): Promise<IInstallPluginResult[]> {
     try {
         let urls: string[] = [];
         const inputUrl = text.trim();
@@ -555,15 +641,17 @@ async function installPluginFromUrl(text: string): Promise<IInstallPluginResult[
         } else {
             urls = [inputUrl];
         }
-        return await Promise.all(
-            urls.map(url =>
-                PluginManager.installPluginFromUrl(url, {
-                    notCheckVersion: Config.getConfig(
-                        "basic.notCheckPluginVersion",
-                    ),
-                }),
-            ),
+        // 批量安装：下载并发、挂载逐个让出（清单含大量混淆插件时不再打满 JS 线程）
+        const { results } = await PluginManager.installPluginsFromUrls(
+            urls,
+            onProgress,
+            {
+                notCheckVersion: Config.getConfig(
+                    "basic.notCheckPluginVersion",
+                ),
+            },
         );
+        return results;
     } catch (e: any) {
         return [{ success: false, message: e?.message, pluginUrl: text }];
     }

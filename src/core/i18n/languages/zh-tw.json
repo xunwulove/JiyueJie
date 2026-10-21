@@ -168,6 +168,8 @@
     "pluginSetting.failReason": "失敗原因: {reason}",
     "pluginSetting.pluginInstallFailedDialogContent": "以下外掛安裝失敗: \n {detail}",
     "pluginSetting.pluginUpdateFailedDialogContent": "以下外掛安裝失敗: \n {detail}",
+    "pluginSetting.installProgressDownload": "下載音源 {done}/{total}",
+    "pluginSetting.installProgressMount": "掛載音源 {done}/{total}",
     "toast.pluginUpdateSuccess": "已更新到最新版本",
     "toast.failToUpdatePlugin": "更新外掛失敗",
     "toast.copiedToClipboard": "已複製到剪貼板",

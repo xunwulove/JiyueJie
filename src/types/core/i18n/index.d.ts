@@ -213,6 +213,8 @@ export interface ILanguageData {
     "pluginSetting.failReason": string; // 失败原因
     "pluginSetting.pluginInstallFailedDialogContent": string; // 插件安装失败对话框内容
     "pluginSetting.pluginUpdateFailedDialogContent": string; // 插件更新失败对话框内容
+    "pluginSetting.installProgressDownload": string; // 批量安装下载进度
+    "pluginSetting.installProgressMount": string; // 批量安装挂载进度
 
     // 提示消息相关 - 插件操作
     "toast.pluginUpdateSuccess": string; // 插件更新成功
