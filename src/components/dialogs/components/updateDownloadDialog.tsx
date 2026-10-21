@@ -12,22 +12,18 @@ import path from "path-browserify";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import Toast from "@/utils/toast";
-
 interface IProps {
     version: string;
     fromUrl: string;
     backUrl?: string;
 }
-
 type Status = "downloading" | "completed" | "error";
-
 function formatSize(bytes: number): string {
     if (!bytes || bytes <= 0) return "0 B";
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
-
 function formatSpeed(bytesPerSec: number): string {
     if (!bytesPerSec || bytesPerSec <= 0) return "0 KB/s";
     if (bytesPerSec < 1024 * 1024) {
@@ -35,7 +31,6 @@ function formatSpeed(bytesPerSec: number): string {
     }
     return `${(bytesPerSec / 1024 / 1024).toFixed(1)} MB/s`;
 }
-
 /**
  * 软件内下载更新三级浮窗：
  * 进度条 + 百分比 + 下载速度 + 已下载/总大小；完成 → 拉起系统安装器
@@ -44,7 +39,6 @@ export default function UpdateDownloadDialog(props: IProps) {
     const { version, fromUrl } = props ?? {};
     const { t } = useI18N();
     const colors = useColors();
-
     const [attempt, setAttempt] = useState(0);
     const [status, setStatus] = useState<Status>("downloading");
     const [progress, setProgress] = useState(0);
@@ -52,23 +46,18 @@ export default function UpdateDownloadDialog(props: IProps) {
     const [fileSize, setFileSize] = useState(0);
     const [speed, setSpeed] = useState(0);
     const [_filePath, setFilePath] = useState("");
-
     const jobIdRef = useRef<number | undefined>(undefined);
     const lastSampleRef = useRef({ time: Date.now(), bytes: 0 });
     const statusRef = useRef<Status>("downloading");
-
     useEffect(() => {
         statusRef.current = status;
     }, [status]);
-
     const targetPath = addFileScheme(
         `${pathConst.downloadPath}update/极悦界-v${version}.apk`,
     );
     const plainPath = targetPath.replace(/^file:\/\//, "");
-
     useEffect(() => {
         let disposed = false;
-
         setStatus("downloading");
         setProgress(0);
         setDownloadedSize(0);
@@ -77,7 +66,6 @@ export default function UpdateDownloadDialog(props: IProps) {
         setFilePath(targetPath);
         jobIdRef.current = undefined;
         lastSampleRef.current = { time: Date.now(), bytes: 0 };
-
         (async () => {
             try {
                 // 每次进入都重新下载目标版本：先清理本地同名旧文件（含此前下载但可能是旧版/损坏的同名 APK），
@@ -86,7 +74,6 @@ export default function UpdateDownloadDialog(props: IProps) {
                 if (disposed) return;
                 await RNFS.unlink(plainPath).catch(() => {});
                 if (disposed) return;
-
                 const { jobId, promise } = downloadFile({
                     fromUrl,
                     toFile: targetPath,
@@ -132,10 +119,13 @@ export default function UpdateDownloadDialog(props: IProps) {
             } catch (e: any) {
                 if (disposed) return;
                 setStatus("error");
-                Toast.warn(`下载更新失败：${e?.message ?? "未知错误"}`);
+                Toast.warn(
+                    t("toast.downloadUpdateFail", {
+                        reason: e?.message ?? "未知错误",
+                    }),
+                );
             }
         })();
-
         return () => {
             disposed = true;
             // 组件卸载/重试时停止未完成的下载，避免后台继续
@@ -147,7 +137,6 @@ export default function UpdateDownloadDialog(props: IProps) {
             }
         };
     }, [attempt]);
-
     function onCancel() {
         if (jobIdRef.current !== undefined) {
             RNFS.stopDownload(jobIdRef.current);
@@ -158,7 +147,6 @@ export default function UpdateDownloadDialog(props: IProps) {
         }
         hideDialog();
     }
-
     function onInstall() {
         NativeUtils.installApk(plainPath)
             .then(() => {
@@ -166,24 +154,23 @@ export default function UpdateDownloadDialog(props: IProps) {
             })
             .catch(e => {
                 if (e?.code === "NEED_INSTALL_PERMISSION") {
-                    Toast.warn(
-                        "请在系统设置中允许「极悦界」安装未知应用，然后重试",
-                    );
+                    Toast.warn(t("toast.needInstallPermission"));
                     return;
                 }
-                Toast.warn(`无法启动安装：${e?.message ?? "未知错误"}`);
+                Toast.warn(
+                    t("toast.installApkFail", {
+                        reason: e?.message ?? "未知错误",
+                    }),
+                );
             });
     }
-
     function onRetry() {
         setAttempt(a => a + 1);
     }
-
     const percent = Math.min(100, Math.round(progress * 100));
-
     return (
         <Dialog onDismiss={onCancel}>
-            <Dialog.Title withDivider>
+            <Dialog.Title>
                 {status === "completed"
                     ? `下载完成 V${version}`
                     : status === "error"
@@ -250,7 +237,6 @@ export default function UpdateDownloadDialog(props: IProps) {
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     progressRow: {
         flexDirection: "row",

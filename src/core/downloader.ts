@@ -165,8 +165,8 @@ interface IEvents {
     [DownloaderEvent.DownloadTaskError]: (reason: DownloadFailReason, mediaItem: IMusic.IMusicItem, error?: Error) => void;
     /** 下载任务更新 */
     [DownloaderEvent.DownloadTaskUpdate]: (task: IDownloadTaskInfo) => void;
-    /** 下载队列清空 */
-    [DownloaderEvent.DownloadQueueCompleted]: () => void;
+    /** 下载队列清空（info.hasError：队列中是否存在失败任务，供上层区分"完成/部分失败"提示） */
+    [DownloaderEvent.DownloadQueueCompleted]: (info: { hasError: boolean }) => void;
 }
 
 class Downloader extends EventEmitter<IEvents> implements IInjectable {
@@ -313,7 +313,14 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
         // 没有下一个任务了
         if (!nextTask) {
             if (this.downloadingCount === 0) {
-                this.emit(DownloaderEvent.DownloadQueueCompleted);
+                // 队列完结：统计是否有失败任务，区分"全部完成 / 部分失败"提示
+                // （被取消的任务已从 downloadTasks 移除，不参与统计，不误报失败）
+                const hasError = [...downloadTasks.values()].some(
+                    task => task.status === DownloadStatus.Error,
+                );
+                this.emit(DownloaderEvent.DownloadQueueCompleted, {
+                    hasError,
+                });
             }
             return;
         }

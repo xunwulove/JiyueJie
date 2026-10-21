@@ -6,13 +6,11 @@ import MusicSheet from "@/core/musicSheet";
 import Input from "@/components/base/input";
 import { useI18N } from "@/core/i18n";
 import { fontSizeConst } from "@/constants/uiConst";
-
 interface ICreateMusicSheetDialogProps {
     defaultName?: string;
     onSheetCreated?: (sheetId: string) => void;
     onCancel?: () => void;
 }
-
 /** 新建歌单（对齐 APlayer PlaylistManagePage Level3Dialog：输入框 + 取消/确定） */
 export default function CreateMusicSheetDialog(
     props: ICreateMusicSheetDialogProps,
@@ -23,9 +21,7 @@ export default function CreateMusicSheetDialog(
         onCancel,
         defaultName = t("panel.createMusicSheet.title"),
     } = props;
-
     const [input, setInput] = useState("");
-
     return (
         <Dialog
             onDismiss={() => {
@@ -33,7 +29,7 @@ export default function CreateMusicSheetDialog(
                 onCancel?.();
                 hideDialog();
             }}>
-            <Dialog.Title withDivider>{t("panel.createMusicSheet.title")}</Dialog.Title>
+            <Dialog.Title>{t("panel.createMusicSheet.title")}</Dialog.Title>
             <Dialog.Content>
                 <Input
                     value={input}
@@ -70,7 +66,6 @@ export default function CreateMusicSheetDialog(
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     input: {
         borderRadius: 12,

@@ -4,13 +4,11 @@ import rpx from "@/utils/rpx";
 import { iconSizeConst } from "@/constants/uiConst";
 import ThemeText from "@/components/base/themeText";
 import Icon from "@/components/base/icon.tsx";
-
 import Slider from "@react-native-community/slider";
 import RNTrackPlayer from "react-native-track-player";
 import useColors from "@/hooks/useColors";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
-
 /**
  * 音量调节三级浮窗（全屏功能区"音量"按钮）：
  * 显示当前音量百分比 + 滑块实时调节（0-100%，拖动即生效）
@@ -19,7 +17,6 @@ export default function VolumeSettingDialog() {
     const colors = useColors();
     // null = 正在读取，避免打开瞬间闪现默认 100%
     const [volume, setVolume] = useState<number | null>(null);
-
     // 打开时读取当前播放音量（异步 API，读取完成后才渲染滑块）
     useEffect(() => {
         let mounted = true;
@@ -38,10 +35,9 @@ export default function VolumeSettingDialog() {
             mounted = false;
         };
     }, []);
-
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider>音量</Dialog.Title>
+            <Dialog.Title>音量</Dialog.Title>
             <Dialog.Content>
                 <View style={styles.container}>
                     <Icon
@@ -80,7 +76,6 @@ export default function VolumeSettingDialog() {
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     container: {
         flexDirection: "row",

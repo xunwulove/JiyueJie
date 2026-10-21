@@ -3,20 +3,19 @@ import { FlatList } from "react-native-gesture-handler";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import ListItem from "@/components/base/listItem";
+import { ListDivider } from "@/components/base/divider";
 import useOrientation from "@/hooks/useOrientation";
-import rpx, { vmax, vmin } from "@/utils/rpx";
+import { vmax, vmin } from "@/utils/rpx";
 import { IIconName } from "@/components/base/icon.tsx";
 import useColors from "@/hooks/useColors.ts";
 import ThemeText from "@/components/base/themeText";
 import { iconSizeConst } from "@/constants/uiConst";
 import { Pressable } from "react-native";
-
 interface ISortOption<T extends string = string> {
     label: string;
     value: T;
     icon?: IIconName;
 }
-
 interface ISortDialogProps<T extends string = string> {
     title: string;
     options: Array<ISortOption<T>>;
@@ -25,7 +24,6 @@ interface ISortDialogProps<T extends string = string> {
     direction: "asc" | "desc";
     onOk: (value: T, direction: "asc" | "desc") => void;
 }
-
 /**
  * 排序三级浮窗（对齐三级页面规范：渐变标题行 + 单选列表 + 底部同高选项行）：
  * 点选维度立即生效并关闭；再次点当前维度 = 切换升/降序；
@@ -36,11 +34,9 @@ export default function SortDialog(props: ISortDialogProps) {
     const orientation = useOrientation();
     const colors = useColors();
     const ref = useRef<FlatList | null>(null);
-
     const defaultSelectedIndex = useMemo(() => {
         return options.findIndex(item => item.value === defaultSelected);
     }, [options, defaultSelected]);
-
     useEffect(() => {
         if (ref.current && defaultSelectedIndex - 3 >= 0) {
             ref.current.scrollToIndex({
@@ -49,20 +45,17 @@ export default function SortDialog(props: ISortDialogProps) {
             });
         }
     }, []);
-
     const apply = (value: string, dir: "asc" | "desc") => {
         // 单槽位浮窗：先关闭再触发回调，避免 onOk 内新浮窗被连带清掉
         hideDialog();
         setTimeout(() => onOk?.(value as any, dir), 0);
     };
-
     const toggleDirection = (dir: "asc" | "desc") => {
         apply(defaultSelected, dir);
     };
-
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title containerStyle={{ gap: rpx(8) }}>
+            <Dialog.Title>
                 <ThemeText
                     fontSize="title"
                     fontWeight="bold"
@@ -70,7 +63,6 @@ export default function SortDialog(props: ISortDialogProps) {
                     {title}
                 </ThemeText>
             </Dialog.Title>
-
             <FlatList
                 ref={ref}
                 style={{
@@ -83,6 +75,9 @@ export default function SortDialog(props: ISortDialogProps) {
                     offset: ListItem.Size.small * index,
                     index,
                 })}
+                ItemSeparatorComponent={() => (
+                    <ListDivider marginLeft={16} />
+                )}
                 renderItem={({ item }) => {
                     const selected = item.value === defaultSelected;
                     return (
@@ -118,7 +113,6 @@ export default function SortDialog(props: ISortDialogProps) {
                     );
                 }}
             />
-
             <Dialog.Actions>
                 <Pressable
                     style={styles.dirButton}
@@ -156,7 +150,6 @@ export default function SortDialog(props: ISortDialogProps) {
         </Dialog>
     );
 }
-
 const styles = {
     dirButton: {
         flex: 1,

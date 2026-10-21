@@ -21,6 +21,12 @@ interface IMediaExtraProperties {
     lyricOffset?: number;
     /** 关联歌词 */
     associatedLrc?: ICommon.IMediaBase
+    /** 本地缓存的歌词（获取/自动搜索成功后写入；重启后直接读取，避免重复请求；
+        更换歌词/解除关联时清除） */
+    cachedLrc?: {
+        rawLrc?: string;
+        translation?: string;
+    }
 }
 
 

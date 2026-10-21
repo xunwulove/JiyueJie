@@ -127,11 +127,14 @@ class LyricManager implements IInjectable {
         if (isSameMediaItem(musicItem, linkToMusicItem)) {
             patchMediaExtra(musicItem, {
                 associatedLrc: undefined,
+                cachedLrc: undefined,
             });
             return false;
         } else {
             patchMediaExtra(musicItem, {
                 associatedLrc: linkToMusicItem,
+                // 更换歌词后旧缓存失效，避免 refreshLyric 命中旧歌词
+                cachedLrc: undefined,
             });
             if (this.trackPlayer.isCurrentMusic(musicItem)) {
                 this.refreshLyric(false);
@@ -147,10 +150,21 @@ class LyricManager implements IInjectable {
 
         patchMediaExtra(musicItem, {
             associatedLrc: undefined,
+            cachedLrc: undefined,
         });
 
         if (this.trackPlayer.isCurrentMusic(musicItem)) {
             this.refreshLyric(false);
+        }
+    }
+
+    /**
+     * 强制重新获取歌词（"更换歌词"：清除本地缓存后重新走插件获取/自动搜索）。
+     */
+    async forceRefreshLyric(musicItem: IMusic.IMusicItem) {
+        patchMediaExtra(musicItem, { cachedLrc: undefined });
+        if (this.trackPlayer.isCurrentMusic(musicItem)) {
+            await this.refreshLyric(false, false);
         }
     }
 
@@ -209,23 +223,38 @@ class LyricManager implements IInjectable {
                 // 重置歌词状态
                 this.setLyricAsLoadingState();
 
-                lrcSource = (await this.pluginManager.getByMedia(currentMusicItem)?.methods?.getLyric(currentMusicItem)) ?? null;
-            }
+                // 歌词本地缓存：上次获取/自动搜索成功后写入（mediaExtra.cachedLrc），
+                // 重启/重新进入直接读取，避免每次进播放页都重复请求歌词
+                const cachedLrc = getMediaExtraProperty(currentMusicItem, "cachedLrc");
+                if (cachedLrc?.rawLrc) {
+                    lrcSource = {
+                        rawLrc: cachedLrc.rawLrc,
+                        translation: cachedLrc.translation,
+                    };
+                } else {
+                    lrcSource = (await this.pluginManager.getByMedia(currentMusicItem)?.methods?.getLyric(currentMusicItem)) ?? null;
 
-            // 切换到其他歌曲了, 直接返回
-            if (!this.trackPlayer.isCurrentMusic(currentMusicItem)) {
-                return;
-            }
+                    // 如果歌词源不存在，并且开启自动搜索歌词（默认开启：未显式关闭时自动搜索）
+                    if (
+                        !lrcSource &&
+                        (this.appConfig.getConfig("lyric.autoSearchLyric") ?? true)
+                    ) {
+                        // 重置歌词状态
+                        this.setLyricAsLoadingState();
 
-            // 如果歌词源不存在，并且开启自动搜索歌词（默认开启：未显式关闭时自动搜索）
-            if (
-                !lrcSource &&
-                (this.appConfig.getConfig("lyric.autoSearchLyric") ?? true)
-            ) {
-                // 重置歌词状态
-                this.setLyricAsLoadingState();
+                        lrcSource = await this.searchSimilarLyric(currentMusicItem);
+                    }
 
-                lrcSource = await this.searchSimilarLyric(currentMusicItem);
+                    // 获取成功（含自动搜索命中）后写入缓存；无 rawLrc 不缓存
+                    if (lrcSource?.rawLrc) {
+                        patchMediaExtra(currentMusicItem, {
+                            cachedLrc: {
+                                rawLrc: lrcSource.rawLrc,
+                                translation: lrcSource.translation,
+                            },
+                        });
+                    }
+                }
             }
 
             // 切换到其他歌曲了, 直接返回
@@ -291,7 +320,9 @@ class LyricManager implements IInjectable {
      */
     private async searchSimilarLyric(musicItem: IMusic.IMusicItem) {
         const keyword = musicItem.alias || musicItem.title;
-        const plugins = this.pluginManager.getSearchablePlugins("lyric");
+        // 歌曲搜索：源插件不实现 "lyric" 搜索类型（实测 58 个源插件 search 均无 lyric 分支），
+        // 改为搜歌曲候选，再对候选 getLyric 取词
+        const plugins = this.pluginManager.getSearchablePlugins("music");
 
         let distance = Infinity;
         let minDistanceMusicItem;
@@ -318,7 +349,7 @@ class LyricManager implements IInjectable {
             }
 
             const results = await plugin.methods
-                .search(keyword, 1, "lyric")
+                .search(keyword, 1, "music")
                 .catch(() => null);
 
             // 取前两个

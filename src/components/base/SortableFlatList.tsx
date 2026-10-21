@@ -45,6 +45,8 @@ interface ISortableFlatListProps<T> {
     activeBackgroundColor?: string;
     /** 交换结束 */
     onSortEnd?: (newData: T[]) => void;
+    /** 行分隔线（弹窗内批量编辑用；页面拖拽列表默认不传保持无分隔） */
+    itemSeparatorComponent?: React.ComponentType<any> | null;
 }
 
 export default function SortableFlatList<T extends any = any>(
@@ -58,6 +60,7 @@ export default function SortableFlatList<T extends any = any>(
         marginTop,
         activeBackgroundColor,
         onSortEnd,
+        itemSeparatorComponent,
     } = props;
 
     // 不要干扰原始数据
@@ -175,6 +178,7 @@ export default function SortableFlatList<T extends any = any>(
                 }}
                 data={_data}
                 estimatedItemSize={itemHeight}
+                ItemSeparatorComponent={itemSeparatorComponent}
                 scrollEventThrottle={16}
                 onTouchStart={e => {
                     if (activeRef.current !== -1) {

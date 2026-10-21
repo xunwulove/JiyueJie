@@ -68,12 +68,11 @@
 
 ## 第1章 核查总览与 UI 冲突统一处理
 
-> 本章合并来源：`UI_ALIGNMENT_CHECK.md`（fork 项目复刻 APlayer/盐音 UI 的逐页核查总记录，任务 #27~#50）与 `UI冲突统一处理报告.md`（2026-10-14，"少数服从多数"原则统一字号/载体冲突）。
+> 本章合并来源：`UI_ALIGNMENT_CHECK.md`（fork 项目 UI 的逐页核查总记录，任务 #27~#50）与 `UI冲突统一处理报告.md`（2026-10-14，"少数服从多数"原则统一字号/载体冲突）。
 
 ### 1.1 核查目标与方法
 
-- 目标：fork 项目（MusicFree 内核）完全复刻 APlayer（盐音）UI。只考虑白天模式；设置页放行（不逐项查）；手机端按"美观可用"自定；平板严格按用户规范。
-- 比对基线：旧项目源码 `E:\xunwu\Deepseek\APlayer\app\src\main\java\remix\myplayer\ui\salt\...`。
+- 目标：fork 项目（MusicFree 内核）UI 全面规范化。只考虑白天模式；设置页放行（不逐项查）；手机端按"美观可用"自定；平板严格按用户规范。
 - 9 大要素：①层级定位 ②布局结构 ③配色体系 ④字号字重 ⑤间距尺寸 ⑥组件样式 ⑦交互行为 ⑧文案图标 ⑨动效与状态。
 - 验证口径：所有改动均通过 `npx tsc --noEmit`（exit 0）；多轮"未打包、未装机验证"（用户叫停打包），后续 0.6.2.x 发版才装机。
 
@@ -98,7 +97,7 @@
 > ⚠️ 修正核对：合并时读取 `src/constants/uiConst.ts`（第 6~29 行）确认——`xlarge: 32` 与 `appbar: 18` 两档均在位；`iconSizeConst` small16/light20/normal24/big32/large40 与文档一致。原文档首轮记录"图标 small16/light20/normal24/big32/large40"属实。
 
 #### 图标档位 `iconSizeConst`
-small 16 / light 20 / normal 24 / big 32 / large 40 —— 对齐 APlayer 标准图标 24dp。
+small 16 / light 20 / normal 24 / big 32 / large 40 —— 标准图标 24dp。
 
 #### 全局组件对齐结果（#33）
 
@@ -141,7 +140,7 @@ panelBase 圆角 16、平板右内容区定位（浮窗中心=内容区中心不
 
 | # | 差异点 | 状态 |
 |---|---|---|
-| 1 | "每日推荐"图标 | ✅ 新增 calendar-days 图标（`src/assets/icons/calendar-days.svg`+重生成 icon.tsx），对齐旧项目 Today 日历语义 |
+| 1 | "每日推荐"图标 | ✅ 新增 calendar-days 图标（`src/assets/icons/calendar-days.svg`+重生成 icon.tsx），对齐 Today 日历语义 |
 | 2 | "扫描/媒体来源" arrow-path 近似 | ✅ arrow-path（Heroicons 旋转箭头）与 Material Refresh 同义，语义已对齐 |
 | 3 | 我的页歌单管理/备份管理入口 | ⏸️ 用户放行保持 fork 现状（后于 #44/#49 迁出独立页） |
 | 4 | 我的歌单区双 tab+加号/导入 | ⏸️ 用户放行 |
@@ -217,7 +216,7 @@ albumDetail、artistDetail、pluginSheetDetail、recommendSheets、searchMusicLi
 结论基本统一：背景色=FullOverlay=`colors.background`；顶栏 AppBar 高 56dp/标题 18 Bold/返回 arrow-left/paddingH 8（14 页直接使用）；列表行=全局 MusicList/ListItem；容器=VerticalSafeAreaView edges top/bottom。**特例**：①sheetDetail 两行顶栏（对齐旧 PlaylistDetailPage）；②fileSelector 顶栏由 rpx(88)→56、背景 appBar→background、路径文本 16→title(18) Bold。
 
 #### 6.18 三级界面按旧版 Level3Dialog 规范实现
-规范源 `APlayer\...\components\Level3Dialog.kt`。改动 `src/components/dialogs/components/base/index.tsx`：容器圆角 20、细边框 outlineVariant α0.35/shadow；平板宽 60%/手机 86%；标题行 52dp+水平品牌渐变（primary 0.10→primaryContainer 0.07→透明）+4×20 胶囊条+淡蓝线 α0.12；正文 13sp/行高 21/onSurfaceVariant/padding 24/16；按钮行同 52dp 渐变+上分割线；BottomButton 改透明文字按钮（confirm primary 14sp Medium/dismiss textSecondary）。ThirdLevelModal（subPageOverlay.tsx）圆角 20、宽 60%/86%、最大高 70%、中心定位=内容区中心不盖 tab。
+改动 `src/components/dialogs/components/base/index.tsx`：容器圆角 20、细边框 outlineVariant α0.35/shadow；平板宽 60%/手机 86%；标题行 52dp+水平品牌渐变（primary 0.10→primaryContainer 0.07→透明）+4×20 胶囊条+淡蓝线 α0.12；正文 13sp/行高 21/onSurfaceVariant/padding 24/16；按钮行同 52dp 渐变+上分割线；BottomButton 改透明文字按钮（confirm primary 14sp Medium/dismiss textSecondary）。ThirdLevelModal（subPageOverlay.tsx）圆角 20、宽 60%/86%、最大高 70%、中心定位=内容区中心不盖 tab。
 
 #### 6.19 操作逻辑核查：任何界面点 tab 切对应一级页
 修复 `src/pages/home/index.tsx`：`switchTab = useCallback(tab => { setSubPages([]); setSelectedTab(tab); })`，平板/手机 TabBar 与搜索退出统一走 switchTab。任何界面点 tab→清空覆盖层栈+切一级页。
@@ -445,7 +444,7 @@ albumDetail、artistDetail、pluginSheetDetail、recommendSheets、searchMusicLi
 
 ### 3.4 修复建议 F1~F14 与执行记录（2026-10-08）
 
-> 执行后全树 SHA-256 比对 src 差异恰为 22 文件；逐项核验；`npx tsc --noEmit` exit 0；修复前备份 `E:\xunwu\Deepseek\APlayer\MusicFree源码备份-修复前-20261008.zip`。未打包未 commit。
+> 执行后全树 SHA-256 比对 src 差异恰为 22 文件；逐项核验；`npx tsc --noEmit` exit 0；未打包未 commit。
 
 | 项 | 修复内容（前→后） | 文件 |
 |---|---|---|
@@ -575,7 +574,7 @@ albumDetail、artistDetail、pluginSheetDetail、recommendSheets、searchMusicLi
 | 设置族（自核） | setting/**、settingTypes/**、scanSettings、pluginSources、backup | 15 | 1/5/2 |
 | 音乐详情+首页（自核） | musicDetail/**、home/** | 28 | 0/3/3 |
 
-一致/合理项：弹窗 Header（52dp）与面板 PanelHeader（56dp）为两家族独立规范（APlayer Level3Dialog 52 vs Panel 56），非缺陷；全屏播放页顶栏 56/底部控制固定分档/seekBar 28·caption11/封面 240·20/heartIcon normal24/歌词系全部一致；aboutSetting、scanSettings、fileSelectorDialog、downloadSettingsDialog、immersiveSettingDialog、lyricSettingDialog、tabletPanel、mineTab、homeBody 系一致；早期预测"订阅源行仍 56""localMusicList 封面 44"经核实未复现。
+一致/合理项：弹窗 Header（52dp）与面板 PanelHeader（56dp）为两家族独立规范（Level3Dialog 52 vs Panel 56），非缺陷；全屏播放页顶栏 56/底部控制固定分档/seekBar 28·caption11/封面 240·20/heartIcon normal24/歌词系全部一致；aboutSetting、scanSettings、fileSelectorDialog、downloadSettingsDialog、immersiveSettingDialog、lyricSettingDialog、tabletPanel、mineTab、homeBody 系一致；早期预测"订阅源行仍 56""localMusicList 封面 44"经核实未复现。
 
 ---
 
@@ -778,7 +777,7 @@ albumDetail、artistDetail、pluginSheetDetail、recommendSheets、searchMusicLi
 
 | 原文档 | 原内容要点 | 合并后所在章节 |
 |---|---|---|
-| 1. UI_ALIGNMENT_CHECK.md | 标题+目标说明（fork 复刻 APlayer UI、9 要素、tsc 验证） | 1.1 |
+| 1. UI_ALIGNMENT_CHECK.md | 标题+目标说明（fork UI 对齐、9 要素、tsc 验证） | 1.1 |
 | 1. UI_ALIGNMENT_CHECK.md | 一、全局基础（字号档/图标档/全局组件 #33） | 1.2 |
 | 1. UI_ALIGNMENT_CHECK.md | 二、逐页检查记录（#27~#33 首页/搜索/音乐库/我的/播放页/二级页/三级弹窗） | 1.3 |
 | 1. UI_ALIGNMENT_CHECK.md | 三、差异点处理结果（7 项，2026-10-07） | 1.4 |

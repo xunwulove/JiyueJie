@@ -6,6 +6,7 @@ import Icon from "@/components/base/icon.tsx";
 import Input from "@/components/base/input";
 import { FlatList } from "react-native-gesture-handler";
 import ListItem from "@/components/base/listItem";
+import { ListDivider } from "@/components/base/divider";
 import useColors from "@/hooks/useColors";
 import { useI18N } from "@/core/i18n";
 import Config from "@/core/appConfig";
@@ -14,16 +15,13 @@ import Dialog from "./base";
 import { iconSizeConst } from "@/constants/uiConst";
 import Toast from "@/utils/toast";
 import { DEFAULT_PLUGIN_SUBSCRIPTION_URL } from "@/constants/defaultPluginSubscription";
-
 interface ISubscriptionSettingDialogProps {
     /** 更新订阅（由调用方传入：读取订阅列表逐个拉取安装插件） */
     onUpdateSubscription?: () => void;
 }
-
 interface ISubscriptionItem {
     url: string;
 }
-
 function getSubscriptions(): ISubscriptionItem[] {
     const raw = Config.getConfig("plugin.subscribeUrl");
     if (!raw) {
@@ -57,14 +55,12 @@ function getSubscriptions(): ISubscriptionItem[] {
     }
     return [{ url: DEFAULT_PLUGIN_SUBSCRIPTION_URL }];
 }
-
 function saveSubscriptions(list: ISubscriptionItem[]) {
     Config.setConfig(
         "plugin.subscribeUrl",
         JSON.stringify(list.map(it => ({ url: it.url }))),
     );
 }
-
 /**
  * 订阅设置三级浮窗（音源管理三点菜单"订阅设置"项）：
  * 订阅源列表（增/删）+ 更新订阅；删除确认再弹三级（SimpleDialog）
@@ -75,31 +71,27 @@ export default function SubscriptionSettingDialog(
     const { onUpdateSubscription } = props ?? {};
     const { t } = useI18N();
     const colors = useColors();
-
     const [urls, setUrls] = useState<ISubscriptionItem[]>(
         getSubscriptions(),
     );
     const [inputUrl, setInputUrl] = useState("");
-
     const listData = useMemo(() => urls, [urls]);
-
     function onAdd() {
         const text = inputUrl.trim();
         if (!text) {
-            Toast.warn("请输入订阅链接");
+            Toast.warn(t("toast.subscriptionUrlInput"));
             return;
         }
         if (urls.some(it => it.url === text)) {
-            Toast.warn("该订阅已存在");
+            Toast.warn(t("toast.subscriptionExists"));
             return;
         }
         const next = [...urls, { url: text }];
         setUrls(next);
         saveSubscriptions(next);
         setInputUrl("");
-        Toast.success("已添加订阅");
+        Toast.success(t("toast.subscriptionAdded"));
     }
-
     function onDelete(item: ISubscriptionItem) {
         // 三级内再弹三级（删除确认），遵守三级规范
         showDialog("SimpleDialog", {
@@ -110,22 +102,20 @@ export default function SubscriptionSettingDialog(
                 const next = urls.filter(it => it.url !== item.url);
                 setUrls(next);
                 saveSubscriptions(next);
-                Toast.success("已删除订阅");
+                Toast.success(t("toast.subscriptionDeleted"));
             },
         });
     }
-
     /** 恢复默认订阅：重置为内置默认订阅源（极悦界音源库） */
     function onRestoreDefault() {
         const next = [{ url: DEFAULT_PLUGIN_SUBSCRIPTION_URL }];
         setUrls(next);
         saveSubscriptions(next);
-        Toast.success("已恢复默认订阅");
+        Toast.success(t("toast.subscriptionRestored"));
     }
-
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider>订阅设置</Dialog.Title>
+            <Dialog.Title>订阅设置</Dialog.Title>
             <Dialog.Content needScroll>
                 <FlatList
                     data={listData}
@@ -138,6 +128,9 @@ export default function SubscriptionSettingDialog(
                             暂无订阅，可在下方添加订阅链接
                         </ThemeText>
                     }
+                    ItemSeparatorComponent={() => (
+                        <ListDivider marginLeft={16} />
+                    )}
                     renderItem={({ item }) => (
                         <ListItem
                             withHorizontalPadding
@@ -203,7 +196,6 @@ export default function SubscriptionSettingDialog(
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     empty: {
         paddingVertical: rpx(24),

@@ -10,7 +10,6 @@ import BackgroundCustom, {
 import Config from "@/core/appConfig";
 import Theme from "@/core/theme";
 import Toast from "@/utils/toast";
-
 /**
  * 主题设置三级浮窗（B3 决策：设置页点"主题"直接弹三级浮窗，
  * 不再叠二级设置覆盖层；自定义取色功能已去除，自定义背景于 2026-10-14 恢复入口）
@@ -22,7 +21,6 @@ import Toast from "@/utils/toast";
 export default function ThemeSettingDialog() {
     const { t } = useI18N();
     const [customOpen, setCustomOpen] = useState(false);
-
     const resetDefault = () => {
         // 恢复默认：浅色模式 + 清除自定义背景 + 取消跟随系统（默认主题 = p-light）
         Config.setConfig("theme.followSystem", false);
@@ -31,7 +29,6 @@ export default function ThemeSettingDialog() {
         hideDialog();
         Toast.success(t("themeSettings.resetDefaultToast"));
     };
-
     /** 选图（文件选择浮窗会替换当前主题浮窗——对话框全局单值；确认/取消后重开主题浮窗，
         保持"主题浮窗 → 选图 → 回到主题浮窗"闭环；选完自动展开自定义背景面板） */
     const pickBackgroundImage = () => {
@@ -60,13 +57,12 @@ export default function ThemeSettingDialog() {
             onCancel: reopenThemeDialog,
         });
     };
-
     return (
         <Dialog onDismiss={hideDialog}>
             <Dialog.Title>{t("sidebar.themeSettings")}</Dialog.Title>
             <Dialog.Content
                 needScroll
-                style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0 }}>
+                style={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 12 }}>
                 <Mode />
                 <Background
                     customOpen={customOpen}

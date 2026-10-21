@@ -61,8 +61,9 @@ export default function IconButton(props: IIconButtonProps) {
 }
 
 const styles = StyleSheet.create({
+    // 仅做交叉轴居中：原 height:"100%" + textAlignVertical（Text 专属，对 SVG 无效且干扰渲染高度）
+    // 导致 SVG 图标在部分列表行中垂直偏移（实测偏下），改为 alignSelf 居中兜底
     textCenter: {
-        height: "100%",
-        textAlignVertical: "center",
+        alignSelf: "center",
     },
 });

@@ -22,7 +22,8 @@ interface INewMusicSheetProps {
 export default function SearchLrc(props: INewMusicSheetProps) {
     const { musicItem } = props;
     const [input, setInput] = useState(
-        musicItem?.alias ?? musicItem?.title ?? "",
+        // || 而非 ??：alias 为空字符串时回退到 title（与 useEffect 自动搜索一致）
+        musicItem?.alias || musicItem?.title || "",
     );
     const colors = useColors();
     const { t } = useI18N();

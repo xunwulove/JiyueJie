@@ -227,6 +227,39 @@ export interface ILanguageData {
     "toast.importing": string; // 正在导入
     "toast.failToImportSheet": string; // 歌单导入失败
     "toast.settingSuccess": string; // 设置成功
+    "toast.musicIsLocal": string; // 该歌曲已是本地音乐
+    "toast.noLocalMusic": string; // 暂无本地音乐，可通过「扫描」添加媒体来源
+    "toast.scanFailOnboard": string; // 扫描失败，可稍后到音乐库重试
+    "toast.pluginInstallSuccess": string; // 安装成功
+    "toast.pluginInstallSuccessNamed": string; // 插件「{name}」安装成功
+    "toast.pluginInstallFail": string; // 安装失败: {message}
+    "toast.unknownPlugin": string; // 无法识别此插件
+    "toast.networkOffline": string; // 当前无网络连接，请等待网络恢复后重试
+    "toast.downloadQueueCompleted": string; // 下载任务已完成
+    "toast.downloadQueuePartialFail": string; // 部分下载失败，请检查网络后重试
+    "toast.irLoadFail": string; // IR 加载失败，请使用 16bit/48kHz WAV
+    "toast.needEnableMediaSource": string; // 请先启用媒体库或添加自定义文件夹
+    "toast.scanComplete": string; // 扫描完成，共 {count} 首歌曲
+    "toast.scanFail": string; // 扫描失败
+    "toast.recommendSourceSwitch": string; // 该音源推荐歌单不可用，已切换到下一个音源
+    "toast.cannotOpenLink": string; // 无法打开链接
+    "toast.floatLyricPermissionFail": string; // 状态栏歌词开启失败，请到手机系统设置打开悬浮窗权限
+    "toast.needInputPluginUrl": string; // 请输入插件链接
+    "toast.noExportablePlugin": string; // 没有可导出的插件（仅支持导出有来源 URL 的插件）
+    "toast.shareNotSupported": string; // 当前设备不支持系统分享，无法导出
+    "toast.exportFail": string; // 导出失败：{reason}
+    "toast.downloadUpdateFail": string; // 下载更新失败：{reason}
+    "toast.installApkFail": string; // 无法启动安装：{reason}
+    "toast.needInstallPermission": string; // 请在系统设置中允许「极悦界」安装未知应用，然后重试
+    "toast.updateSheetInfoSuccess": string; // 更新歌单信息成功
+    "toast.downloadRecordDeleted": string; // 已删除下载记录
+    "toast.downloadRecordAndFileDeleted": string; // 已删除下载记录及文件
+    "toast.subscriptionUrlInput": string; // 请输入订阅链接
+    "toast.subscriptionExists": string; // 该订阅已存在
+    "toast.subscriptionAdded": string; // 已添加订阅
+    "toast.subscriptionDeleted": string; // 已删除订阅
+    "toast.subscriptionRestored": string; // 已恢复默认订阅
+    "toast.deleteFail": string; // 删除失败
     "toast.installPluginSuccess": string; // 插件安装成功
     "toast.updatePluginSuccess": string; // 插件更新成功
     "toast.installPluginFail": string; // 插件安装失败
@@ -307,7 +340,7 @@ export interface ILanguageData {
     "basicSettings.associateLyricType.input": string; // 输入
     "basicSettings.associateLyricType.search": string; // 搜索
     "basicSettings.showExitOnNotification": string; // 通知中显示退出
-    "basicSettings.sheetAndAlbum": string; // 歌曲和歌单/专辑
+    "basicSettings.sheetAndAlbum": string; // 歌曲与歌单
     "coverBase.title": string; // 自制封面底图（设置项）
     "coverBase.notSet": string; // 未设置
     "coverBase.choose": string; // 选择本地图片
@@ -461,8 +494,8 @@ export interface ILanguageData {
     "panel.playList.title": string; // 播放列表
     "panel.playList.count": string; // 歌曲数量
     "panel.searchLrc.inputPlaceholder": string; // 搜索歌词输入占位符
-    "panel.searchLrc.toast.settingSuccess": string; // 设置成功
-    "panel.searchLrc.toast.failToSearch": string; // 设置失败
+    "panel.searchLrc.toast.settingSuccess": string; // 更换歌词成功
+    "panel.searchLrc.toast.failToSearch": string; // 更换歌词失败
 
     // 面板相关 - 添加到歌单
     "panel.addToMusicSheet.title": string; // 添加到歌单

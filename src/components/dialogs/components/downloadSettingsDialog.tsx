@@ -14,7 +14,6 @@ import { qualityKeys } from "@/utils/qualities";
 import { iconSizeConst } from "@/constants/uiConst";
 import { useI18N } from "@/core/i18n";
 import { readdir } from "react-native-fs";
-
 /**
  * 模块级状态缓存：点"下载目录"用同体系三级浮窗替换（FileSelectorDialog）打开选择器；
  * 切换期间缓存用户已改的设置，取消/选完均 setTimeout 重开本弹窗并恢复。
@@ -26,7 +25,6 @@ let cachedState: {
     downloadPath?: string;
     nameOrder?: "title-first" | "artist-first";
 } | null = null;
-
 /**
  * 下载设置（对齐 APlayer DownloadPage 3 级弹窗：默认音质 + 音质顺序 + 下载目录 + 最大并发）
  * 迁移自设置页"基本设置-下载"组；写同一组 appConfig 键，下载内核不变
@@ -35,7 +33,6 @@ let cachedState: {
 export default function DownloadSettingsDialog() {
     const { t } = useI18N();
     const colors = useColors();
-
     const [quality, setQuality] = useState<IMusic.IQualityKey>(
         cachedState?.quality ??
             Config.getConfig("basic.defaultDownloadQuality") ??
@@ -60,14 +57,12 @@ export default function DownloadSettingsDialog() {
             Config.getConfig("basic.downloadNameOrder") ??
             "title-first",
     );
-
     const qualityLabels: Record<IMusic.IQualityKey, string> = {
         low: t("musicQuality.low"),
         standard: t("musicQuality.standard"),
         high: t("musicQuality.high"),
         super: t("musicQuality.super"),
     };
-
     const onPickPath = () => {
         // 先缓存当前设置并关闭浮窗，再打开文件夹选择三级浮窗（同体系，无遮挡问题）
         cachedState = { quality, order, maxDownload, downloadPath, nameOrder };
@@ -99,7 +94,6 @@ export default function DownloadSettingsDialog() {
             },
         });
     };
-
     const save = () => {
         cachedState = null;
         Config.setConfig("basic.defaultDownloadQuality", quality);
@@ -112,7 +106,6 @@ export default function DownloadSettingsDialog() {
         Toast.success(t("toast.saveSuccess"));
         hideDialog();
     };
-
     const checked = (
         <Icon
             name="check-circle"
@@ -120,10 +113,9 @@ export default function DownloadSettingsDialog() {
             color={colors.primary}
         />
     );
-
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title withDivider>{t("downloadSettings.title")}</Dialog.Title>
+            <Dialog.Title>{t("downloadSettings.title")}</Dialog.Title>
             <Dialog.Content needScroll style={styles.content}>
                 <View>
                     <OptionGroup title={t("basicSettings.defaultDownloadQuality")}>
@@ -252,7 +244,6 @@ export default function DownloadSettingsDialog() {
         </Dialog>
     );
 }
-
 function OptionGroup(props: {
     title: string;
     children: React.ReactNode;
@@ -273,12 +264,11 @@ function OptionGroup(props: {
         </View>
     );
 }
-
 const styles = StyleSheet.create({
     content: {
         paddingHorizontal: 0,
-        paddingTop: 0,
-        paddingBottom: 0,
+        paddingTop: 12, // 2026-10-21 统一：列表首项距标题分割线 12
+        paddingBottom: 12, // 2026-10-21 统一：列表末项距底栏 12
     },
     group: {
         marginBottom: 8,

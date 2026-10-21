@@ -5,6 +5,9 @@ import ListItem from "@/components/base/listItem";
 import ThemeText from "@/components/base/themeText";
 import { ImgAsset } from "@/constants/assetsConst";
 import Clipboard from "@react-native-clipboard/clipboard";
+import LinearGradient from "react-native-linear-gradient";
+import Color from "color";
+import useColors from "@/hooks/useColors";
 
 import { getMediaUniqueKey } from "@/utils/mediaUtils";
 import FastImage from "@/components/base/fastImage";
@@ -15,6 +18,7 @@ import { localMusicSheetId, musicHistorySheetId } from "@/constants/commonConst"
 import { hideDialog, showDialog } from "@/components/dialogs/useDialog";
 import { showPanel } from "@/components/panels/usePanel";
 import Divider from "@/components/base/divider";
+import { ListDivider } from "@/components/base/divider";
 import { iconSizeConst } from "@/constants/uiConst";
 import TrackPlayer from "@/core/trackPlayer";
 import mediaCache from "@/core/mediaCache";
@@ -56,6 +60,7 @@ export default function MusicItemOptionsDialog(
 ) {
     const { musicItem, musicSheet } = props ?? {};
     const { t } = useI18N();
+    const colors = useColors();
 
     const downloaded = LocalMusicSheet.isLocalMusic(musicItem);
     const associatedLrc = getMediaExtraProperty(musicItem, "associatedLrc");
@@ -249,14 +254,30 @@ export default function MusicItemOptionsDialog(
             <Dialog.Content
                 needScroll
                 style={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 0 }}>
-                <View style={style.header}>
+                <LinearGradient
+                    colors={[
+                        Color(colors.primary).alpha(0.10).toString(),
+                        Color(
+                            (colors as any).primaryContainer ?? colors.primary,
+                        )
+                            .alpha(0.07)
+                            .toString(),
+                        "rgba(0,0,0,0.016)",
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={style.header}>
                     <FastImage
                         style={style.artwork}
                         source={musicItem?.artwork}
                         placeholderSource={ImgAsset.albumDefault}
                     />
                     <View style={style.content}>
-                        <ThemeText numberOfLines={2} style={style.title}>
+                        <ThemeText
+                            fontSize="title"
+                            fontWeight="bold"
+                            numberOfLines={2}
+                            style={style.title}>
                             {musicItem?.title}
                         </ThemeText>
                         <ThemeText
@@ -267,7 +288,7 @@ export default function MusicItemOptionsDialog(
                             {musicItem?.album ? `- ${musicItem.album}` : ""}
                         </ThemeText>
                     </View>
-                </View>
+                </LinearGradient>
                 <Divider />
                 <FlatList
                     data={options}
@@ -279,6 +300,9 @@ export default function MusicItemOptionsDialog(
                     ListFooterComponent={<View style={style.footer} />}
                     style={style.listWrapper}
                     keyExtractor={_ => _.title}
+                    ItemSeparatorComponent={() => (
+                        <ListDivider marginLeft={16} />
+                    )}
                     renderItem={({ item }) =>
                         item.show !== false ? (
                             <ListItem
@@ -296,17 +320,6 @@ export default function MusicItemOptionsDialog(
                     }
                 />
             </Dialog.Content>
-            <Dialog.Actions
-                actions={[
-                    {
-                        title: t("common.cancel"),
-                        type: "normal",
-                        onPress() {
-                            hideDialog();
-                        },
-                    },
-                ]}
-            />
         </Dialog>
     );
 }
@@ -338,6 +351,6 @@ const style = StyleSheet.create({
     },
     footer: {
         width: "100%",
-        height: rpx(30),
+        height: rpx(12), // 2026-10-21 统一：列表末项距底栏 12（原 30）
     },
 });

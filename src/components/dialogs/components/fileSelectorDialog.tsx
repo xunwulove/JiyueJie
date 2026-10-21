@@ -13,20 +13,17 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-
+import { ListDivider } from "@/components/base/divider";
 import Dialog from "./base";
 import { hideDialog } from "../useDialog";
-
 interface IPathItem {
     path: string;
     parent: null | IPathItem;
 }
-
 interface IFileItem {
     path: string;
     type: "file" | "folder";
 }
-
 interface IFileSelectorDialogProps {
     fileType?: "file" | "folder" | "file-and-folder";
     multi?: boolean;
@@ -39,7 +36,6 @@ interface IFileSelectorDialogProps {
     /** 取消/返回退出时的回调（如重开上游浮窗）；不传则仅关闭 */
     onCancel?: () => void;
 }
-
 /**
  * 文件夹/文件选择器 - 三级浮窗（对话框体系：居中缩放 + 渐变标题行 + 底部等高同渐变按钮行）。
  * 对齐旧 APlayer Level3Dialog 的文件选择交互：
@@ -59,7 +55,6 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
         onAction,
         onCancel,
     } = props ?? {};
-
     const [currentPath, setCurrentPath] = useState<IPathItem>({
         path: "/",
         parent: null,
@@ -68,11 +63,9 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
     const [filesData, setFilesData] = useState<IFileItem[]>([]);
     const [checkedItems, setCheckedItems] = useState<IFileItem[]>([]);
     const [loading, setLoading] = useState(false);
-
     useEffect(() => {
         currentPathRef.current = currentPath;
     }, [currentPath]);
-
     useEffect(() => {
         (async () => {
             setLoading(true);
@@ -153,7 +146,6 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
             setLoading(false);
         })();
     }, [currentPath.path]);
-
     /** 返回手势：目录内逐级回退，回到根目录则关闭浮窗（可回调恢复上游浮窗） */
     const onBackPress = useCallback(() => {
         const _currentPath = currentPathRef.current;
@@ -165,19 +157,16 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
         hideDialog();
         return true;
     }, [onCancel]);
-
     /** 底部取消：回调恢复上游浮窗后关闭 */
     const cancel = useCallback(() => {
         onCancel?.();
         hideDialog();
     }, [onCancel]);
-
     const goUp = useCallback(() => {
         if (currentPathRef.current.parent !== null) {
             setCurrentPath(currentPathRef.current.parent);
         }
     }, []);
-
     /** 面包屑分段（以当前链的顶层根为根，避免自动跳到存储根后点"/"回到多 SD 列表） */
     const crumbs = useMemo(() => {
         // 沿 parent 链回溯到当前路径的顶层根（多 SD 列表 = "/"；单存储 = ExternalStorageDirectoryPath；子目录 = 对应根）
@@ -202,7 +191,6 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
         });
         return items;
     }, [currentPath]);
-
     const toggleCheck = useCallback(
         (item: IFileItem) => {
             if (!multi) {
@@ -217,7 +205,6 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
         },
         [multi],
     );
-
     /** 底部确认 */
     const confirm = useCallback(async () => {
         let selected: IFileItem[];
@@ -235,20 +222,16 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
             hideDialog();
         }
     }, [checkedItems, fileType, multi, onAction]);
-
     const canConfirm =
         fileType === "folder" && !multi
             ? currentPath.path !== "/"
             : checkedItems.length > 0;
-
     const actionLabel =
         actionText ?? (fileType === "folder" ? "选择文件夹" : t("common.confirm"));
-
     const folderName = (path: string) => {
         const segs = path.split("/").filter(Boolean);
         return segs[segs.length - 1] ?? "/";
     };
-
     return (
         <Dialog
             onDismiss={() => {
@@ -257,7 +240,7 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
                 hideDialog();
             }}
             onBackPress={onBackPress}>
-            <Dialog.Title withDivider>{actionLabel}</Dialog.Title>
+            <Dialog.Title>{actionLabel}</Dialog.Title>
             <Dialog.Content needScroll>
                 {description ? (
                     <ThemeText
@@ -360,64 +343,69 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
                     </ThemeText>
                 ) : (
                     <View>
-                        {filesData.map(item => {
+                        {filesData.map((item, i, arr) => {
                             const isFolder = item.type === "folder";
                             const checked = checkedItems.some(
                                 _ => _.path === item.path,
                             );
                             return (
-                                <Pressable
-                                    key={item.path}
-                                    style={styles.row}
-                                    onPress={() => {
-                                        if (isFolder) {
-                                            setCurrentPath(prev => ({
-                                                parent: prev,
-                                                path: item.path,
-                                            }));
-                                        } else {
-                                            toggleCheck(item);
-                                        }
-                                    }}
-                                    onLongPress={() => {
-                                        if (isFolder && multi) {
-                                            toggleCheck(item);
-                                        }
-                                    }}>
-                                    <Icon
-                                        name={
-                                            isFolder
-                                                ? "folder-outline"
-                                                : "document-outline"
-                                        }
-                                        size={iconSizeConst.light}
-                                        color={
-                                            isFolder
-                                                ? colors.primary
-                                                : colors.textSecondary
-                                        }
-                                    />
-                                    <View style={styles.rowMain}>
-                                        <ThemeText
-                                            fontSize="normal"
-                                            fontWeight="medium"
-                                            numberOfLines={1}>
-                                            {folderName(item.path)}
-                                        </ThemeText>
-                                        <ThemeText
-                                            fontSize="caption"
-                                            fontColor="textSecondary">
-                                            {isFolder ? "文件夹" : "文件"}
-                                        </ThemeText>
-                                    </View>
-                                    {checked ? (
+                                <View key={item.path}>
+                                    <Pressable
+                                        style={styles.row}
+                                        onPress={() => {
+                                            if (isFolder) {
+                                                setCurrentPath(prev => ({
+                                                    parent: prev,
+                                                    path: item.path,
+                                                }));
+                                            } else {
+                                                toggleCheck(item);
+                                            }
+                                        }}
+                                        onLongPress={() => {
+                                            if (isFolder && multi) {
+                                                toggleCheck(item);
+                                            }
+                                        }}>
                                         <Icon
-                                            name="check-circle"
+                                            name={
+                                                isFolder
+                                                    ? "folder-outline"
+                                                    : "document-outline"
+                                            }
                                             size={iconSizeConst.light}
-                                            color={colors.primary}
+                                            color={
+                                                isFolder
+                                                    ? colors.primary
+                                                    : colors.textSecondary
+                                            }
                                         />
+                                        <View style={styles.rowMain}>
+                                            <ThemeText
+                                                fontSize="normal"
+                                                fontWeight="medium"
+                                                numberOfLines={1}>
+                                                {folderName(item.path)}
+                                            </ThemeText>
+                                            <ThemeText
+                                                fontSize="caption"
+                                                fontColor="textSecondary">
+                                                {isFolder ? "文件夹" : "文件"}
+                                            </ThemeText>
+                                        </View>
+                                        {checked ? (
+                                            <Icon
+                                                name="check-circle"
+                                                size={iconSizeConst.light}
+                                                color={colors.primary}
+                                            />
+                                        ) : null}
+                                    </Pressable>
+                                    {/* 2026-10-21 统一：列表项之间加 ListDivider */}
+                                    {i < arr.length - 1 ? (
+                                        <ListDivider marginLeft={16} />
                                     ) : null}
-                                </Pressable>
+                                </View>
                             );
                         })}
                     </View>
@@ -445,7 +433,6 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
         </Dialog>
     );
 }
-
 const styles = StyleSheet.create({
     desc: {
         marginBottom: 8,

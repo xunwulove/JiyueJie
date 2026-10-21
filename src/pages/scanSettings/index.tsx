@@ -20,6 +20,7 @@ import Color from "color";
 import { showDialog, hideDialog } from "@/components/dialogs/useDialog";
 import Toast from "@/utils/toast";
 import LocalMusicSheet from "@/core/localMusicSheet";
+import { useI18N } from "@/core/i18n";
 import {
     defaultScanFolders,
     getScanSettings,
@@ -33,6 +34,7 @@ import {
  */
 export default function ScanSettings() {
     const colors = useColors();
+    const { t } = useI18N();
     const [settings, setSettings] = useState<any>(null);
     const [scanning, setScanning] = useState(false);
     /** 被屏蔽文件夹输入弹窗的文本（组件级状态，选择文件夹后回弹不丢失） */
@@ -62,13 +64,15 @@ export default function ScanSettings() {
             // 自定义文件夹：有路径即启用（无独立开关）
             folders.push(...(settings.customFolders ?? []));
             if (!folders.length) {
-                Toast.warn("请先启用媒体库或添加自定义文件夹");
+                Toast.warn(t("toast.needEnableMediaSource"));
                 return;
             }
             const count = await LocalMusicSheet.importLocal(folders);
-            Toast.success(`扫描完成，共 ${count} 首歌曲`);
+            Toast.success(
+                t("toast.scanComplete", { count }),
+            );
         } catch {
-            Toast.warn("扫描失败");
+            Toast.warn(t("toast.scanFail"));
         } finally {
             setScanning(false);
         }

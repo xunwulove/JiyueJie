@@ -182,7 +182,10 @@ export default function Icon(props: IProps) {
     const newProps = {
         ...props,
         width: props.width ?? size,
-        height: props.width ?? size,
+        height: props.height ?? size,
+        // 垂直居中兜底：SVG 作为 flex 子项时若无父容器 alignItems 约束会贴顶/偏位，
+        // alignSelf center 在父已居中的场景无副作用，未居中场景纠正到中心
+        style: [{ alignSelf: "center" }, props.style],
     } as SvgProps;
     
     const Component = iconMap[name];
