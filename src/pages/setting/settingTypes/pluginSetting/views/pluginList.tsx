@@ -1,11 +1,15 @@
-import React, { useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { FlatList, StyleSheet, View } from "react-native";
 import rpx from "@/utils/rpx";
 import Loading from "@/components/base/loading";
 import useColors from "@/hooks/useColors";
-import { fontSizeConst } from "@/constants/uiConst";
+import ThemeText from "@/components/base/themeText";
+import IconTextButton from "@/components/base/iconTextButton";
 
-import PluginManager, { useSortedPlugins } from "@/core/pluginManager";
+import PluginManager, {
+    IPendingLargePlugin,
+    useSortedPlugins,
+} from "@/core/pluginManager";
 import { trace } from "@/utils/log";
 
 import Toast from "@/utils/toast";
@@ -58,10 +62,67 @@ export default function PluginList() {
         total: number;
         name?: string;
     } | null>(null);
+    // 未挂载的大插件（批量安装跳过，列表底部提供手动安装入口；持久化本地）
+    const [pendingLarge, setPendingLarge] = useState<IPendingLargePlugin[]>([]);
     // 从网络安装：输入框组件级状态（三级浮窗 SimpleDialog 内，关闭重开不丢失）
     const [networkUrl, setNetworkUrl] = useState("");
 
     const navigate = useNavigate();
+
+    /** 读取持久化的未挂载大插件列表 */
+    useEffect(() => {
+        PluginManager.getPendingLargePlugins()
+            .then(setPendingLarge)
+            .catch(() => setPendingLarge([]));
+    }, []);
+
+    /** 合并新跳过的大插件（去重）并持久化 */
+    function mergePendingLarge(list: IPendingLargePlugin[]) {
+        setPendingLarge(prev => {
+            const merged = [...prev];
+            list.forEach(item => {
+                if (!merged.some(p => p.url === item.url)) {
+                    merged.push(item);
+                }
+            });
+            PluginManager.savePendingLargePlugins(merged).catch(() => {});
+            return merged;
+        });
+    }
+
+    /** 手动单装大插件：下载+挂载（大混淆插件单次挂载预期 1~2s 冻结，可预期） */
+    async function onMountLarge(item: IPendingLargePlugin) {
+        if (loading) {
+            return;
+        }
+        setLoading(true);
+        setInstallProgress(null);
+        try {
+            const result = await PluginManager.installPluginFromUrl(item.url, {
+                notCheckVersion: Config.getConfig(
+                    "basic.notCheckPluginVersion",
+                ),
+            });
+            if (result.success) {
+                setPendingLarge(prev => {
+                    const next = prev.filter(p => p.url !== item.url);
+                    PluginManager.savePendingLargePlugins(next).catch(() => {});
+                    return next;
+                });
+                Toast.success(t("toast.installPluginSuccess"));
+            } else {
+                Toast.warn(
+                    t("toast.partialPluginInstallFailedWithReason", {
+                        reason: result.message ?? "",
+                    }),
+                );
+            }
+        } catch (e: any) {
+            Toast.warn(e?.message ?? t("toast.unknownError"));
+        }
+        setLoading(false);
+        setInstallProgress(null);
+    }
 
     // 音源相关配置（与基础设置"音源"分组一致；已迁入三点菜单三级页面）
     // 开关项通过 configKey 由 MenuDialog 内部实时订阅（showDialog payload 是快照，不能依赖外部重渲染）
@@ -256,6 +317,7 @@ export default function PluginList() {
 
         const successResults: IInstallPluginResult[] = [];
         const failResults: IInstallPluginResult[] = [];
+        let skippedCount = 0;
 
         try {
             const urlItems = JSON.parse(urls!);
@@ -292,7 +354,7 @@ export default function PluginList() {
                     }
                 }
                 const uniqueUrls = [...new Set(allUrls)];
-                const { results } =
+                const { results, skipped } =
                     await PluginManager.installPluginsFromUrls(
                         uniqueUrls,
                         p => setInstallProgress(p),
@@ -301,6 +363,7 @@ export default function PluginList() {
                                 "basic.notCheckPluginVersion",
                             ),
                         },
+                        false,
                     );
                 results.forEach(it => {
                     if (it.success) {
@@ -309,8 +372,26 @@ export default function PluginList() {
                         failResults.push(it);
                     }
                 });
+                // 跳过的大插件：持久化到列表底部"未挂载"区块
+                if (skipped?.length) {
+                    skippedCount = skipped.length;
+                    mergePendingLarge(skipped);
+                }
             } else {
                 throw new Error();
+            }
+
+            // 汇总弹窗：成功/跳过（大插件）/失败
+            if (successResults.length) {
+                const failedCount = failResults.length;
+                showDialog("SimpleDialog", {
+                    title: t("pluginSetting.installSummaryTitle"),
+                    content: t("pluginSetting.installSummaryContent", {
+                        success: successResults.length,
+                        skipped: skippedCount,
+                        failed: failedCount,
+                    }),
+                });
             }
 
             if (!failResults.length) {
@@ -474,32 +555,99 @@ export default function PluginList() {
                 <>
                     {loading ? (
                         <View style={style.loadingWrap}>
-                            <Loading />
-                            {installProgress ? (
-                                <Text
-                                    style={[
-                                        style.loadingText,
-                                        { color: colors.textSecondary },
-                                    ]}>
-                                    {installProgress.phase === "download"
-                                        ? t("pluginSetting.installProgressDownload", {
-                                            done: installProgress.done,
-                                            total: installProgress.total,
-                                        })
-                                        : t("pluginSetting.installProgressMount", {
-                                            done: installProgress.done,
-                                            total: installProgress.total,
-                                            pluginName: installProgress.name
-                                                ? " · " + installProgress.name
-                                                : "",
-                                        })}
-                                </Text>
-                            ) : null}
+                            <Loading
+                                text={
+                                    installProgress
+                                        ? installProgress.phase ===
+                                            "download"
+                                            ? t(
+                                                "pluginSetting.installProgressDownload",
+                                                {
+                                                    done: installProgress.done,
+                                                    total:
+                                                        installProgress.total,
+                                                },
+                                            )
+                                            : t(
+                                                "pluginSetting.installProgressMount",
+                                                {
+                                                    done: installProgress.done,
+                                                    total:
+                                                        installProgress.total,
+                                                    pluginName:
+                                                        installProgress.name
+                                                            ? " · " +
+                                                              installProgress.name
+                                                            : "",
+                                                },
+                                            )
+                                        : undefined
+                                }
+                            />
                         </View>
                     ) : (
                         <FlatList
                             ListEmptyComponent={Empty}
-                            ListFooterComponent={<View style={style.blank} />}
+                            ListFooterComponent={
+                                <>
+                                    {pendingLarge.length ? (
+                                        <View style={style.largeSection}>
+                                            <ThemeText
+                                                fontSize="description"
+                                                fontColor="textSecondary">
+                                                {t(
+                                                    "pluginSetting.largePluginSection",
+                                                )}
+                                            </ThemeText>
+                                            {pendingLarge.map(item => (
+                                                <View
+                                                    key={item.url}
+                                                    style={[
+                                                        style.largeCard,
+                                                        {
+                                                            backgroundColor:
+                                                                colors.card,
+                                                        },
+                                                    ]}>
+                                                    <View
+                                                        style={
+                                                            style.largeCardInfo
+                                                        }>
+                                                        <ThemeText
+                                                            fontSize="title"
+                                                            numberOfLines={1}>
+                                                            {item.name}
+                                                        </ThemeText>
+                                                        <ThemeText
+                                                            fontSize="description"
+                                                            fontColor="textSecondary">
+                                                            {t(
+                                                                "pluginSetting.largePluginSize",
+                                                                {
+                                                                    size: Math.round(
+                                                                        item.size /
+                                                                            1024,
+                                                                    ),
+                                                                },
+                                                            )}
+                                                        </ThemeText>
+                                                    </View>
+                                                    <IconTextButton
+                                                        icon="arrow-down-tray"
+                                                        onPress={() =>
+                                                            onMountLarge(item)
+                                                        }>
+                                                        {t(
+                                                            "pluginSetting.installLargePlugin",
+                                                        )}
+                                                    </IconTextButton>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    ) : null}
+                                    <View style={style.blank} />
+                                </>
+                            }
                             data={plugins ?? []}
                             keyExtractor={_ => _.hash}
                             numColumns={isTablet ? 3 : 1}
@@ -604,9 +752,23 @@ const style = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
-    loadingText: {
-        marginTop: rpx(12),
-        fontSize: fontSizeConst.description,
+    /** 未挂载的大插件区块 */
+    largeSection: {
+        marginHorizontal: rpx(24),
+        marginTop: rpx(28),
+        gap: rpx(12),
+    },
+    largeCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderRadius: 14,
+        paddingHorizontal: rpx(16),
+        paddingVertical: 12,
+        gap: rpx(12),
+    },
+    largeCardInfo: {
+        flex: 1,
+        gap: rpx(4),
     },
 });
 

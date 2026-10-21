@@ -33,6 +33,8 @@ import pluginReliability from "../pluginReliability";
 
 const pluginsAtom = atom<Plugin[]>([]);
 const pluginCacheStore = getOrCreateMMKV("plugin.cache");
+/** 未挂载大插件列表的持久化 key（批量安装跳过 >300KB 混淆插件，列表底部手动安装） */
+const PENDING_LARGE_KEY = "pendingLargePlugins";
 
 /**
  * 自动更新音源的并发下载上限。
@@ -40,6 +42,22 @@ const pluginCacheStore = getOrCreateMMKV("plugin.cache");
  * 10 并发也远低于 98 全并发，避免触发 gitee 反爬（历史有 403 风控记录）。
  */
 const PLUGIN_UPDATE_CONCURRENCY = 10;
+
+/**
+ * 大混淆插件体积阈值（字符数近似字节）。
+ * jsjiami 系插件在 Hermes（解释器）上同步求值开销约为 V8 的 5~20 倍，
+ * 450KB+ 单文件单个挂载即可把 JS 线程占死 1~2s；批量串行时累加成界面假死。
+ * 超过该阈值的插件默认跳过自动挂载（skipped），改为列表底部手动安装。
+ */
+export const PLUGIN_SIZE_LIMIT = 300 * 1024;
+
+/** 被跳过的"大插件"：供 UI 在列表底部渲染"未挂载"条目与手动安装入口 */
+export interface IPendingLargePlugin {
+    url: string;
+    name: string;
+    /** 插件代码字节数（近似） */
+    size: number;
+}
 
 /** 限并发执行异步任务：固定 worker 数，按序取任务（失败由任务自身处理） */
 async function runWithConcurrency<T>(
@@ -111,6 +129,33 @@ class PluginManager implements IPluginManager, IInjectable {
                 }),
             );
         }
+    }
+
+    /**
+     * 读取持久化的"未挂载大插件"列表（批量安装跳过的大混淆插件）
+     */
+    async getPendingLargePlugins(): Promise<IPendingLargePlugin[]> {
+        const raw = pluginCacheStore.getString(PENDING_LARGE_KEY);
+        if (!raw) {
+            return [];
+        }
+        try {
+            const parsed = safeParse(raw);
+            return Array.isArray(parsed) ? (parsed as IPendingLargePlugin[]) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    /**
+     * 持久化"未挂载大插件"列表
+     */
+    async savePendingLargePlugins(list: IPendingLargePlugin[]): Promise<void> {
+        if (!list.length) {
+            pluginCacheStore.delete(PENDING_LARGE_KEY);
+            return;
+        }
+        pluginCacheStore.set(PENDING_LARGE_KEY, JSON.stringify(list));
     }
 
     /**
@@ -394,8 +439,12 @@ class PluginManager implements IPluginManager, IInjectable {
      * 阶段 1 限并发下载（网络等待，不占 JS 线程）；
      * 阶段 2 逐个挂载，每个插件挂载后让出一段空闲（delay 50ms）让 UI 渲染插队，
      * 从根上避免「多个 jsjiami 混淆插件同步求值」把 JS 线程打满导致界面冻结/安装假死。
+     * 超过 PLUGIN_SIZE_LIMIT 的大混淆插件：autoMountLarge=false 时跳过自动挂载
+     * （进 skipped，由 UI 在列表底部提供手动安装）；true 时（探测 App）排最后逐个挂载。
      * @param urls - 待安装插件 URL 列表
      * @param onProgress - 进度回调：{phase: "download"|"mount", done, total, name?}
+     * @param config - 安装配置
+     * @param autoMountLarge - 是否自动挂载大插件（极悦界 false；探测 App true 保探测覆盖）
      */
     async installPluginsFromUrls(
         urls: string[],
@@ -406,10 +455,12 @@ class PluginManager implements IPluginManager, IInjectable {
             name?: string;
         }) => void,
         config?: IInstallPluginConfig,
+        autoMountLarge = false,
     ): Promise<{
         results: IInstallPluginResult[];
         success: number;
         failed: number;
+        skipped: IPendingLargePlugin[];
     }> {
         const results: IInstallPluginResult[] = [];
         const noCacheHeaders = {
@@ -450,10 +501,27 @@ class PluginManager implements IPluginManager, IInjectable {
                 });
             },
         );
-        // 阶段 2：逐个挂载，每个后让出空闲（混淆插件求值量大，UI 在间隙渲染）
+        // 阶段 2：分档——大混淆插件默认跳过自动挂载（s 抛到 skipped，UI 提供手动安装）
+        const large: Array<{ url: string; code: string }> = [];
+        const normal: Array<{ url: string; code: string }> = [];
+        for (const d of downloads) {
+            if (d.code.length > PLUGIN_SIZE_LIMIT) {
+                large.push(d);
+            } else {
+                normal.push(d);
+            }
+        }
+        const skipped: IPendingLargePlugin[] = autoMountLarge
+            ? []
+            : large.map(({ url, code }) => ({
+                  url,
+                  name: url.split("/").pop()?.slice(0, 40) ?? url,
+                  size: code.length,
+              }));
+        const mountList = autoMountLarge ? [...normal, ...large] : normal;
         let mounted = 0;
-        for (let i = 0; i < downloads.length; ++i) {
-            const { url, code } = downloads[i];
+        for (let i = 0; i < mountList.length; ++i) {
+            const { url, code } = mountList[i];
             const pluginName = url.split("/").pop()?.slice(0, 40) ?? url;
             try {
                 results.push(await this.installFromCode(code, url, config));
@@ -474,7 +542,7 @@ class PluginManager implements IPluginManager, IInjectable {
             await delay(50);
         }
         const success = results.filter(r => r.success).length;
-        return { results, success, failed: results.length - success };
+        return { results, success, failed: results.length - success, skipped };
     }
 
     /**
@@ -496,6 +564,7 @@ class PluginManager implements IPluginManager, IInjectable {
                         Pragma: "no-cache",
                         Expires: "0",
                     },
+                    timeout: 30_000,
                 })
             ).data;
             if (funcCode) {
