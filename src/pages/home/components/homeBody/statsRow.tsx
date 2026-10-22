@@ -181,7 +181,7 @@ export default function StatsRow() {
                                 <ThemeText
                                     fontSize="title"
                                     fontWeight="bold"
-                                    numberOfLines={1}
+                                    numberOfLines={2}
                                     ellipsizeMode="tail"
                                     style={styles.valuePhone}>
                                     {card.value}

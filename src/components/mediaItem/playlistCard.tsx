@@ -7,6 +7,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Color from "color";
 import useColors from "@/hooks/useColors";
 import Icon from "@/components/base/icon.tsx";
+import useIsTablet from "@/hooks/useIsTablet";
 
 /** 播放量格式化：≥1亿 → x.x亿，≥1万 → x.x万 */
 export function formatPlayCount(count: number): string {
@@ -35,6 +36,7 @@ interface IPlaylistCardProps {
 /**
  * 歌单卡 - 复刻 APlayer PlaylistCard / MyPlaylistCard：
  * 130dp 封面 + 12dp 圆角 + 播放量角标（右下黑底白字）+ 歌名 13sp Medium + 副行 11sp
+ * 手机版：卡宽/封面 150dp + 标题 2 行（长歌单名不截断）；平板版保持 130dp + 1 行（平板 UI 已冻结）
  */
 export default function PlaylistCard(props: IPlaylistCardProps) {
     const {
@@ -47,15 +49,23 @@ export default function PlaylistCard(props: IPlaylistCardProps) {
         placeholderIcon,
     } = props;
     const colors = useColors();
+    const isTablet = useIsTablet();
 
     const showCount = !!playCount && playCount > 0;
 
+    const cardWidth = isTablet ? 130 : 150;
+    const cardStyle = { width: cardWidth };
+    const coverStyle = [
+        styles.cover,
+        { width: cardWidth, height: cardWidth },
+    ];
+
     return (
-        <Pressable style={styles.wrapper} onPress={onPress} onLongPress={onLongPress}>
+        <Pressable style={[styles.wrapper, cardStyle]} onPress={onPress} onLongPress={onLongPress}>
             <View style={styles.coverBox}>
                 {artwork ? (
                     <Image
-                        style={styles.cover}
+                        style={coverStyle}
                         uri={artwork}
                         emptySrc={ImgAsset.albumDefault}
                     />
@@ -67,7 +77,7 @@ export default function PlaylistCard(props: IPlaylistCardProps) {
                         ]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={styles.cover}>
+                        style={coverStyle}>
                         <Icon
                             name={placeholderIcon}
                             size={36}
@@ -77,7 +87,7 @@ export default function PlaylistCard(props: IPlaylistCardProps) {
                 ) : (
                     <View
                         style={[
-                            styles.cover,
+                            ...coverStyle,
                             {
                                 backgroundColor:
                                     colors.surfaceVariant ??
@@ -97,7 +107,7 @@ export default function PlaylistCard(props: IPlaylistCardProps) {
             <ThemeText
                 fontSize="normal"
                 fontWeight="medium"
-                numberOfLines={1}
+                numberOfLines={isTablet ? 1 : 2}
                 ellipsizeMode="tail"
                 style={styles.title}>
                 {title}
@@ -118,7 +128,6 @@ export default function PlaylistCard(props: IPlaylistCardProps) {
 
 const styles = StyleSheet.create({
     wrapper: {
-        width: 130,
         flexGrow: 0,
         flexShrink: 0,
     },
@@ -126,8 +135,6 @@ const styles = StyleSheet.create({
         position: "relative",
     },
     cover: {
-        width: 130,
-        height: 130,
         borderRadius: 12,
         alignItems: "center",
         justifyContent: "center",

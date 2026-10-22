@@ -24,30 +24,26 @@ interface ISubscriptionItem {
 }
 function getSubscriptions(): ISubscriptionItem[] {
     const raw = Config.getConfig("plugin.subscribeUrl");
-    if (!raw) {
-        // 未配置订阅时，回退内置默认订阅源（极悦界音源库）
+    if (raw === undefined || raw === null || raw === "") {
+        // 从未配置订阅时，回退内置默认订阅源（极悦界音源库）
         return [{ url: DEFAULT_PLUGIN_SUBSCRIPTION_URL }];
     }
     try {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-            const list = parsed.filter(
+            // 尊重用户已保存的列表；空数组 = 用户已删除全部订阅源，不回退默认
+            return parsed.filter(
                 (it: ISubscriptionItem) => it && typeof it.url === "string",
             );
-            // 配置存在但为空数组：视为未配置，回退默认订阅源
-            return list.length ? list : [{ url: DEFAULT_PLUGIN_SUBSCRIPTION_URL }];
         }
     } catch {
         // 兼容旧格式：纯字符串数组
         try {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) {
-                const list = parsed
+                return parsed
                     .filter((u: unknown) => typeof u === "string")
                     .map((url: string) => ({ url }));
-                return list.length
-                    ? list
-                    : [{ url: DEFAULT_PLUGIN_SUBSCRIPTION_URL }];
             }
         } catch {
             return [{ url: DEFAULT_PLUGIN_SUBSCRIPTION_URL }];

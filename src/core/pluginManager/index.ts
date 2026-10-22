@@ -515,10 +515,10 @@ class PluginManager implements IPluginManager, IInjectable {
         const skipped: IPendingLargePlugin[] = autoMountLarge
             ? []
             : large.map(({ url, code }) => ({
-                  url,
-                  name: url.split("/").pop()?.slice(0, 40) ?? url,
-                  size: code.length,
-              }));
+                url,
+                name: url.split("/").pop()?.slice(0, 40) ?? url,
+                size: code.length,
+            }));
         const mountList = autoMountLarge ? [...normal, ...large] : normal;
         let mounted = 0;
         for (let i = 0; i < mountList.length; ++i) {
@@ -574,7 +574,6 @@ class PluginManager implements IPluginManager, IInjectable {
                         Pragma: "no-cache",
                         Expires: "0",
                     },
-                    timeout: 30_000,
                 })
             ).data;
             if (funcCode) {
@@ -764,9 +763,26 @@ class PluginManager implements IPluginManager, IInjectable {
             );
             if (needDownload.length) {
                 // 下载/挂载分离 + 分批让出：不再并发同步挂载（多个混淆插件同步求值会把 JS 线程打满）
-                await this.installPluginsFromUrls(needDownload).catch(
-                    emptyFunction,
-                );
+                // 大插件（>300KB）被跳过时不静默丢弃：合并进持久化 pendingLarge，
+                // 插件列表底部"未挂载"区块可见并可手动安装（与手动订阅路径 onSubscribeClick 行为一致）
+                try {
+                    const { skipped } = await this.installPluginsFromUrls(
+                        needDownload,
+                    );
+                    if (skipped?.length) {
+                        const existing =
+                            await this.getPendingLargePlugins();
+                        const merged = existing.slice();
+                        skipped.forEach(item => {
+                            if (!merged.some(p => p.url === item.url)) {
+                                merged.push(item);
+                            }
+                        });
+                        await this.savePendingLargePlugins(merged);
+                    }
+                } catch {
+                    // 整体静默，不阻塞启动
+                }
             }
         } catch {
             // 整体静默，不阻塞启动
