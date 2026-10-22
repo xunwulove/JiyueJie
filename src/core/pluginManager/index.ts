@@ -498,6 +498,7 @@ class PluginManager implements IPluginManager, IInjectable {
                     phase: "download",
                     done: downloaded,
                     total: urls.length,
+                    name: url.split("/").pop()?.slice(0, 40) ?? url,
                 });
             },
         );
@@ -523,6 +524,15 @@ class PluginManager implements IPluginManager, IInjectable {
         for (let i = 0; i < mountList.length; ++i) {
             const { url, code } = mountList[i];
             const pluginName = url.split("/").pop()?.slice(0, 40) ?? url;
+            // 挂载前先渲染"正在挂载 · 文件名"，让出主线程一帧；
+            // 避免串行混淆插件顶层求值期间 UI 全程冻结、进度停留在上一阶段
+            onProgress?.({
+                phase: "mount",
+                done: mounted,
+                total: downloads.length,
+                name: pluginName,
+            });
+            await delay(30);
             try {
                 results.push(await this.installFromCode(code, url, config));
             } catch (e: any) {
@@ -539,7 +549,7 @@ class PluginManager implements IPluginManager, IInjectable {
                 total: downloads.length,
                 name: pluginName,
             });
-            await delay(50);
+            await delay(30);
         }
         const success = results.filter(r => r.success).length;
         return { results, success, failed: results.length - success, skipped };

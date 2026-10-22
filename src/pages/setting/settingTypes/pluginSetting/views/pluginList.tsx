@@ -566,6 +566,11 @@ export default function PluginList() {
                                                     done: installProgress.done,
                                                     total:
                                                         installProgress.total,
+                                                    pluginName:
+                                                        installProgress.name
+                                                            ? " · " +
+                                                              installProgress.name
+                                                            : "",
                                                 },
                                             )
                                             : t(

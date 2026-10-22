@@ -168,7 +168,7 @@
     "pluginSetting.failReason": "失敗原因: {reason}",
     "pluginSetting.pluginInstallFailedDialogContent": "以下外掛安裝失敗: \n {detail}",
     "pluginSetting.pluginUpdateFailedDialogContent": "以下外掛安裝失敗: \n {detail}",
-    "pluginSetting.installProgressDownload": "下載音源 {done}/{total}",
+    "pluginSetting.installProgressDownload": "下載音源 {done}/{total}{pluginName}",
     "pluginSetting.installProgressMount": "掛載音源 {done}/{total}{pluginName}",
     "pluginSetting.installSummaryTitle": "安裝完成",
     "pluginSetting.installSummaryContent": "成功 {success} 個，跳過 {skipped} 個（大外掛），失敗 {failed} 個",
