@@ -24,6 +24,7 @@ export default function Loading(props: ILoadingProps) {
                     color={color}
                     fontSize="title"
                     fontWeight="semibold"
+                    numberOfLines={2}
                     style={style.text}>
                     {text ?? t("common.loading")}
                 </ThemeText>
@@ -41,5 +42,7 @@ const style = StyleSheet.create({
     },
     text: {
         marginTop: rpx(48),
+        textAlign: "center",
+        paddingHorizontal: rpx(24),
     },
 });

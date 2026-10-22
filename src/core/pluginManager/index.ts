@@ -33,6 +33,8 @@ import pluginReliability from "../pluginReliability";
 
 const pluginsAtom = atom<Plugin[]>([]);
 const pluginCacheStore = getOrCreateMMKV("plugin.cache");
+/** 未挂载大插件列表的持久化 key（批量安装跳过 >300KB 混淆插件，列表底部手动安装） */
+const PENDING_LARGE_KEY = "pendingLargePlugins";
 
 /**
  * 自动更新音源的并发下载上限。
@@ -40,6 +42,22 @@ const pluginCacheStore = getOrCreateMMKV("plugin.cache");
  * 10 并发也远低于 98 全并发，避免触发 gitee 反爬（历史有 403 风控记录）。
  */
 const PLUGIN_UPDATE_CONCURRENCY = 10;
+
+/**
+ * 大混淆插件体积阈值（字符数近似字节）。
+ * jsjiami 系插件在 Hermes（解释器）上同步求值开销约为 V8 的 5~20 倍，
+ * 450KB+ 单文件单个挂载即可把 JS 线程占死 1~2s；批量串行时累加成界面假死。
+ * 超过该阈值的插件默认跳过自动挂载（skipped），改为列表底部手动安装。
+ */
+export const PLUGIN_SIZE_LIMIT = 300 * 1024;
+
+/** 被跳过的"大插件"：供 UI 在列表底部渲染"未挂载"条目与手动安装入口 */
+export interface IPendingLargePlugin {
+    url: string;
+    name: string;
+    /** 插件代码字节数（近似） */
+    size: number;
+}
 
 /** 限并发执行异步任务：固定 worker 数，按序取任务（失败由任务自身处理） */
 async function runWithConcurrency<T>(
@@ -111,6 +129,33 @@ class PluginManager implements IPluginManager, IInjectable {
                 }),
             );
         }
+    }
+
+    /**
+     * 读取持久化的"未挂载大插件"列表（批量安装跳过的大混淆插件）
+     */
+    async getPendingLargePlugins(): Promise<IPendingLargePlugin[]> {
+        const raw = pluginCacheStore.getString(PENDING_LARGE_KEY);
+        if (!raw) {
+            return [];
+        }
+        try {
+            const parsed = safeParse(raw);
+            return Array.isArray(parsed) ? (parsed as IPendingLargePlugin[]) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    /**
+     * 持久化"未挂载大插件"列表
+     */
+    async savePendingLargePlugins(list: IPendingLargePlugin[]): Promise<void> {
+        if (!list.length) {
+            pluginCacheStore.delete(PENDING_LARGE_KEY);
+            return;
+        }
+        pluginCacheStore.set(PENDING_LARGE_KEY, JSON.stringify(list));
     }
 
     /**
@@ -193,6 +238,11 @@ class PluginManager implements IPluginManager, IInjectable {
                                     ? `${plugin.name}: ${e?.message ?? e}`
                                     : e?.message ?? e,
                             );
+                        }
+                        // 分批让出 JS 线程：混淆插件逐个求值会把主线程打满，
+                        // 每挂载 2 个让出一帧，UI 保持可响应（冷启动不冻结）
+                        if (i % 2 === 1) {
+                            await delay(16);
                         }
                     }
                 }
@@ -308,6 +358,210 @@ class PluginManager implements IPluginManager, IInjectable {
      * @param config.notCheckVersion - 为true时跳过版本检查
      * @returns 安装结果，包含成功状态和相关信息
      */
+    /**
+     * 挂载已下载的插件代码并落盘（installPluginFromUrl 与批量安装共用的核心逻辑）
+     * @param funcCode - 已下载的插件源码
+     * @param url - 插件来源 URL（用于结果回显与版本检查）
+     * @param config - 安装配置选项
+     */
+    private async installFromCode(
+        funcCode: string,
+        url?: string,
+        config?: IInstallPluginConfig,
+    ): Promise<IInstallPluginResult> {
+        const plugin = new Plugin(funcCode, "");
+        let allPlugins = [...this.getPlugins()];
+        const pluginIndex = allPlugins.findIndex(
+            p => p.hash === plugin.hash,
+        );
+        if (pluginIndex !== -1) {
+            // 静默忽略
+            return {
+                success: true,
+                message: "插件已安装",
+                pluginName: plugin.name,
+                pluginHash: plugin.hash,
+                pluginUrl: url,
+            };
+        }
+        const oldVersionPlugin = allPlugins.find(
+            p => p.name === plugin.name,
+        );
+        if (oldVersionPlugin && !config?.notCheckVersion) {
+            if (
+                compare(
+                    oldVersionPlugin.instance.version ?? "",
+                    plugin.instance.version ?? "",
+                    ">",
+                )
+            ) {
+                return {
+                    success: false,
+                    message: "已安装更新版本的插件",
+                    pluginName: plugin.name,
+                    pluginHash: plugin.hash,
+                    pluginUrl: url,
+                };
+            }
+        }
+
+        if (plugin.hash !== "") {
+            const fn = nanoid();
+            const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
+            await writeFile(_pluginPath, funcCode, "utf8");
+            plugin.path = _pluginPath;
+            allPlugins = allPlugins.concat(plugin);
+            if (oldVersionPlugin) {
+                allPlugins = allPlugins.filter(
+                    _ => _.hash !== oldVersionPlugin.hash,
+                );
+                try {
+                    await unlink(oldVersionPlugin.path);
+                } catch {}
+            }
+            this.setPlugins(allPlugins);
+            return {
+                success: true,
+                pluginName: plugin.name,
+                pluginHash: plugin.hash,
+                pluginUrl: url,
+            };
+        }
+        return {
+            success: false,
+            message: "插件无法解析",
+            pluginUrl: url,
+        };
+    }
+
+    /**
+     * 批量安装插件（订阅拉取专用）：下载与挂载分离。
+     * 阶段 1 限并发下载（网络等待，不占 JS 线程）；
+     * 阶段 2 逐个挂载，每个插件挂载后让出一段空闲（delay 50ms）让 UI 渲染插队，
+     * 从根上避免「多个 jsjiami 混淆插件同步求值」把 JS 线程打满导致界面冻结/安装假死。
+     * 超过 PLUGIN_SIZE_LIMIT 的大混淆插件：autoMountLarge=false 时跳过自动挂载
+     * （进 skipped，由 UI 在列表底部提供手动安装）；true 时（探测 App）排最后逐个挂载。
+     * @param urls - 待安装插件 URL 列表
+     * @param onProgress - 进度回调：{phase: "download"|"mount", done, total, name?}
+     * @param config - 安装配置
+     * @param autoMountLarge - 是否自动挂载大插件（极悦界 false；探测 App true 保探测覆盖）
+     */
+    async installPluginsFromUrls(
+        urls: string[],
+        onProgress?: (p: {
+            phase: "download" | "mount";
+            done: number;
+            total: number;
+            name?: string;
+        }) => void,
+        config?: IInstallPluginConfig,
+        autoMountLarge = false,
+    ): Promise<{
+        results: IInstallPluginResult[];
+        success: number;
+        failed: number;
+        skipped: IPendingLargePlugin[];
+    }> {
+        const results: IInstallPluginResult[] = [];
+        const noCacheHeaders = {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+            Expires: "0",
+        };
+        // 阶段 1：并发下载（不挂载；慢源（如 hebijunge 大混淆插件）放宽到 30s，
+        // 不被 plugin.ts 的全局 2s 默认超时误杀）
+        const downloads: Array<{ url: string; code: string }> = [];
+        let downloaded = 0;
+        await runWithConcurrency(
+            urls,
+            PLUGIN_UPDATE_CONCURRENCY,
+            async url => {
+                try {
+                    const code = (
+                        await axios.get(url, {
+                            headers: noCacheHeaders,
+                            timeout: 30_000,
+                        })
+                    ).data;
+                    if (code) {
+                        downloads.push({ url, code });
+                    }
+                } catch (e: any) {
+                    results.push({
+                        success: false,
+                        message: e?.message ?? "",
+                        pluginUrl: url,
+                    });
+                }
+                downloaded++;
+                onProgress?.({
+                    phase: "download",
+                    done: downloaded,
+                    total: urls.length,
+                    name: url.split("/").pop()?.slice(0, 40) ?? url,
+                });
+            },
+        );
+        // 阶段 2：分档——大混淆插件默认跳过自动挂载（s 抛到 skipped，UI 提供手动安装）
+        const large: Array<{ url: string; code: string }> = [];
+        const normal: Array<{ url: string; code: string }> = [];
+        for (const d of downloads) {
+            if (d.code.length > PLUGIN_SIZE_LIMIT) {
+                large.push(d);
+            } else {
+                normal.push(d);
+            }
+        }
+        const skipped: IPendingLargePlugin[] = autoMountLarge
+            ? []
+            : large.map(({ url, code }) => ({
+                url,
+                name: url.split("/").pop()?.slice(0, 40) ?? url,
+                size: code.length,
+            }));
+        const mountList = autoMountLarge ? [...normal, ...large] : normal;
+        let mounted = 0;
+        for (let i = 0; i < mountList.length; ++i) {
+            const { url, code } = mountList[i];
+            const pluginName = url.split("/").pop()?.slice(0, 40) ?? url;
+            // 挂载前先渲染"正在挂载 · 文件名"，让出主线程一帧；
+            // 避免串行混淆插件顶层求值期间 UI 全程冻结、进度停留在上一阶段
+            onProgress?.({
+                phase: "mount",
+                done: mounted,
+                total: downloads.length,
+                name: pluginName,
+            });
+            await delay(30);
+            try {
+                results.push(await this.installFromCode(code, url, config));
+            } catch (e: any) {
+                results.push({
+                    success: false,
+                    message: e?.message ?? "",
+                    pluginUrl: url,
+                });
+            }
+            mounted++;
+            onProgress?.({
+                phase: "mount",
+                done: mounted,
+                total: downloads.length,
+                name: pluginName,
+            });
+            await delay(30);
+        }
+        const success = results.filter(r => r.success).length;
+        return { results, success, failed: results.length - success, skipped };
+    }
+
+    /**
+     * 从URL安装插件
+     * @param url - 下载插件的URL
+     * @param config - 安装配置选项
+     * @param config.notCheckVersion - 为true时跳过版本检查
+     * @returns 安装结果，包含成功状态和相关信息
+     */
     async installPluginFromUrl(
         url: string,
         config?: IInstallPluginConfig,
@@ -323,69 +577,7 @@ class PluginManager implements IPluginManager, IInjectable {
                 })
             ).data;
             if (funcCode) {
-                const plugin = new Plugin(funcCode, "");
-                let allPlugins = [...this.getPlugins()];
-                const pluginIndex = allPlugins.findIndex(
-                    p => p.hash === plugin.hash,
-                );
-                if (pluginIndex !== -1) {
-                    // 静默忽略
-                    return {
-                        success: true,
-                        message: "插件已安装",
-                        pluginName: plugin.name,
-                        pluginHash: plugin.hash,
-                        pluginUrl: url,
-                    };
-                }
-                const oldVersionPlugin = allPlugins.find(
-                    p => p.name === plugin.name,
-                );
-                if (oldVersionPlugin && !config?.notCheckVersion) {
-                    if (
-                        compare(
-                            oldVersionPlugin.instance.version ?? "",
-                            plugin.instance.version ?? "",
-                            ">",
-                        )
-                    ) {
-                        return {
-                            success: false,
-                            message: "已安装更新版本的插件",
-                            pluginName: plugin.name,
-                            pluginHash: plugin.hash,
-                            pluginUrl: url,
-                        };
-                    }
-                }
-
-                if (plugin.hash !== "") {
-                    const fn = nanoid();
-                    const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
-                    await writeFile(_pluginPath, funcCode, "utf8");
-                    plugin.path = _pluginPath;
-                    allPlugins = allPlugins.concat(plugin);
-                    if (oldVersionPlugin) {
-                        allPlugins = allPlugins.filter(
-                            _ => _.hash !== oldVersionPlugin.hash,
-                        );
-                        try {
-                            await unlink(oldVersionPlugin.path);
-                        } catch {}
-                    }
-                    this.setPlugins(allPlugins);
-                    return {
-                        success: true,
-                        pluginName: plugin.name,
-                        pluginHash: plugin.hash,
-                        pluginUrl: url,
-                    };
-                }
-                return {
-                    success: false,
-                    message: "插件无法解析",
-                    pluginUrl: url,
-                };
+                return await this.installFromCode(funcCode, url, config);
             } else {
                 return {
                     success: false,
@@ -570,15 +762,27 @@ class PluginManager implements IPluginManager, IInjectable {
                 },
             );
             if (needDownload.length) {
-                await runWithConcurrency(
-                    needDownload,
-                    PLUGIN_UPDATE_CONCURRENCY,
-                    async url => {
-                        await this.installPluginFromUrl(url).catch(
-                            emptyFunction,
-                        );
-                    },
-                );
+                // 下载/挂载分离 + 分批让出：不再并发同步挂载（多个混淆插件同步求值会把 JS 线程打满）
+                // 大插件（>300KB）被跳过时不静默丢弃：合并进持久化 pendingLarge，
+                // 插件列表底部"未挂载"区块可见并可手动安装（与手动订阅路径 onSubscribeClick 行为一致）
+                try {
+                    const { skipped } = await this.installPluginsFromUrls(
+                        needDownload,
+                    );
+                    if (skipped?.length) {
+                        const existing =
+                            await this.getPendingLargePlugins();
+                        const merged = existing.slice();
+                        skipped.forEach(item => {
+                            if (!merged.some(p => p.url === item.url)) {
+                                merged.push(item);
+                            }
+                        });
+                        await this.savePendingLargePlugins(merged);
+                    }
+                } catch {
+                    // 整体静默，不阻塞启动
+                }
             }
         } catch {
             // 整体静默，不阻塞启动

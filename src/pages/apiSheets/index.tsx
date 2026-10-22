@@ -127,7 +127,6 @@ interface IApiSheetListProps {
 
 function ApiSheetList(props: IApiSheetListProps) {
     const { type, loader, onError, onPress } = props;
-    const { t } = useI18N();
     const [sheets, setSheets] = useState<IMusic.IMusicSheetItemBase[]>([]);
     const [state, setState] = useState(RequestStateCode.PENDING_FIRST_PAGE);
     const orientation = useOrientation();

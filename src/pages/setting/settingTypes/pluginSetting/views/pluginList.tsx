@@ -1,9 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import rpx from "@/utils/rpx";
 import Loading from "@/components/base/loading";
+import useColors from "@/hooks/useColors";
+import ThemeText from "@/components/base/themeText";
+import IconTextButton from "@/components/base/iconTextButton";
 
-import PluginManager, { useSortedPlugins } from "@/core/pluginManager";
+import PluginManager, {
+    IPendingLargePlugin,
+    useSortedPlugins,
+} from "@/core/pluginManager";
 import { trace } from "@/utils/log";
 
 import Toast from "@/utils/toast";
@@ -46,12 +52,77 @@ export default function PluginList() {
     const plugins = useSortedPlugins();
     const { t } = useI18N();
     const isTablet = useIsTablet();
+    const colors = useColors();
 
     const [loading, setLoading] = useState(false);
+    // 批量安装进度：{phase:"download"|"mount", done, total, name?}，null 表示无安装任务
+    const [installProgress, setInstallProgress] = useState<{
+        phase: "download" | "mount";
+        done: number;
+        total: number;
+        name?: string;
+    } | null>(null);
+    // 未挂载的大插件（批量安装跳过，列表底部提供手动安装入口；持久化本地）
+    const [pendingLarge, setPendingLarge] = useState<IPendingLargePlugin[]>([]);
     // 从网络安装：输入框组件级状态（三级浮窗 SimpleDialog 内，关闭重开不丢失）
     const [networkUrl, setNetworkUrl] = useState("");
 
     const navigate = useNavigate();
+
+    /** 读取持久化的未挂载大插件列表 */
+    useEffect(() => {
+        PluginManager.getPendingLargePlugins()
+            .then(setPendingLarge)
+            .catch(() => setPendingLarge([]));
+    }, []);
+
+    /** 合并新跳过的大插件（去重）并持久化 */
+    function mergePendingLarge(list: IPendingLargePlugin[]) {
+        setPendingLarge(prev => {
+            const merged = [...prev];
+            list.forEach(item => {
+                if (!merged.some(p => p.url === item.url)) {
+                    merged.push(item);
+                }
+            });
+            PluginManager.savePendingLargePlugins(merged).catch(() => {});
+            return merged;
+        });
+    }
+
+    /** 手动单装大插件：下载+挂载（大混淆插件单次挂载预期 1~2s 冻结，可预期） */
+    async function onMountLarge(item: IPendingLargePlugin) {
+        if (loading) {
+            return;
+        }
+        setLoading(true);
+        setInstallProgress(null);
+        try {
+            const result = await PluginManager.installPluginFromUrl(item.url, {
+                notCheckVersion: Config.getConfig(
+                    "basic.notCheckPluginVersion",
+                ),
+            });
+            if (result.success) {
+                setPendingLarge(prev => {
+                    const next = prev.filter(p => p.url !== item.url);
+                    PluginManager.savePendingLargePlugins(next).catch(() => {});
+                    return next;
+                });
+                Toast.success(t("toast.installPluginSuccess"));
+            } else {
+                Toast.warn(
+                    t("toast.partialPluginInstallFailedWithReason", {
+                        reason: result.message ?? "",
+                    }),
+                );
+            }
+        } catch (e: any) {
+            Toast.warn(e?.message ?? t("toast.unknownError"));
+        }
+        setLoading(false);
+        setInstallProgress(null);
+    }
 
     // 音源相关配置（与基础设置"音源"分组一致；已迁入三点菜单三级页面）
     // 开关项通过 configKey 由 MenuDialog 内部实时订阅（showDialog payload 是快照，不能依赖外部重渲染）
@@ -242,25 +313,85 @@ export default function PluginList() {
             Config.getConfig("plugin.subscribeUrl") ??
             JSON.stringify([{ url: DEFAULT_PLUGIN_SUBSCRIPTION_URL }]);
         setLoading(true);
+        setInstallProgress(null);
 
         const successResults: IInstallPluginResult[] = [];
         const failResults: IInstallPluginResult[] = [];
+        let skippedCount = 0;
 
         try {
             const urlItems = JSON.parse(urls!);
             if (Array.isArray(urlItems)) {
+                // 收集全部订阅清单的插件 URL（去重），统一批量安装（下载并发 + 挂载分批让出）
+                const allUrls: string[] = [];
+                const noCacheHeaders = {
+                    "Cache-Control": "no-cache",
+                    Pragma: "no-cache",
+                    Expires: "0",
+                };
                 for (let i = 0; i < urlItems.length; ++i) {
-                    const result = await installPluginFromUrl(urlItems[i].url);
-                    if (result[0]) {
-                        if (result[0].success) {
-                            successResults.push(result[0]);
-                        } else {
-                            failResults.push(result[0]);
-                        }
+                    const url = urlItems[i]?.url;
+                    if (!url) {
+                        continue;
                     }
+                    try {
+                        if (url.endsWith(".json")) {
+                            const text = (
+                                await axios.get(url, {
+                                    headers: noCacheHeaders,
+                                })
+                            ).data;
+                            (text?.plugins ?? []).forEach((p: any) => {
+                                if (p?.url) {
+                                    allUrls.push(p.url);
+                                }
+                            });
+                        } else {
+                            allUrls.push(url);
+                        }
+                    } catch {
+                        // 单条订阅地址拉取失败静默（与其他地址互不影响）
+                    }
+                }
+                const uniqueUrls = [...new Set(allUrls)];
+                const { results, skipped } =
+                    await PluginManager.installPluginsFromUrls(
+                        uniqueUrls,
+                        p => setInstallProgress(p),
+                        {
+                            notCheckVersion: Config.getConfig(
+                                "basic.notCheckPluginVersion",
+                            ),
+                        },
+                        false,
+                    );
+                results.forEach(it => {
+                    if (it.success) {
+                        successResults.push(it);
+                    } else {
+                        failResults.push(it);
+                    }
+                });
+                // 跳过的大插件：持久化到列表底部"未挂载"区块
+                if (skipped?.length) {
+                    skippedCount = skipped.length;
+                    mergePendingLarge(skipped);
                 }
             } else {
                 throw new Error();
+            }
+
+            // 汇总弹窗：成功/跳过（大插件）/失败
+            if (successResults.length) {
+                const failedCount = failResults.length;
+                showDialog("SimpleDialog", {
+                    title: t("pluginSetting.installSummaryTitle"),
+                    content: t("pluginSetting.installSummaryContent", {
+                        success: successResults.length,
+                        skipped: skippedCount,
+                        failed: failedCount,
+                    }),
+                });
             }
 
             if (!failResults.length) {
@@ -284,7 +415,7 @@ export default function PluginList() {
 
         } catch {
             if (urls?.length) {
-                const result = await installPluginFromUrl(urls);
+                const result = await installPluginFromUrl(urls, p => setInstallProgress(p));
                 if (result[0]) {
                     if (result[0].success) {
                         Toast.success(t("toast.installPluginSuccess"));
@@ -299,6 +430,7 @@ export default function PluginList() {
             }
         }
         setLoading(false);
+        setInstallProgress(null);
     }
 
     async function onUpdateAllClick() {
@@ -422,11 +554,105 @@ export default function PluginList() {
             <HorizontalSafeAreaView style={style.wrapper}>
                 <>
                     {loading ? (
-                        <Loading />
+                        <View style={style.loadingWrap}>
+                            <Loading
+                                text={
+                                    installProgress
+                                        ? installProgress.phase ===
+                                            "download"
+                                            ? t(
+                                                "pluginSetting.installProgressDownload",
+                                                {
+                                                    done: installProgress.done,
+                                                    total:
+                                                        installProgress.total,
+                                                    pluginName:
+                                                        installProgress.name
+                                                            ? " · " +
+                                                              installProgress.name
+                                                            : "",
+                                                },
+                                            )
+                                            : t(
+                                                "pluginSetting.installProgressMount",
+                                                {
+                                                    done: installProgress.done,
+                                                    total:
+                                                        installProgress.total,
+                                                    pluginName:
+                                                        installProgress.name
+                                                            ? " · " +
+                                                              installProgress.name
+                                                            : "",
+                                                },
+                                            )
+                                        : undefined
+                                }
+                            />
+                        </View>
                     ) : (
                         <FlatList
                             ListEmptyComponent={Empty}
-                            ListFooterComponent={<View style={style.blank} />}
+                            ListFooterComponent={
+                                <>
+                                    {pendingLarge.length ? (
+                                        <View style={style.largeSection}>
+                                            <ThemeText
+                                                fontSize="description"
+                                                fontColor="textSecondary">
+                                                {t(
+                                                    "pluginSetting.largePluginSection",
+                                                )}
+                                            </ThemeText>
+                                            {pendingLarge.map(item => (
+                                                <View
+                                                    key={item.url}
+                                                    style={[
+                                                        style.largeCard,
+                                                        {
+                                                            backgroundColor:
+                                                                colors.card,
+                                                        },
+                                                    ]}>
+                                                    <View
+                                                        style={
+                                                            style.largeCardInfo
+                                                        }>
+                                                        <ThemeText
+                                                            fontSize="title"
+                                                            numberOfLines={1}>
+                                                            {item.name}
+                                                        </ThemeText>
+                                                        <ThemeText
+                                                            fontSize="description"
+                                                            fontColor="textSecondary">
+                                                            {t(
+                                                                "pluginSetting.largePluginSize",
+                                                                {
+                                                                    size: Math.round(
+                                                                        item.size /
+                                                                            1024,
+                                                                    ),
+                                                                },
+                                                            )}
+                                                        </ThemeText>
+                                                    </View>
+                                                    <IconTextButton
+                                                        icon="arrow-down-tray"
+                                                        onPress={() =>
+                                                            onMountLarge(item)
+                                                        }>
+                                                        {t(
+                                                            "pluginSetting.installLargePlugin",
+                                                        )}
+                                                    </IconTextButton>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    ) : null}
+                                    <View style={style.blank} />
+                                </>
+                            }
                             data={plugins ?? []}
                             keyExtractor={_ => _.hash}
                             numColumns={isTablet ? 3 : 1}
@@ -525,11 +751,42 @@ const style = StyleSheet.create({
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: "rgba(128,128,128,0.3)",
     },
+    /** 安装中：转圈 + 进度文案垂直居中 */
+    loadingWrap: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    /** 未挂载的大插件区块 */
+    largeSection: {
+        marginHorizontal: rpx(24),
+        marginTop: rpx(28),
+        gap: rpx(12),
+    },
+    largeCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderRadius: 14,
+        paddingHorizontal: rpx(16),
+        paddingVertical: 12,
+        gap: rpx(12),
+    },
+    largeCardInfo: {
+        flex: 1,
+        gap: rpx(4),
+    },
 });
 
 
 
-async function installPluginFromUrl(text: string): Promise<IInstallPluginResult[]> {
+async function installPluginFromUrl(
+    text: string,
+    onProgress?: (p: {
+        phase: "download" | "mount";
+        done: number;
+        total: number;
+    }) => void,
+): Promise<IInstallPluginResult[]> {
     try {
         let urls: string[] = [];
         const inputUrl = text.trim();
@@ -555,15 +812,17 @@ async function installPluginFromUrl(text: string): Promise<IInstallPluginResult[
         } else {
             urls = [inputUrl];
         }
-        return await Promise.all(
-            urls.map(url =>
-                PluginManager.installPluginFromUrl(url, {
-                    notCheckVersion: Config.getConfig(
-                        "basic.notCheckPluginVersion",
-                    ),
-                }),
-            ),
+        // 批量安装：下载并发、挂载逐个让出（清单含大量混淆插件时不再打满 JS 线程）
+        const { results } = await PluginManager.installPluginsFromUrls(
+            urls,
+            onProgress,
+            {
+                notCheckVersion: Config.getConfig(
+                    "basic.notCheckPluginVersion",
+                ),
+            },
         );
+        return results;
     } catch (e: any) {
         return [{ success: false, message: e?.message, pluginUrl: text }];
     }

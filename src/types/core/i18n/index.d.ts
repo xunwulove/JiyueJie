@@ -213,6 +213,13 @@ export interface ILanguageData {
     "pluginSetting.failReason": string; // 失败原因
     "pluginSetting.pluginInstallFailedDialogContent": string; // 插件安装失败对话框内容
     "pluginSetting.pluginUpdateFailedDialogContent": string; // 插件更新失败对话框内容
+    "pluginSetting.installProgressDownload": string; // 批量安装下载进度
+    "pluginSetting.installProgressMount": string; // 批量安装挂载进度
+    "pluginSetting.installSummaryTitle": string; // 安装完成汇总标题
+    "pluginSetting.installSummaryContent": string; // 安装完成汇总（成功/跳过/失败）
+    "pluginSetting.largePluginSection": string; // 未挂载的大插件区块标题
+    "pluginSetting.largePluginSize": string; // 大插件大小提示
+    "pluginSetting.installLargePlugin": string; // 手动安装大插件按钮
 
     // 提示消息相关 - 插件操作
     "toast.pluginUpdateSuccess": string; // 插件更新成功
