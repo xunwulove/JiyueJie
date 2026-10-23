@@ -44,6 +44,7 @@ import type { IMusicHistory } from "@/types/core/musicHistory";
 import { ITrackPlayer } from "@/types/core/trackPlayer/index";
 import minDistance from "@/utils/minDistance";
 import { IPluginManager } from "@/types/core/pluginManager";
+import type { Plugin } from "../pluginManager";
 import { ImgAsset } from "@/constants/assetsConst";
 import { resolveImportedAssetOrPath } from "@/utils/fileUtils";
 
@@ -53,6 +54,29 @@ const currentMusicAtom = atom<IMusic.IMusicItem | null>(null);
 const repeatModeAtom = atom<MusicRepeatMode>(MusicRepeatMode.QUEUE);
 const qualityAtom = atom<IMusic.IQualityKey>("standard");
 const playListAtom = atom<IMusic.IMusicItem[]>([]);
+
+/** 真实播放成功判定：实际出声 ≥2s 无报错（对齐探测软件口径） */
+const PLAY_SUCCESS_THRESHOLD = 2000;
+/** 已记录真实播放成功的歌曲 key（去重：每首歌只记一次成功） */
+let playSuccessRecordedKey: string | null = null;
+/** 已记录真实播放失败的歌曲 key（对称去重：同一首歌只记第一次失败） */
+let playFailRecordedKey: string | null = null;
+/** 位置显著跳变阈值（ms）：超过视为 seek/跳变，重置连续播放累计 */
+const PLAY_SEEK_JUMP_MS = 5000;
+/** 播放失败换源：最多解析预验证的候选数（精确+非精确合计），避免换源耗时过长 */
+const CHANGE_SOURCE_CANDIDATE_LIMIT = 3;
+/** 连续播放跟踪：进入 Playing 后按 position 连续递增累计，达到阈值才算"真实出声" */
+let playTrackState: { key: string; lastPos: number; accMs: number } | null = null;
+
+/** 播放统计去重键（id 优先，缺失时用 平台|标题|艺术家 兜底） */
+function playStatKey(
+    cur: IMusic.IMusicItem | null | undefined,
+): string | null {
+    if (!cur?.platform) {
+        return null;
+    }
+    return cur.id || `${cur.platform}|${cur.title}|${cur.artist}`;
+}
 
 
 class TrackPlayer extends EventEmitter<{
@@ -246,12 +270,46 @@ class TrackPlayer extends EventEmitter<{
             ReactNativeTrackPlayer.addEventListener(
                 Event.PlaybackProgressUpdated,
                 evt => {
+                    // 真实播放成功记录：连续出声 ≥2s（position 正常递增累计，
+                    // seek/显著跳变重置累计），每首歌只记一次成功
+                    const position = evt?.position ?? 0;
+                    const cur = this.currentMusic;
+                    const key = playStatKey(cur);
+                    if (key && playTrackState?.key === key) {
+                        const diff = position - playTrackState.lastPos;
+                        if (
+                            diff >= 0 &&
+                            diff < PLAY_SEEK_JUMP_MS
+                        ) {
+                            // 正常连续前进：累计（buffering 期间 diff≈0 不累计）
+                            playTrackState.accMs += diff;
+                        } else if (
+                            diff < -PLAY_SEEK_JUMP_MS ||
+                            diff >= PLAY_SEEK_JUMP_MS
+                        ) {
+                            // 显著跳变（seek 前进/后退）：重置累计基准
+                            playTrackState.accMs = 0;
+                        }
+                        // 微小回退（<5s）不重置也不累计，仅更新基准
+                        playTrackState.lastPos = position;
+                        if (
+                            playTrackState.accMs >=
+                                PLAY_SUCCESS_THRESHOLD &&
+                            playSuccessRecordedKey !== key
+                        ) {
+                            playSuccessRecordedKey = key;
+                            // key 非 null 时 cur 必非 null（playStatKey 对无 platform 返回 null）
+                            void pluginReliability.recordPlayResult(
+                                cur!.platform,
+                                true,
+                            );
+                        }
+                    }
                     // 播放进度增量累计实际收听秒数（播放中才加；seek/回退不累计负值）
                     const s = this.listenSession;
                     if (!s) {
                         return;
                     }
-                    const position = evt?.position ?? 0;
                     if (s.active && position >= s.lastPosition) {
                         s.listenedSec += position - s.lastPosition;
                     }
@@ -262,13 +320,38 @@ class TrackPlayer extends EventEmitter<{
             ReactNativeTrackPlayer.addEventListener(
                 Event.PlaybackState,
                 async evt => {
+                    const isPlaying = evt?.state === State.Playing;
+                    // 真实播放跟踪：进入 Playing 时初始化/切换连续播放跟踪
+                    // （暂停/缓冲不销毁，恢复播放同曲继续累计；切歌后 key 变化重新跟踪）
+                    if (isPlaying) {
+                        const cur = this.currentMusic;
+                        const key = playStatKey(cur);
+                        if (key) {
+                            if (playTrackState?.key !== key) {
+                                playTrackState = {
+                                    key,
+                                    lastPos: 0,
+                                    accMs: 0,
+                                };
+                            }
+                            try {
+                                const playbackPos =
+                                    await ReactNativeTrackPlayer.getProgress();
+                                if (playTrackState) {
+                                    playTrackState.lastPos =
+                                        playbackPos?.position ?? 0;
+                                }
+                            } catch {
+                                /* 拿不到进度不阻塞播放 */
+                            }
+                        }
+                    }
                     // 校准收听会话 active：播放中=累计、暂停/停止=停止累计；
                     // 恢复播放时以当前进度为基准，避免把暂停期间误算进收听
                     const s = this.listenSession;
                     if (!s) {
                         return;
                     }
-                    const isPlaying = evt?.state === State.Playing;
                     s.active = isPlaying;
                     if (isPlaying) {
                         try {
@@ -286,6 +369,17 @@ class TrackPlayer extends EventEmitter<{
                 Event.PlaybackError,
                 async e => {
                     errorLog("播放出错", e.message);
+                    // 真实播放失败记录：每首歌只记第一次失败（对称去重，
+                    // 避免同一首歌反复报错持续拉低该源可用率；先失败后成功仍各记一次）
+                    const curFail = this.currentMusic;
+                    const failKey = playStatKey(curFail);
+                    if (curFail?.platform && failKey && playFailRecordedKey !== failKey) {
+                        playFailRecordedKey = failKey;
+                        void pluginReliability.recordPlayResult(
+                            curFail.platform,
+                            false,
+                        );
+                    }
                     // WARNING: 不稳定，报错的时候有可能track已经变到下一首歌去了
                     const currentTrack =
                         await ReactNativeTrackPlayer.getActiveTrack();
@@ -596,6 +690,7 @@ class TrackPlayer extends EventEmitter<{
                         pluginReliability.recordResult(
                             plugin?.instance?.platform,
                             true,
+                            "parse",
                         );
                         break;
                     }
@@ -626,6 +721,7 @@ class TrackPlayer extends EventEmitter<{
                     pluginReliability.recordResult(
                         plugin?.instance?.platform,
                         false,
+                        "parse",
                     );
                     // 插件失效的情况（播放失败自动切换音源，默认开启）
                     if (this.configService.getConfig("basic.tryChangeSourceWhenPlayFail") ?? true) {
@@ -654,6 +750,7 @@ class TrackPlayer extends EventEmitter<{
                                         pluginReliability.recordResult(
                                             similarMusicPlugin?.instance?.platform,
                                             true,
+                                            "parse",
                                         );
                                         break;
                                     }
@@ -1227,11 +1324,22 @@ class TrackPlayer extends EventEmitter<{
         abortFunction?: () => boolean,
     ): Promise<ICommon.SupportMediaItemBase[T] | null> {
         const keyword = musicItem.alias || musicItem.title;
-        const plugins = this.pluginManagerService.getSearchablePlugins(type);
+        // 候选源按合成可用率排序（播放权重 60% 主导）：平时"真能播"的源优先被尝试
+        const plugins = this.pluginManagerService.getSortedSearchablePlugins(type);
 
-        let distance = Infinity;
-        let minDistanceMusicItem;
-        let targetPlugin;
+        const qualityOrder = getQualityOrder(
+            this.configService.getConfig("basic.defaultPlayQuality") ?? "standard",
+            this.configService.getConfig("basic.playQualityOrder") ?? "asc",
+        );
+
+        // 非精确候选池（按匹配距离升序逐个验证）；精确候选走即时验证快速路径
+        const candidates: Array<{
+            plugin: Plugin;
+            item: IMusic.IMusicItemBase;
+            dist: number;
+        }> = [];
+        // 已验证候选数（精确快速路径 + 非精确批量，合计不超过上限）
+        let verifiedCount = 0;
 
         const startTime = Date.now();
 
@@ -1252,31 +1360,83 @@ class TrackPlayer extends EventEmitter<{
 
             for (let item of firstTwo) {
                 if (item.title === keyword && item.artist === musicItem.artist) {
-                    distance = 0;
-                    minDistanceMusicItem = item;
-                    targetPlugin = plugin;
-                    break;
+                    // 精确候选：即时解析预验证，验证通过一步到位换源（快速路径）
+                    if (verifiedCount >= CHANGE_SOURCE_CANDIDATE_LIMIT) {
+                        continue; // 验证名额已尽，不再验证
+                    }
+                    verifiedCount += 1;
+                    if (
+                        await this.verifyCandidatePlayable(
+                            plugin,
+                            item,
+                            qualityOrder,
+                        )
+                    ) {
+                        return item as ICommon.SupportMediaItemBase[T];
+                    }
+                    // 该源精确候选不可播：继续收集/验证其他候选
                 } else {
                     const dist =
                         minDistance(keyword, musicItem.title) +
                         minDistance(item.artist, musicItem.artist);
-                    if (dist < distance) {
-                        distance = dist;
-                        minDistanceMusicItem = item;
-                        targetPlugin = plugin;
-                    }
+                    candidates.push({ plugin, item, dist });
                 }
             }
+        }
 
-            if (distance === 0) {
+        // 非精确候选：按匹配距离升序（dist 小=更接近原歌），逐个验证，
+        // 消耗剩余验证名额（总验证数 ≤ 上限，避免卡在换源上太久）
+        candidates.sort((a, b) => a.dist - b.dist);
+        for (const c of candidates) {
+            if (abortFunction?.()) {
                 break;
             }
-        }
-        if (minDistanceMusicItem && targetPlugin) {
-            return minDistanceMusicItem as ICommon.SupportMediaItemBase[T];
+            if (verifiedCount >= CHANGE_SOURCE_CANDIDATE_LIMIT) {
+                break;
+            }
+            verifiedCount += 1;
+            if (
+                await this.verifyCandidatePlayable(
+                    c.plugin,
+                    c.item,
+                    qualityOrder,
+                )
+            ) {
+                return c.item as ICommon.SupportMediaItemBase[T];
+            }
         }
 
         return null;
+    }
+
+    /**
+     * 解析预验证：候选歌在任一质量下能解析出真实播放地址才算"可播"。
+     * 全部质量验证失败 → 记录解析失败（parse fail），并返回 false 让调用方继续尝试其他源。
+     * 验证成功不在此记录（成功由后续换源流程的正常解析记录，避免同一首歌双记成功）。
+     */
+    private async verifyCandidatePlayable(
+        plugin: Plugin,
+        musicItem: IMusic.IMusicItemBase,
+        qualityOrder: IMusic.IQualityKey[],
+    ): Promise<boolean> {
+        const platform = plugin.instance.platform;
+        for (let quality of qualityOrder) {
+            let source: IPlugin.IMediaSourceResult | null = null;
+            try {
+                source =
+                    (await plugin.methods?.getMediaSource?.(
+                        musicItem as IMusic.IMusicItem,
+                        quality,
+                    )) ?? null;
+            } catch {
+                source = null;
+            }
+            if (source) {
+                return true;
+            }
+        }
+        pluginReliability.recordResult(platform, false, "parse");
+        return false;
     }
 
 
