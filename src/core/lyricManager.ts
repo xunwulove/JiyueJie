@@ -7,6 +7,7 @@ import { isSameMediaItem } from "@/utils/mediaUtils";
 import minDistance from "@/utils/minDistance";
 import { atom, getDefaultStore, useAtomValue } from "jotai";
 import { Plugin } from "./pluginManager";
+import pluginReliability from "./pluginReliability";
 
 import LyricUtil from "@/native/lyricUtil";
 import PersistStatus from "@/utils/persistStatus";
@@ -232,7 +233,15 @@ class LyricManager implements IInjectable {
                         translation: cachedLrc.translation,
                     };
                 } else {
-                    lrcSource = (await this.pluginManager.getByMedia(currentMusicItem)?.methods?.getLyric(currentMusicItem)) ?? null;
+                    const lyricPlugin = this.pluginManager.getByMedia(currentMusicItem);
+                    lrcSource = (await lyricPlugin?.methods?.getLyric(currentMusicItem)) ?? null;
+                    // 记录歌词可用率：远程获取成功=ok，空=失败（本地缓存分支不重复记）
+                    if (lyricPlugin?.instance?.platform) {
+                        void pluginReliability.recordLyricResult(
+                            lyricPlugin.instance.platform,
+                            !!lrcSource,
+                        );
+                    }
 
                     // 如果歌词源不存在，并且开启自动搜索歌词（默认开启：未显式关闭时自动搜索）
                     if (
@@ -323,6 +332,20 @@ class LyricManager implements IInjectable {
         // 歌曲搜索：源插件不实现 "lyric" 搜索类型（实测 58 个源插件 search 均无 lyric 分支），
         // 改为搜歌曲候选，再对候选 getLyric 取词
         const plugins = this.pluginManager.getSearchablePlugins("music");
+        // 歌词源选择：按歌词可用率降序尝试（可用率相同显式随机 tiebreak），
+        // 让"能稳定提供歌词"的源优先被搜索取词；遍历仍找最接近的歌词
+        const lyricOrdered = [...plugins].sort((a, b) => {
+            const ra = pluginReliability.getLyricReliabilitySync(
+                a.instance.platform,
+            );
+            const rb = pluginReliability.getLyricReliabilitySync(
+                b.instance.platform,
+            );
+            if (rb !== ra) {
+                return rb - ra; // 可用率高者优先
+            }
+            return Math.random() - 0.5; // 相同可用率：显式随机 tiebreak
+        });
 
         let distance = Infinity;
         let minDistanceMusicItem;
@@ -330,7 +353,7 @@ class LyricManager implements IInjectable {
 
         const startTime = Date.now();
 
-        for (let plugin of plugins) {
+        for (let plugin of lyricOrdered) {
             // 如果插件不是当前音乐的插件，或者当前音乐不是正在播放的音乐，则跳过
             if (
                 !this.trackPlayer.isCurrentMusic(musicItem)
@@ -382,9 +405,17 @@ class LyricManager implements IInjectable {
         }
 
         if (minDistanceMusicItem && targetPlugin) {
-            return await targetPlugin.methods
+            const lrc = await targetPlugin.methods
                 .getLyric(minDistanceMusicItem)
                 .catch(() => null);
+            // 记录歌词可用率：自动搜索取词成功/失败
+            if (targetPlugin.instance?.platform) {
+                void pluginReliability.recordLyricResult(
+                    targetPlugin.instance.platform,
+                    !!lrc,
+                );
+            }
+            return lrc;
         }
 
         return null;
