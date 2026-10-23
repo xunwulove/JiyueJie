@@ -51,6 +51,16 @@ const PLUGIN_UPDATE_CONCURRENCY = 10;
  */
 export const PLUGIN_SIZE_LIMIT = 300 * 1024;
 
+/** 单插件下载超时（30s）：超时即跳过该插件（防慢源/卡源拖死整批安装） */
+export const PLUGIN_DOWNLOAD_TIMEOUT = 30 * 1000;
+
+/**
+ * 单插件挂载（同步求值）超时（30s）：
+ * 挂载是 Hermes 单线程同步求值，无法中途中断；求值完成后若耗时超过阈值，
+ * 判定为"超大/超慢混淆插件"，跳过安装（不落盘、不进列表），避免其长期占用 JS 线程。
+ */
+export const PLUGIN_MOUNT_TIMEOUT = 30 * 1000;
+
 /** 被跳过的"大插件"：供 UI 在列表底部渲染"未挂载"条目与手动安装入口 */
 export interface IPendingLargePlugin {
     url: string;
@@ -283,7 +293,18 @@ class PluginManager implements IPluginManager, IInjectable {
         }
 
         if (funcCode) {
+            // 挂载超时检测（与 installFromCode 一致）：本地 .js 也可能是超大混淆插件
+            const mountStartAt = Date.now();
             const plugin = new Plugin(funcCode, pluginPath);
+            const mountElapsed = Date.now() - mountStartAt;
+            if (mountElapsed > PLUGIN_MOUNT_TIMEOUT) {
+                return {
+                    success: false,
+                    message: `插件挂载超时（${Math.round(mountElapsed / 1000)}s > 30s），已跳过`,
+                    pluginName: plugin.name,
+                    pluginHash: plugin.hash,
+                };
+            }
             let allPlugins = [...this.getPlugins()];
 
             const _pluginIndex = allPlugins.findIndex(
@@ -369,7 +390,19 @@ class PluginManager implements IPluginManager, IInjectable {
         url?: string,
         config?: IInstallPluginConfig,
     ): Promise<IInstallPluginResult> {
+        // 挂载超时检测：new Plugin 的构造 = 同步求值插件源码（Hermes 单线程，不可中断）。
+        // 求值完成后若耗时超过 30s，判定为超大/超慢混淆插件，跳过安装（不落盘、不进列表），
+        // 避免其长期占用 JS 线程拖垮整批安装/界面。
+        const mountStartAt = Date.now();
         const plugin = new Plugin(funcCode, "");
+        const mountElapsed = Date.now() - mountStartAt;
+        if (mountElapsed > PLUGIN_MOUNT_TIMEOUT) {
+            return {
+                success: false,
+                message: `插件挂载超时（${Math.round(mountElapsed / 1000)}s > 30s），已跳过`,
+                pluginUrl: url,
+            };
+        }
         let allPlugins = [...this.getPlugins()];
         const pluginIndex = allPlugins.findIndex(
             p => p.hash === plugin.hash,
@@ -521,8 +554,29 @@ class PluginManager implements IPluginManager, IInjectable {
             }));
         const mountList = autoMountLarge ? [...normal, ...large] : normal;
         let mounted = 0;
+        // 挂载时间预算（仅极悦界自动挂载路径生效；探测 App autoMountLarge=true 保覆盖不启用）：
+        // 同步求值无法中途打断，采用"实测耗时 + 累计预算"组合——单插件挂载实测超 30s 或
+        // 批量累计挂载超 30s 时，剩余插件跳过自动挂载（并入 skipped → 列表底部手动安装），
+        // 避免连续大混淆插件串行求值把 JS 线程占死、界面长时间冻结
+        const MOUNT_BUDGET_MS = 30_000;
+        let totalMountMs = 0;
+        let hitSlowMount = false;
         for (let i = 0; i < mountList.length; ++i) {
             const { url, code } = mountList[i];
+            if (!autoMountLarge && (totalMountMs > MOUNT_BUDGET_MS || hitSlowMount)) {
+                // 已超预算：剩余插件全部转入"未挂载"（与体积阈值跳过同一出口）
+                const rest = mountList.slice(i).map(({ url, code }) => ({
+                    url,
+                    name: url.split("/").pop()?.slice(0, 40) ?? url,
+                    size: code.length,
+                }));
+                skipped.push(...rest);
+                devLog(
+                    "warn",
+                    `挂载超预算(${totalMountMs}ms)，剩余 ${rest.length} 个插件转入未挂载列表`,
+                );
+                break;
+            }
             const pluginName = url.split("/").pop()?.slice(0, 40) ?? url;
             // 挂载前先渲染"正在挂载 · 文件名"，让出主线程一帧；
             // 避免串行混淆插件顶层求值期间 UI 全程冻结、进度停留在上一阶段
@@ -533,6 +587,7 @@ class PluginManager implements IPluginManager, IInjectable {
                 name: pluginName,
             });
             await delay(30);
+            const mountStart = Date.now();
             try {
                 results.push(await this.installFromCode(code, url, config));
             } catch (e: any) {
@@ -541,6 +596,15 @@ class PluginManager implements IPluginManager, IInjectable {
                     message: e?.message ?? "",
                     pluginUrl: url,
                 });
+            }
+            const mountElapsed = Date.now() - mountStart;
+            totalMountMs += mountElapsed;
+            if (mountElapsed > MOUNT_BUDGET_MS) {
+                devLog(
+                    "warn",
+                    `插件挂载超 30s（${mountElapsed}ms）：${pluginName}`,
+                );
+                hitSlowMount = true;
             }
             mounted++;
             onProgress?.({
@@ -574,6 +638,9 @@ class PluginManager implements IPluginManager, IInjectable {
                         Pragma: "no-cache",
                         Expires: "0",
                     },
+                    // 下载超时统一 30s（与批量安装一致）：慢源/死链超时即失败跳过该插件，
+                    // 不被 plugin.ts 全局默认 2s 误杀
+                    timeout: 30_000,
                 })
             ).data;
             if (funcCode) {
