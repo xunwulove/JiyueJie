@@ -10,7 +10,7 @@ import { IIconName } from "@/components/base/icon.tsx";
 import useColors from "@/hooks/useColors.ts";
 import ThemeText from "@/components/base/themeText";
 import { iconSizeConst } from "@/constants/uiConst";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 interface ISortOption<T extends string = string> {
     label: string;
     value: T;
@@ -75,6 +75,7 @@ export default function SortDialog(props: ISortDialogProps) {
                     offset: ListItem.Size.small * index,
                     index,
                 })}
+                ListFooterComponent={<View style={styles.footer} />}
                 ItemSeparatorComponent={() => (
                     <ListDivider marginLeft={16} />
                 )}
@@ -156,5 +157,10 @@ const styles = {
         height: 52,
         alignItems: "center" as const,
         justifyContent: "center" as const,
+    },
+    // 2026-10-24 规范统一：列表末项距底部按钮行分割线 12（base 规范）
+    footer: {
+        width: "100%" as const,
+        height: 12,
     },
 };

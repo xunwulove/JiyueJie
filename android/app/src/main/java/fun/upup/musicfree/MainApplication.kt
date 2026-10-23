@@ -16,6 +16,7 @@ import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 import `fun`.upup.musicfree.lyricUtil.LyricUtilPackage
 import `fun`.upup.musicfree.mp3Util.Mp3UtilPackage
+import `fun`.upup.musicfree.probePlayer.ProbePlayerPackage
 import `fun`.upup.musicfree.soundEffect.SoundEffectPackage
 import `fun`.upup.musicfree.utils.UtilsPackage
 
@@ -31,6 +32,7 @@ class MainApplication : Application(), ReactApplication {
               add(Mp3UtilPackage())
               add(LyricUtilPackage())
               add(SoundEffectPackage())
+              add(ProbePlayerPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"

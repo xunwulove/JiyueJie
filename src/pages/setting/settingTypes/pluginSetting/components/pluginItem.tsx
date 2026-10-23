@@ -44,21 +44,24 @@ function _PluginItem(props: IPluginItemProps) {
     const enabled = usePluginEnabled(plugin);
     const { t } = useI18N();
 
-    // 可用率（null = 暂无统计数据）
+    // 可用率（null = 暂无统计数据，默认 50%）
+    // 分维度统计后 UI 展示"合成可用率"（播放60/解析30/搜索10，按有数据维度归一化）
     const [reliability, setReliability] = useState<number | null>(null);
     useEffect(() => {
         let alive = true;
         pluginReliability
             .getReliabilityRecord(plugin.instance.platform)
-            .then(record => {
+            .then(() => {
                 if (alive) {
-                    if (record && record.success + record.fail > 0) {
-                        setReliability(
-                            record.success / (record.success + record.fail),
-                        );
-                    } else {
-                        setReliability(null);
-                    }
+                    setReliability(
+                        pluginReliability.hasRecordSync(
+                            plugin.instance.platform,
+                        )
+                            ? pluginReliability.getReliabilitySync(
+                                plugin.instance.platform,
+                            )
+                            : null,
+                    );
                 }
             });
         return () => {
@@ -66,7 +69,22 @@ function _PluginItem(props: IPluginItemProps) {
         };
     }, [plugin]);
 
-    // 可用率标签配色：高(≥80%)绿 / 中(50%~80%)主色 / 低(<50%)红
+    // 歌词源判定：能取歌词但不可搜索/解析（纯歌词插件，如歌词千寻/歌词网）。
+    // 此类源按搜索/解析口径统计的可用率必然偏低（功能型差异而非插件损坏），标签改显"歌词"
+    const isLyricSource =
+        plugin.supportedMethods.has("getLyric") &&
+        !plugin.supportedMethods.has("search") &&
+        !plugin.supportedMethods.has("getMediaSource");
+
+    // 纯歌单源判定：只提供推荐歌单（getRecommendSheetTags），不可搜索/不可解析。
+    // 仿照歌词源：此类源按搜索/解析口径统计的可用率必然偏低，标签改显"歌单"
+    const isPureSheetSource =
+        plugin.supportedMethods.has("getRecommendSheetTags") &&
+        !plugin.supportedMethods.has("search") &&
+        !plugin.supportedMethods.has("getMediaSource");
+
+    // 可用率标签配色：高(≥80%)绿 / 中(50%~80%)主色 / 低(<50%)红；
+    // 无统计数据默认 50%（textSecondary）；歌词源用主色
     const reliabilityColor =
         reliability === null
             ? colors.textSecondary
@@ -75,6 +93,19 @@ function _PluginItem(props: IPluginItemProps) {
                 : reliability >= 0.5
                     ? colors.primary
                     : "#E53935";
+
+    // 标签内容：歌词源显示"歌词"，纯歌单源显示"歌单"，其余显示可用率百分比（无数据时默认 50%）
+    const tagText = isLyricSource
+        ? "歌词"
+        : isPureSheetSource
+            ? "歌单"
+            : reliability === null
+                ? "50%"
+                : `${Math.round(reliability * 100)}%`;
+    const tagBg =
+        isLyricSource || isPureSheetSource
+            ? colors.primary
+            : reliabilityColor;
 
     const alternativePluginName = pluginManager.getAlternativePluginName(plugin);
 
@@ -175,7 +206,12 @@ function _PluginItem(props: IPluginItemProps) {
                         ]}>
                         <ThemeText
                             numberOfLines={1}
-                            fontSize="title">
+                            fontSize="title"
+                            color={
+                                plugin.instance.userVariables?.length
+                                    ? colors.primary
+                                    : undefined
+                            }>
                             {plugin.name}
                         </ThemeText>
                     </Pressable>
@@ -187,20 +223,18 @@ function _PluginItem(props: IPluginItemProps) {
                             });
                         }} /> : null
                     }
-                    {/* 可用率标签（仅在有统计数据时显示，只展示百分比） */}
-                    {reliability !== null ? (
-                        <View
-                            style={[
-                                styles.reliabilityTag,
-                                { backgroundColor: reliabilityColor },
-                            ]}>
-                            <Text
-                                numberOfLines={1}
-                                style={styles.reliabilityText}>
-                                {Math.round(reliability * 100)}%
-                            </Text>
-                        </View>
-                    ) : null}
+                    {/* 可用率/歌词标签：普通源显示可用率（无数据默认 50%）；歌词源显示"歌词" */}
+                    <View
+                        style={[
+                            styles.reliabilityTag,
+                            { backgroundColor: tagBg },
+                        ]}>
+                        <Text
+                            numberOfLines={1}
+                            style={styles.reliabilityText}>
+                            {tagText}
+                        </Text>
+                    </View>
                 </View>
                 <ThemeSwitch
                     value={enabled}

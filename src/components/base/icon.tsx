@@ -69,6 +69,7 @@ import ServerIcon from "@/assets/icons/server.svg";
 import ShareIcon from "@/assets/icons/share.svg";
 import ShieldKeyholeOutlineIcon from "@/assets/icons/shield-keyhole-outline.svg";
 import ShuffleIcon from "@/assets/icons/shuffle.svg";
+import SignalIcon from "@/assets/icons/signal.svg";
 import SkipLeftIcon from "@/assets/icons/skip-left.svg";
 import SkipRightIcon from "@/assets/icons/skip-right.svg";
 import SortOutlineIcon from "@/assets/icons/sort-outline.svg";
@@ -83,7 +84,7 @@ import UserIcon from "@/assets/icons/user.svg";
 import WifiIcon from "@/assets/icons/wifi.svg";
 import XMarkIcon from "@/assets/icons/x-mark.svg";
 
-export type IIconName = "alarm-outline" | "album-outline" | "archive-box-x-mark" | "arrow-down-tray" | "arrow-left" | "arrow-long-left" | "arrow-path" | "arrow-right-end-on-rectangle" | "arrow-up-tray" | "arrow-uturn-left" | "arrows-left-right" | "bars-3" | "bookmark-square" | "calendar-days" | "chart-bar" | "chat-bubble-oval-left-ellipsis" | "check-circle-outline" | "check-circle" | "check" | "circle-stack" | "clock-outline" | "code-bracket-square" | "cog-8-tooth" | "crosshair" | "document-outline" | "ellipsis-vertical" | "exclamation-circle" | "fire-outline" | "fire" | "folder-music-outline" | "folder-outline" | "folder-plus" | "font-size" | "hand-thumb-up" | "heart-outline" | "heart" | "home-outline" | "identification" | "inbox-arrow-down" | "information-circle" | "javascript" | "language" | "link-slash" | "link" | "lyric" | "magnifying-glass" | "minus" | "moon" | "motion-play" | "musical-note" | "pause-circle-outline" | "pause" | "pencil-outline" | "pencil-square" | "play-circle-outline" | "play-circle" | "play" | "playlist" | "plus" | "power-outline" | "question-mark-circle" | "repeat-song-1" | "repeat-song" | "server-stack" | "server" | "share" | "shield-keyhole-outline" | "shuffle" | "skip-left" | "skip-right" | "sort-outline" | "speaker-wave" | "speedometer" | "strategy" | "t-shirt-outline" | "translation" | "trash-outline" | "trophy" | "user" | "wifi" | "x-mark";
+export type IIconName = "alarm-outline" | "album-outline" | "archive-box-x-mark" | "arrow-down-tray" | "arrow-left" | "arrow-long-left" | "arrow-path" | "arrow-right-end-on-rectangle" | "arrow-up-tray" | "arrow-uturn-left" | "arrows-left-right" | "bars-3" | "bookmark-square" | "calendar-days" | "chart-bar" | "chat-bubble-oval-left-ellipsis" | "check-circle-outline" | "check-circle" | "check" | "circle-stack" | "clock-outline" | "code-bracket-square" | "cog-8-tooth" | "crosshair" | "document-outline" | "ellipsis-vertical" | "exclamation-circle" | "fire-outline" | "fire" | "folder-music-outline" | "folder-outline" | "folder-plus" | "font-size" | "hand-thumb-up" | "heart-outline" | "heart" | "home-outline" | "identification" | "inbox-arrow-down" | "information-circle" | "javascript" | "language" | "link-slash" | "link" | "lyric" | "magnifying-glass" | "minus" | "moon" | "motion-play" | "musical-note" | "pause-circle-outline" | "pause" | "pencil-outline" | "pencil-square" | "play-circle-outline" | "play-circle" | "play" | "playlist" | "plus" | "power-outline" | "question-mark-circle" | "repeat-song-1" | "repeat-song" | "server-stack" | "server" | "share" | "shield-keyhole-outline" | "shuffle" | "signal" | "skip-left" | "skip-right" | "sort-outline" | "speaker-wave" | "speedometer" | "strategy" | "t-shirt-outline" | "translation" | "trash-outline" | "trophy" | "user" | "wifi" | "x-mark";
 
 interface IProps extends SvgProps {
     /** 图标名称 */
@@ -161,6 +162,7 @@ const iconMap = {
     "share": ShareIcon,
     "shield-keyhole-outline": ShieldKeyholeOutlineIcon,
     "shuffle": ShuffleIcon,
+    "signal": SignalIcon,
     "skip-left": SkipLeftIcon,
     "skip-right": SkipRightIcon,
     "sort-outline": SortOutlineIcon,
@@ -182,10 +184,7 @@ export default function Icon(props: IProps) {
     const newProps = {
         ...props,
         width: props.width ?? size,
-        height: props.height ?? size,
-        // 垂直居中兜底：SVG 作为 flex 子项时若无父容器 alignItems 约束会贴顶/偏位，
-        // alignSelf center 在父已居中的场景无副作用，未居中场景纠正到中心
-        style: [{ alignSelf: "center" }, props.style],
+        height: props.width ?? size,
     } as SvgProps;
     
     const Component = iconMap[name];

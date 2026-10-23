@@ -10,15 +10,21 @@ interface ILoadingProps {
     showText?: boolean;
     height?: number;
     color?: string;
+    /** 转圈图标尺寸（默认 small） */
+    size?: "small" | "large";
 }
 export default function Loading(props: ILoadingProps) {
-    const { showText = true, height, text, color } = props;
+    const { showText = true, height, text, color, size = "small" } = props;
     const colors = useColors();
     const { t } = useI18N();
 
     return (
         <View style={[style.wrapper, { height }]}>
-            <ActivityIndicator animating color={color ?? colors.text} />
+            <ActivityIndicator
+                animating
+                color={color ?? colors.text}
+                size={size}
+            />
             {showText ? (
                 <ThemeText
                     color={color}

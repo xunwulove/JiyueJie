@@ -27,6 +27,7 @@ import {  Linking, Platform } from "react-native";
 import { PERMISSIONS, check, request } from "react-native-permissions";
 import RNTrackPlayer, { AppKilledPlaybackBehavior, Capability } from "react-native-track-player";
 import i18n from "@/core/i18n";
+import probeService from "@/core/probeService";
 import bootstrapAtom from "./bootstrap.atom";
 import { getDefaultStore } from "jotai";
 
@@ -342,6 +343,12 @@ export default async function () {
         getDefaultStore().set(bootstrapAtom, {
             "state": "Done",
         });
+        // 音源主动探测：启动后延迟 20s 后台静默执行。
+        // 每天最多一轮、只探测数据过期（>24h）的已启用源、轻量（搜索+解析），
+        // 串行 + 60s 预算，不阻塞启动、不打断播放（探测不写 play 维度）
+        setTimeout(() => {
+            void probeService.probeAuto().catch(() => undefined);
+        }, 20000);
     } catch (e: any) {
         errorLog("初始化出错", e);
         if (getDefaultStore().get(bootstrapAtom).state === "Loading") {

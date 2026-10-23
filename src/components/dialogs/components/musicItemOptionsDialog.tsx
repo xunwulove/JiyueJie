@@ -3,21 +3,15 @@ import { StyleSheet, View } from "react-native";
 import rpx from "@/utils/rpx";
 import ListItem from "@/components/base/listItem";
 import ThemeText from "@/components/base/themeText";
-import { ImgAsset } from "@/constants/assetsConst";
 import Clipboard from "@react-native-clipboard/clipboard";
-import LinearGradient from "react-native-linear-gradient";
-import Color from "color";
-import useColors from "@/hooks/useColors";
 
 import { getMediaUniqueKey } from "@/utils/mediaUtils";
-import FastImage from "@/components/base/fastImage";
 import Toast from "@/utils/toast";
 import LocalMusicSheet from "@/core/localMusicSheet";
 import { localMusicSheetId, musicHistorySheetId } from "@/constants/commonConst";
 
 import { hideDialog, showDialog } from "@/components/dialogs/useDialog";
 import { showPanel } from "@/components/panels/usePanel";
-import Divider from "@/components/base/divider";
 import { ListDivider } from "@/components/base/divider";
 import { iconSizeConst } from "@/constants/uiConst";
 import TrackPlayer from "@/core/trackPlayer";
@@ -31,6 +25,8 @@ import lyricManager from "@/core/lyricManager";
 import { useI18N } from "@/core/i18n";
 import musicHistory from "@/core/musicHistory";
 import { FlatList } from "react-native-gesture-handler";
+import useOrientation from "@/hooks/useOrientation";
+import { vmin, vmax } from "@/utils/rpx";
 import Dialog from "./base";
 
 interface IMusicItemOptionsDialogProps {
@@ -60,7 +56,7 @@ export default function MusicItemOptionsDialog(
 ) {
     const { musicItem, musicSheet } = props ?? {};
     const { t } = useI18N();
-    const colors = useColors();
+    const orientation = useOrientation();
 
     const downloaded = LocalMusicSheet.isLocalMusic(musicItem);
     const associatedLrc = getMediaExtraProperty(musicItem, "associatedLrc");
@@ -251,103 +247,60 @@ export default function MusicItemOptionsDialog(
 
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Content
-                needScroll
-                style={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 0 }}>
-                <LinearGradient
-                    colors={[
-                        Color(colors.primary).alpha(0.10).toString(),
-                        Color(
-                            (colors as any).primaryContainer ?? colors.primary,
-                        )
-                            .alpha(0.07)
-                            .toString(),
-                        "rgba(0,0,0,0.016)",
-                    ]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={style.header}>
-                    <FastImage
-                        style={style.artwork}
-                        source={musicItem?.artwork}
-                        placeholderSource={ImgAsset.albumDefault}
-                    />
-                    <View style={style.content}>
-                        <ThemeText
-                            fontSize="title"
-                            fontWeight="bold"
-                            numberOfLines={2}
-                            style={style.title}>
-                            {musicItem?.title}
-                        </ThemeText>
-                        <ThemeText
-                            fontColor="textSecondary"
-                            numberOfLines={2}
-                            fontSize="description">
-                            {musicItem?.artist}{" "}
-                            {musicItem?.album ? `- ${musicItem.album}` : ""}
-                        </ThemeText>
-                    </View>
-                </LinearGradient>
-                <Divider />
-                <FlatList
-                    data={options}
-                    getItemLayout={(_, index) => ({
-                        length: ITEM_HEIGHT,
-                        offset: ITEM_HEIGHT * index,
-                        index,
-                    })}
-                    ListFooterComponent={<View style={style.footer} />}
-                    style={style.listWrapper}
-                    keyExtractor={_ => _.title}
-                    ItemSeparatorComponent={() => (
-                        <ListDivider marginLeft={16} />
-                    )}
-                    renderItem={({ item }) =>
-                        item.show !== false ? (
-                            <ListItem
-                                withHorizontalPadding
-                                heightType="small"
-                                onPress={item.onPress}>
-                                <ListItem.ListItemIcon
-                                    width={28}
-                                    icon={item.icon}
-                                    iconSize={iconSizeConst.light}
-                                />
-                                <ListItem.Content title={item.title} />
-                            </ListItem>
-                        ) : null
-                    }
-                />
-            </Dialog.Content>
+            <Dialog.Title>
+                <ThemeText
+                    fontSize="title"
+                    fontWeight="bold"
+                    numberOfLines={1}>
+                    {musicItem?.title ?? "未知歌曲"}
+                </ThemeText>
+            </Dialog.Title>
+            <FlatList
+                data={options}
+                getItemLayout={(_, index) => ({
+                    length: ITEM_HEIGHT,
+                    offset: ITEM_HEIGHT * index,
+                    index,
+                })}
+                ListFooterComponent={<View style={style.footer} />}
+                style={[
+                    style.listWrapper,
+                    {
+                        // 2026-10-24 通用弹窗式：与 RadioDialog 一致，选项区限高自身滚动
+                        maxHeight:
+                            orientation === "horizontal"
+                                ? vmin(60)
+                                : vmax(60),
+                    },
+                ]}
+                keyExtractor={_ => _.title}
+                ItemSeparatorComponent={() => (
+                    <ListDivider marginLeft={16} />
+                )}
+                renderItem={({ item }) =>
+                    item.show !== false ? (
+                        <ListItem
+                            withHorizontalPadding
+                            heightType="small"
+                            onPress={item.onPress}>
+                            <ListItem.ListItemIcon
+                                width={28}
+                                icon={item.icon}
+                                iconSize={iconSizeConst.light}
+                            />
+                            <ListItem.Content title={item.title} />
+                        </ListItem>
+                    ) : null
+                }
+            />
         </Dialog>
     );
 }
 
 const style = StyleSheet.create({
-    header: {
-        width: "100%",
-        height: 100,
-        flexDirection: "row",
-        paddingHorizontal: rpx(24),
-    },
     listWrapper: {
         paddingTop: rpx(12),
         flexGrow: 0,
-    },
-    artwork: {
-        width: 72,
-        height: 72,
-        borderRadius: 8,
-    },
-    content: {
-        marginLeft: rpx(36),
-        width: rpx(526),
-        height: 72,
-        justifyContent: "space-around",
-    },
-    title: {
-        paddingRight: rpx(24),
     },
     footer: {
         width: "100%",

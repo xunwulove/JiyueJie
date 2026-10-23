@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { FlatList } from "react-native-gesture-handler";
+import { StyleSheet, View } from "react-native";
 import { hideDialog } from "../useDialog";
 import Dialog from "./base";
 import ListItem from "@/components/base/listItem";
@@ -74,6 +75,7 @@ export default function RadioDialog(props: IRadioDialogProps) {
                     offset: ListItem.Size.small * index,
                     index,
                 })}
+                ListFooterComponent={<View style={styles.footer} />}
                 ItemSeparatorComponent={() => (
                     <ListDivider marginLeft={16} />
                 )}
@@ -117,3 +119,11 @@ export default function RadioDialog(props: IRadioDialogProps) {
         </Dialog>
     );
 }
+
+// 2026-10-24 规范统一：列表末项距弹窗底部 12（与通用弹窗式/有按钮行弹窗一致，base 规范）
+const styles = StyleSheet.create({
+    footer: {
+        width: "100%",
+        height: 12,
+    },
+});

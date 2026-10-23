@@ -1,5 +1,16 @@
 pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
 plugins { id("com.facebook.react.settings") }
+// 2026-10-23：依赖解析默认走 mavenCentral 直连会超时，加阿里云镜像优先（build.gradle 只有 buildscript 仓库）
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex ->
   def command = [
     'node',

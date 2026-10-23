@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import rpx from "@/utils/rpx";
-import Loading from "@/components/base/loading";
 import useColors from "@/hooks/useColors";
 import ThemeText from "@/components/base/themeText";
 import IconTextButton from "@/components/base/iconTextButton";
@@ -14,7 +13,6 @@ import { trace } from "@/utils/log";
 
 import Toast from "@/utils/toast";
 import axios from "axios";
-import { useNavigate, ROUTE_PATH } from "@/core/router";
 import Config from "@/core/appConfig";
 import { IAppConfigProperties } from "@/types/core/config";
 import Empty from "@/components/base/empty";
@@ -31,6 +29,10 @@ import useIsTablet from "@/hooks/useIsTablet";
 import { DEFAULT_PLUGIN_SUBSCRIPTION_URL } from "@/constants/defaultPluginSubscription";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system";
+import PluginInstallProgressDialog, {
+    IInstallProgress,
+} from "@/components/dialogs/components/pluginInstallProgressDialog";
+import probeService from "@/core/probeService";
 
 interface IOption {
     icon: IIconName;
@@ -56,18 +58,15 @@ export default function PluginList() {
 
     const [loading, setLoading] = useState(false);
     // 批量安装进度：{phase:"download"|"mount", done, total, name?}，null 表示无安装任务
-    const [installProgress, setInstallProgress] = useState<{
-        phase: "download" | "mount";
-        done: number;
-        total: number;
-        name?: string;
-    } | null>(null);
+    const [installProgress, setInstallProgress] =
+        useState<IInstallProgress | null>(null);
+    // 音源检测进度：{phase:"probe", done, total, name?}，null 表示无检测任务
+    const [probeProgress, setProbeProgress] =
+        useState<IInstallProgress | null>(null);
     // 未挂载的大插件（批量安装跳过，列表底部提供手动安装入口；持久化本地）
     const [pendingLarge, setPendingLarge] = useState<IPendingLargePlugin[]>([]);
     // 从网络安装：输入框组件级状态（三级浮窗 SimpleDialog 内，关闭重开不丢失）
     const [networkUrl, setNetworkUrl] = useState("");
-
-    const navigate = useNavigate();
 
     /** 读取持久化的未挂载大插件列表 */
     useEffect(() => {
@@ -96,7 +95,12 @@ export default function PluginList() {
             return;
         }
         setLoading(true);
-        setInstallProgress(null);
+        setInstallProgress({
+            phase: "mount",
+            done: 0,
+            total: 1,
+            name: item.name,
+        });
         try {
             const result = await PluginManager.installPluginFromUrl(item.url, {
                 notCheckVersion: Config.getConfig(
@@ -174,6 +178,7 @@ export default function PluginList() {
                         setLoading(true);
                         await PluginManager.uninstallAllPlugins();
                         setLoading(false);
+                        setInstallProgress(null);
                     },
                 });
             },
@@ -190,18 +195,22 @@ export default function PluginList() {
             async onAction(selectedFiles) {
                 try {
                     setLoading(true);
-                    await Promise.all(
-                        selectedFiles.map(async it => {
-                            await PluginManager.installPluginFromLocalFile(
-                                it.path,
-                                {
-                                    notCheckVersion: Config.getConfig(
-                                        "basic.notCheckPluginVersion",
-                                    ),
-                                },
-                            );
-                        }),
-                    );
+                    for (let i = 0; i < selectedFiles.length; ++i) {
+                        setInstallProgress({
+                            phase: "mount",
+                            done: i,
+                            total: selectedFiles.length,
+                            name: selectedFiles[i].path?.split("/").pop(),
+                        });
+                        await PluginManager.installPluginFromLocalFile(
+                            selectedFiles[i].path,
+                            {
+                                notCheckVersion: Config.getConfig(
+                                    "basic.notCheckPluginVersion",
+                                ),
+                            },
+                        );
+                    }
                     Toast.success(t("toast.installPluginSuccess"));
                 } catch (e: any) {
                     trace("插件安装失败", e?.message);
@@ -212,6 +221,7 @@ export default function PluginList() {
                     );
                 }
                 setLoading(false);
+                setInstallProgress(null);
                 return true;
             },
         });
@@ -245,7 +255,10 @@ export default function PluginList() {
                 }
                 setLoading(true);
 
-                const result = await installPluginFromUrl(text);
+                const result = await installPluginFromUrl(
+                    text,
+                    p => setInstallProgress(p),
+                );
 
                 // 检查是否全部安装成功
                 const successResults: IInstallPluginResult[] = [];
@@ -444,6 +457,12 @@ export default function PluginList() {
             for (let i = 0; i < plugins.length; ++i) {
                 const srcUrl = plugins[i].instance.srcUrl;
                 if (srcUrl) {
+                    setInstallProgress({
+                        phase: "download",
+                        done: i,
+                        total: plugins.length,
+                        name: plugins[i].name,
+                    });
                     const result = await installPluginFromUrl(srcUrl);
                     if (result[0]) {
                         if (result[0].success) {
@@ -523,10 +542,45 @@ export default function PluginList() {
             <AppBar
                 actions={[
                     {
-                        // 排序
-                        icon: "sort-outline",
+                        // 检测音源（主动探测：全量深度验证可播性；串行 60s 预算内完成，
+                        // 深度验证为静默网络层 Range 拉取，不打断当前播放；
+                        // 进度弹窗三行显示，可点"后台运行"收起、任务继续）
+                        icon: "signal",
                         onPress() {
-                            navigate(ROUTE_PATH.PLUGIN_SORT);
+                            const plugins =
+                                PluginManager.getSortedSearchablePlugins(
+                                    "music",
+                                );
+                            setProbeProgress({
+                                phase: "probe",
+                                done: 0,
+                                total: plugins.length,
+                                name: undefined,
+                            });
+                            void probeService
+                                .probeAllPlugins({
+                                    deep: true,
+                                    onProgress(done, total, name) {
+                                        setProbeProgress({
+                                            phase: "probe",
+                                            done,
+                                            total,
+                                            name,
+                                        });
+                                    },
+                                })
+                                .then(report => {
+                                    setProbeProgress(null);
+                                    Toast.success(
+                                        `检测完成：可搜索 ${report.searchOk}/${report.total} · 可解析 ${report.parseOk}/${report.total} · 可播放 ${report.playable}/${report.total}`,
+                                    );
+                                })
+                                .catch(() => {
+                                    setProbeProgress(null);
+                                    Toast.warn(
+                                        "音源检测失败，请稍后重试",
+                                    );
+                                });
                         },
                     },
                     {
@@ -554,131 +608,108 @@ export default function PluginList() {
             <HorizontalSafeAreaView style={style.wrapper}>
                 <>
                     {loading ? (
-                        <View style={style.loadingWrap}>
-                            <Loading
-                                text={
-                                    installProgress
-                                        ? installProgress.phase ===
-                                            "download"
-                                            ? t(
-                                                "pluginSetting.installProgressDownload",
-                                                {
-                                                    done: installProgress.done,
-                                                    total:
-                                                        installProgress.total,
-                                                    pluginName:
-                                                        installProgress.name
-                                                            ? " · " +
-                                                              installProgress.name
-                                                            : "",
-                                                },
-                                            )
-                                            : t(
-                                                "pluginSetting.installProgressMount",
-                                                {
-                                                    done: installProgress.done,
-                                                    total:
-                                                        installProgress.total,
-                                                    pluginName:
-                                                        installProgress.name
-                                                            ? " · " +
-                                                              installProgress.name
-                                                            : "",
-                                                },
-                                            )
-                                        : undefined
-                                }
-                            />
-                        </View>
-                    ) : (
-                        <FlatList
-                            ListEmptyComponent={Empty}
-                            ListFooterComponent={
-                                <>
-                                    {pendingLarge.length ? (
-                                        <View style={style.largeSection}>
-                                            <ThemeText
-                                                fontSize="description"
-                                                fontColor="textSecondary">
-                                                {t(
-                                                    "pluginSetting.largePluginSection",
-                                                )}
-                                            </ThemeText>
-                                            {pendingLarge.map(item => (
-                                                <View
-                                                    key={item.url}
-                                                    style={[
-                                                        style.largeCard,
-                                                        {
-                                                            backgroundColor:
+                        <PluginInstallProgressDialog
+                            progress={installProgress}
+                            onClose={() => {
+                                setLoading(false);
+                            }}
+                        />
+                    ) : null}
+                    {probeProgress ? (
+                        <PluginInstallProgressDialog
+                            progress={probeProgress}
+                            onClose={() => {
+                                setProbeProgress(null);
+                            }}
+                        />
+                    ) : null}
+                    <FlatList
+                        ListEmptyComponent={Empty}
+                        ListFooterComponent={
+                            <>
+                                {pendingLarge.length ? (
+                                    <View style={style.largeSection}>
+                                        <ThemeText
+                                            fontSize="description"
+                                            fontColor="textSecondary">
+                                            {t(
+                                                "pluginSetting.largePluginSection",
+                                            )}
+                                        </ThemeText>
+                                        {pendingLarge.map(item => (
+                                            <View
+                                                key={item.url}
+                                                style={[
+                                                    style.largeCard,
+                                                    {
+                                                        backgroundColor:
                                                                 colors.card,
-                                                        },
-                                                    ]}>
-                                                    <View
-                                                        style={
-                                                            style.largeCardInfo
-                                                        }>
-                                                        <ThemeText
-                                                            fontSize="title"
-                                                            numberOfLines={1}>
-                                                            {item.name}
-                                                        </ThemeText>
-                                                        <ThemeText
-                                                            fontSize="description"
-                                                            fontColor="textSecondary">
-                                                            {t(
-                                                                "pluginSetting.largePluginSize",
-                                                                {
-                                                                    size: Math.round(
-                                                                        item.size /
-                                                                            1024,
-                                                                    ),
-                                                                },
-                                                            )}
-                                                        </ThemeText>
-                                                    </View>
-                                                    <IconTextButton
-                                                        icon="arrow-down-tray"
-                                                        onPress={() =>
-                                                            onMountLarge(item)
-                                                        }>
+                                                    },
+                                                ]}>
+                                                <View
+                                                    style={
+                                                        style.largeCardInfo
+                                                    }>
+                                                    <ThemeText
+                                                        fontSize="title"
+                                                        numberOfLines={1}>
+                                                        {item.name}
+                                                    </ThemeText>
+                                                    <ThemeText
+                                                        fontSize="description"
+                                                        fontColor="textSecondary">
                                                         {t(
-                                                            "pluginSetting.installLargePlugin",
+                                                            "pluginSetting.largePluginSize",
+                                                            {
+                                                                size: Math.round(
+                                                                    item.size /
+                                                                            1024,
+                                                                ),
+                                                            },
                                                         )}
-                                                    </IconTextButton>
+                                                    </ThemeText>
                                                 </View>
-                                            ))}
-                                        </View>
-                                    ) : null}
-                                    <View style={style.blank} />
-                                </>
-                            }
-                            data={plugins ?? []}
-                            keyExtractor={_ => _.hash}
-                            numColumns={isTablet ? 3 : 1}
-                            columnWrapperStyle={
-                                isTablet ? style.gridRow : undefined
-                            }
-                            renderItem={({ item: plugin }) => (
-                                <View
+                                                <IconTextButton
+                                                    icon="arrow-down-tray"
+                                                    onPress={() =>
+                                                        onMountLarge(item)
+                                                    }>
+                                                    {t(
+                                                        "pluginSetting.installLargePlugin",
+                                                    )}
+                                                </IconTextButton>
+                                            </View>
+                                        ))}
+                                    </View>
+                                ) : null}
+                                <View style={style.blank} />
+                            </>
+                        }
+                        data={plugins ?? []}
+                        keyExtractor={_ => _.hash}
+                        numColumns={isTablet ? 3 : 1}
+                        columnWrapperStyle={
+                            isTablet ? style.gridRow : undefined
+                        }
+                        renderItem={({ item: plugin }) => (
+                            <View
+                                style={
+                                    isTablet
+                                        ? style.gridItem
+                                        : undefined
+                                }>
+                                <PluginItem
+                                    key={plugin.hash}
+                                    plugin={plugin}
                                     style={
                                         isTablet
-                                            ? style.gridItem
+                                            ? style.gridCard
                                             : undefined
-                                    }>
-                                    <PluginItem
-                                        key={plugin.hash}
-                                        plugin={plugin}
-                                        style={
-                                            isTablet
-                                                ? style.gridCard
-                                                : undefined
-                                        }
-                                    />
-                                </View>
-                            )}
-                        />
-                    )}
+                                    }
+                                />
+                            </View>
+                        )}
+                    />
 
                     <Fab
                         icon="plus"
@@ -750,12 +781,6 @@ const style = StyleSheet.create({
     networkUrlInput: {
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: "rgba(128,128,128,0.3)",
-    },
-    /** 安装中：转圈 + 进度文案垂直居中 */
-    loadingWrap: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
     },
     /** 未挂载的大插件区块 */
     largeSection: {

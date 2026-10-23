@@ -15,6 +15,7 @@ import path from "path-browserify";
 import { useEffect, useState } from "react";
 import { appendFile, copyFile, downloadFile, exists, readDir, readFile, stat, unlink } from "react-native-fs";
 import LocalMusicSheet from "./localMusicSheet";
+import pluginReliability from "./pluginReliability";
 import { IPluginManager } from "@/types/core/pluginManager";
 import { setStorage, getStorage } from "@/utils/storage";
 
@@ -525,6 +526,13 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                     plugin.methods
                         .getLyric(musicItem)
                         .then(async lrc => {
+                            // 记录歌词可用率：下载取词成功/失败
+                            if (plugin?.instance?.platform) {
+                                void pluginReliability.recordLyricResult(
+                                    plugin.instance.platform,
+                                    !!lrc,
+                                );
+                            }
                             if (lrc) {
                                 await Mp3Util.setMediaTag(
                                     targetDownloadPath,

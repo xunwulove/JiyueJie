@@ -773,6 +773,30 @@ albumDetail、artistDetail、pluginSheetDetail、recommendSheets、searchMusicLi
 
 ---
 
+## 第7章 音源安装进度弹窗与卡片标识改动（2026-10-23）
+
+背景：音源管理走查发现「下载/载入音源」的进度不是三级弹窗（整页替换为自绘进度卡），且音源卡片缺可点击提示、可用率标签口径不含歌词源。以下 3 项已落地（tsc 通过，未打包）：
+
+### 7.1 安装进度 → 三级弹窗（列表不再整页替换）
+
+- 新增 `src/components/dialogs/components/pluginInstallProgressDialog.tsx`：标准 Dialog（Title"安装音源" / Content 三行进度 / Actions"后台运行"），三行布局与探测软件一致（行1 状态+计数、行2 进度条+百分比、行3 当前插件名）；无进度数据（卸载全部等）时 Content 内转圈 + "正在安装…"。
+- `pluginList.tsx`：移除 `loading` 整页替换分支，FlatList 常驻；`loading` 时在页面上声明式渲染进度弹窗（props 实时更新，不走命令式 showDialog 快照）。
+- 各入口进度补齐：订阅批量安装（原有）、手动安装大插件（mount 0/1）、本地导入（逐个文件 mount i/n）、网络安装（补 onProgress）、更新全部（download i/n）。
+- 「后台运行」按钮语义：仅收起弹窗，安装任务继续后台执行（installPluginsFromUrls 无法中途取消）；任务完成后的结果汇总 Toast 不变。
+- 弹窗规格自动继承 Dialog base：平板右 70% 内容区 60% 宽（全屏播放页 42%）、从 tab 行 56dp 下起、手机 86%，圆角 20、elevation 909。
+
+### 7.2 音源卡片名字可点击 → 主题色提示
+
+- `pluginItem.tsx`：有 `userVariables`（可进设置表单）的插件，名字颜色改 `colors.primary`（主题色）；无 userVariables 不可点时保持默认文本色（text）。与按下 opacity 0.6 反馈并存。
+
+### 7.3 可用率标签口径修正
+
+- 无统计数据的普通音源：标签**常显 "50%"**（原仅在有统计数据时显示百分比；底色 textSecondary）。
+- 纯歌词源（`supportedMethods` 含 `getLyric` 且不含 `search`/`getMediaSource`，如歌词千寻/歌词网）：标签**显示"歌词"**（底色主题色），不显示百分比——此类源按搜索/解析口径统计可用率无意义（必然偏低），区分"功能型差异"与"插件损坏"。
+- 有统计数据的普通源：行为不变（≥80% 绿 / 50~80% 主色 / <50% 红）。
+
+---
+
 ## 附录：原文档章节映射
 
 | 原文档 | 原内容要点 | 合并后所在章节 |

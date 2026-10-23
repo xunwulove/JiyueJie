@@ -82,7 +82,7 @@ export default function CoverBasePositionDialog(
             </Dialog.Title>
             <Dialog.Content
                 needScroll
-                style={{ paddingHorizontal: 0, paddingTop: 8, paddingBottom: 8 }}>
+                style={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 12 }}>
                 <View
                     style={[styles.preview, { backgroundColor: colors.background }]}
                     onLayout={onLayout}>

@@ -151,6 +151,7 @@ export default function useSearch() {
                         pluginReliability.recordResult(
                             plugin.instance.platform,
                             !!result?.data?.length,
+                            "search",
                         );
                     }
                     /** 切换到结果页 */
@@ -192,6 +193,7 @@ export default function useSearch() {
                         pluginReliability.recordResult(
                             plugin.instance.platform,
                             false,
+                            "search",
                         );
                     }
                     errorLog("搜索失败", e?.message);

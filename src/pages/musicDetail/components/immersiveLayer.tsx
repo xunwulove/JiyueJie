@@ -559,14 +559,14 @@ export default function ImmersiveLayer() {
         <View style={styles.coverPane}>
             {typeof musicItem?.artwork === "string" &&
             musicItem.artwork.length > 0 ? (
-                <Image
-                    source={{ uri: musicItem.artwork }}
-                    style={styles.cover}
-                    resizeMode="cover"
-                />
-            ) : (
-                <SyntheticCover style={styles.cover} />
-            )}
+                    <Image
+                        source={{ uri: musicItem.artwork }}
+                        style={styles.cover}
+                        resizeMode="cover"
+                    />
+                ) : (
+                    <SyntheticCover style={styles.cover} />
+                )}
         </View>
     ) : null;
 
