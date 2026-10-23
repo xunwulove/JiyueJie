@@ -183,6 +183,19 @@ export default function SubscriptionSettingDialog(
                         title: "更新订阅",
                         type: "primary",
                         onPress: () => {
+                            // 输入框还有未添加的地址：先自动加入列表再更新，
+                            // 避免"输完地址直接点更新订阅"时地址未生效（必须先回车/+ 才会进列表）
+                            const pending = inputUrl.trim();
+                            if (pending) {
+                                const next = urls.some(
+                                    it => it.url === pending,
+                                )
+                                    ? urls
+                                    : [...urls, { url: pending }];
+                                setUrls(next);
+                                saveSubscriptions(next);
+                                setInputUrl("");
+                            }
                             onUpdateSubscription?.();
                             hideDialog();
                         },
