@@ -218,12 +218,6 @@ export default function DownloadSettingsDialog() {
                                 color={colors.primary}
                             />
                         </ListItem>
-                        <ThemeText
-                            fontSize="description"
-                            fontColor="textSecondary"
-                            style={styles.pathNote}>
-                            {t("basicSettings.fileSelector.selectFolder")}
-                        </ThemeText>
                     </OptionGroup>
                 </View>
             </Dialog.Content>
@@ -280,10 +274,5 @@ const styles = StyleSheet.create({
         marginTop: 8,
         marginBottom: 2,
         paddingHorizontal: 16,
-    },
-    pathNote: {
-        paddingHorizontal: 16,
-        paddingTop: 4,
-        paddingBottom: 8,
     },
 });
