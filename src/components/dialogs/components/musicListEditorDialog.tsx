@@ -11,6 +11,7 @@ import TrackPlayer from "@/core/trackPlayer";
 import Dialog from "./base";
 import { ListDivider } from "@/components/base/divider";
 import { hideDialog, showDialog } from "../useDialog";
+import { vh } from "@/utils/rpx";
 interface IMusicListEditorDialogProps {
     /** 歌单标题（接口/插件歌单无本地 id，删除/保存不适用） */
     musicSheet?: { title?: string; id?: string };
@@ -91,7 +92,12 @@ export default function MusicListEditorDialog(
                 </View>
                 {/* 2026-10-21 统一：全选行与歌曲列表之间加分割线 */}
                 <ListDivider marginLeft={16} />
-                <MusicList marginTop={0} showItemSeparator />
+                {/* 2026-10-24 修复：Dialog.Content 仅 maxHeight+flexShrink（无确定高度），
+                    FlashList/SortableFlatList 在无确定高度的父容器内虚拟化高度塌陷 → 弹窗内不显示歌曲。
+                    列表区给固定高度（vh）+ flexShrink，FlashList 才能撑开并自身滚动 */}
+                <View style={style.listWrap}>
+                    <MusicList marginTop={0} showItemSeparator />
+                </View>
             </Dialog.Content>
             <Dialog.Actions
                 actions={[
@@ -141,5 +147,9 @@ const style = StyleSheet.create({
         paddingHorizontal: 16,
         alignItems: "center",
         justifyContent: "space-between",
+    },
+    listWrap: {
+        height: vh(50),
+        flexShrink: 1,
     },
 });
