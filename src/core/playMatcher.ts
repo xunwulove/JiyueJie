@@ -261,7 +261,7 @@ async function matchInSource(
         result = null;
     }
     const ok = !!result?.data?.length;
-    pluginReliability.recordResult(platform, ok);
+    pluginReliability.recordResult(platform, ok, "search");
     if (ok) {
         recordSuccess(platform);
         return pickBest(
