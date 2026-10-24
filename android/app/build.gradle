@@ -130,6 +130,14 @@ android {
         noCompress "ttf", "otf"
     }
 
+    // 2026-10-24：release 构建期 lintVitalAnalyzeRelease 对第三方 aar
+    // （react-native-fast-image）transform 失败导致 assembleRelease 打包失败，
+    // 关闭 release 构建期 lint，保证打包链路可用（lint 仍可在 debug 手动执行）
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
     defaultConfig {
         applicationId "fun.upup.musicfree"
         minSdkVersion rootProject.ext.minSdkVersion
