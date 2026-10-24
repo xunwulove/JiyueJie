@@ -8,8 +8,6 @@ jiyuejie/
 └── sources/   音源订阅：plugins.json（音源订阅清单）
 ```
 
-原音源仓库 `jishijie-release` 已弃用（仓库 `jiyuejie-updates` 已改名为 `jiyuejie`），音源订阅收口到本仓库。
-
 ## 一、软件更新（version.json + APK）
 
 软件内「检查更新」读取本仓库的 `version.json`，有新版本时在软件内下载安装包并提示安装。
@@ -81,7 +79,7 @@ https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.j
 
 ### 2.6 更新记录
 
-- **2026-10-13**：音源订阅从 `jishijie-release` 迁移至本仓库，全部音源验证有效。
+- **2026-10-13**：音源订阅收口到本仓库（`updates/` + `sources/`），全部音源验证有效。
 - **2026-10-13**：整合 hebijunge 订阅站 + 聚合器补充插件，移除不稳定音源。
 - **2026-10-15**：补录 hebijunge 新增「聚合」音源；移除 `probe_plugin.js` / `package.json`（验证脚本已废弃，不再维护）；订阅清单数量不再单独声明。
 - **2026-10-16**：软件音效引擎切换为 **JamesDSP 核心算法库**（均衡器 15 段 + 输出增益/动态低音/立体声增强/混响/电子管/交叉馈送/卷积器等进阶音效），替换系统 AudioEffect；对应更新日志见 `updates/version.json` 的 `changeLog`。
