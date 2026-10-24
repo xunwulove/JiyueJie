@@ -310,8 +310,14 @@ class TrackPlayer extends EventEmitter<{
                     if (!s) {
                         return;
                     }
-                    if (s.active && position >= s.lastPosition) {
-                        s.listenedSec += position - s.lastPosition;
+                    if (s.active) {
+                        const diff = position - s.lastPosition;
+                        // seek 快进（单次增量 ≥5s 视为跳变）：不累计进收听秒数，只更新基准
+                        // （与 playTrackState.accMs 同口径）。否则拖动进度条会虚增 listenedSec，
+                        // 使"试听几秒+切歌"也满足 30s 有效收听阈值 → 事件流次数虚高（如"最常听 202 次"）
+                        if (diff >= 0 && diff < PLAY_SEEK_JUMP_MS) {
+                            s.listenedSec += diff;
+                        }
                     }
                     s.lastPosition = position;
                 },
@@ -1180,6 +1186,20 @@ class TrackPlayer extends EventEmitter<{
                             musicItem,
                             d,
                         );
+                        // 本地歌曲同步回填 localSheet：扫描时 MMR 缺失/估算的时长
+                        // 用播放器真实解析值覆盖（第④层兜底，覆盖损坏 Xing/Info 头的文件）
+                        const localItem = LocalMusicSheet.isLocalMusic(
+                            musicItem,
+                        );
+                        if (
+                            localItem &&
+                            (localItem.duration ?? 0) !== d
+                        ) {
+                            void LocalMusicSheet.backfillDuration(
+                                musicItem,
+                                d,
+                            );
+                        }
                         return;
                     }
                     await new Promise(resolve => setTimeout(resolve, 500));
