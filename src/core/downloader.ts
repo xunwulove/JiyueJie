@@ -3,7 +3,7 @@ import pathConst from "@/constants/pathConst";
 import { IAppConfig } from "@/types/core/config";
 import { IInjectable } from "@/types/infra";
 import { addFileScheme, escapeCharacter, mkdirR } from "@/utils/fileUtils";
-import { errorLog } from "@/utils/log";
+import { devLog, errorLog } from "@/utils/log";
 import { patchMediaExtra } from "@/utils/mediaExtra";
 import { getMediaUniqueKey, isSameMediaItem } from "@/utils/mediaUtils";
 import Mp3Util from "@/native/mp3Util";
@@ -513,12 +513,19 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                 await unlink(targetDownloadPath).catch(() => {});
                 this.cleanupCancelledTask(musicItem);
             } else {
-                // 内嵌专辑图：有 artwork 时写入音频文件（失败不影响入库）
+                // 内嵌专辑图：有 artwork 时写入音频文件（失败不影响入库，留痕便于排查）
                 if (musicItem.artwork) {
                     Mp3Util.setMediaCover(
                         targetDownloadPath,
                         musicItem.artwork,
-                    ).catch(() => {});
+                    ).catch((e: any) => {
+                        devLog(
+                            "warn",
+                            "内嵌封面写入失败",
+                            musicItem.title,
+                            e?.message ?? e,
+                        );
+                    });
                 }
                 // 内嵌歌词：音源支持 getLyric 时尝试写入（失败不影响入库，
                 // 避免个别音源歌词接口异常拖垮下载队列）
