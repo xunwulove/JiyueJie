@@ -1,6 +1,7 @@
 import AppBar from "@/components/base/appBar";
 import ThemeText from "@/components/base/themeText";
 import { usePlayEvents } from "@/core/playEvents";
+import { useParams } from "@/core/router";
 import useColors from "@/hooks/useColors";
 import useIsTablet from "@/hooks/useIsTablet";
 import Color from "color";
@@ -22,15 +23,17 @@ import Icon from "@/components/base/icon.tsx";
  * 平板左 50% 排行（BarChart 18 primary + "最常听 TOP10" 15 Bold；32dp 圆块前3 primary 底白字、歌名14 Medium、副行12、右侧时长12）
  * 右 50% 日历卡（surfaceVariant 底圆角14 padding12、标题13 Bold、右侧/表头/格子 10sp、色阶 0→surfaceVariant α0.5 / 1-2→primary0.25 / 3-5→0.5 / 6-9→0.75 / ≥10→1）；手机：日历全宽在上、排行在下 */
 
-type Period = "DAY" | "WEEK" | "YEAR";
+type Period = "DAY" | "WEEK" | "YEAR" | "ALL";
 const PERIODS: Array<{ key: Period; label: string }> = [
     { key: "DAY", label: "今日" },
     { key: "WEEK", label: "本周" },
     { key: "YEAR", label: "今年" },
+    { key: "ALL", label: "全部" },
 ];
 
-/** 维度起点：今日0点 / 本周一0点 / 今年1月1日0点（对齐 APlayer periodStart） */
+/** 维度起点：今日0点 / 本周一0点 / 今年1月1日0点（对齐 APlayer periodStart）；全部=不限 */
 function periodStartMs(period: Period): number | null {
+    if (period === "ALL") return null;
     const now = new Date();
     const day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     if (period === "DAY") return day.getTime();
@@ -62,7 +65,11 @@ export default function Statistics() {
     const events = usePlayEvents();
     const isTablet = useIsTablet();
 
-    const [period, setPeriod] = useState<Period>("DAY");
+    const routeParams = useParams<"statistics">();
+    const [period, setPeriod] = useState<Period>(
+        // 首页卡片带参进入：最常听卡 → 全部（与卡片口径一致）；今日两卡 → 今日；其余入口默认今日
+        routeParams?.period ?? "DAY",
+    );
     const [selectedDay, setSelectedDay] = useState<number | null>(null);
     /* 日历卡片实测高度（平板：决定 TOP N 条数，使左右底端齐平） */
     const [calendarHeight, setCalendarHeight] = useState(0);
@@ -77,8 +84,8 @@ export default function Statistics() {
     /* 维度过滤 + 排行（按播放事件流精确汇总）：
      * 累计时长 = 时段内全部事件实际收听秒数 listenedSec 之和（不再"播放次数×整曲时长"估算）；
      * 排行 = 时段内按 key 聚合事件次数倒序（短播 <30s 已在采集层判定为无效、不入事件流）；
-     * 歌曲数 = 时段内事件去重 key 数 —— 事件带 ts，精确归属今日/本周/今年，不跨时段虚大 */
-    const { ranked, totalSec, uniqueCount, periodLabel } = useMemo(() => {
+     * 播放次数 = 时段内事件数 —— 事件带 ts，精确归属今日/本周/今年，不跨时段虚大 */
+    const { ranked, totalSec, eventCount, periodLabel } = useMemo(() => {
         const fromMs = periodStartMs(period);
         const filtered = (events ?? []).filter(
             it => !fromMs || it.ts >= fromMs,
@@ -115,7 +122,7 @@ export default function Statistics() {
         return {
             ranked: rankedList,
             totalSec: total,
-            uniqueCount: map.size,
+            eventCount: filtered.length,
             periodLabel: label,
         };
     }, [events, period]);
@@ -467,8 +474,8 @@ export default function Statistics() {
                     )}
                     {overviewCard(
                         "musical-note",
-                        `${uniqueCount}`,
-                        "播放过歌曲",
+                        `${eventCount}`,
+                        "播放次数",
                         `${periodLabel}播放`,
                     )}
                 </View>
