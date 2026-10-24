@@ -15,7 +15,7 @@
 | 包名 | fun.upup.musicfree |
 | 项目根 | `E:\xunwu\Deepseek\jiyuejie` |
 | 上游 | https://github.com/maotoumao/MusicFree（AGPL） |
-| 上游快照 | `MusicFree-upstream/`（原版源码快照，2026-10-19 更新至上游 master=d118b18b3d，即 v1.0.0-beta.4 tag 指向 commit；1.0.0-beta 完整源码作者尚未公开，正式版发布后才上主分支） |
+| 上游快照 | `E:\xunwu\deepseek\reference\musicfree-upstream\`（统一参考库，2026-10-19 更新至上游 master=d118b18b3d，即 v1.0.0-beta.4 tag 指向 commit；1.0.0-beta 完整源码作者尚未公开，正式版发布后才上主分支；2026-10 已移出本项目仓库，不随源码上传，已入 .gitignore） |
 
 **远程仓库**：
 - **GitHub**（源代码）：`github.com/xunwulove/JiyueJie`，main 分支。push 凭据已在 `.git/config` 的 origin URL 内（含 PAT，勿外泄、勿复制到公开文档）；**github.com:443 持续封锁，git 直连/镜像均不可靠——固定用 Git Data API 推送（api.github.com 走 REST，保留完整 commit 历史），脚本思路见 `docs/问题排查与避坑记录.md` §6.3**。
@@ -63,7 +63,7 @@
 | `docs/` | 整合后文档（见下表） |
 | `E:\Temp\Deepseek\` | 项目外临时区：备份 *.bak*、打包日志 build-*.log、生成脚本 |
 
-### docs/ 文档导航（23 份原文档已整合为 4 份，原文档归档于 `E:\Temp\Deepseek\docs-archive-20261015\`）
+### docs/ 文档导航（原 23 份已整合为主文档，原文档归档于 `E:\Temp\Deepseek\docs-archive-20261015\`）
 
 | 文档 | 查什么 |
 |---|---|
@@ -71,7 +71,9 @@
 | `docs/UI与适配核查记录.md` | 列表行/浮窗/卡片规范、16 条 UI 统一、尺寸类型、车机/横屏适配、P2 明细 |
 | `docs/功能与代码核查记录.md` | 全量代码审查、功能全面核查、页面导航/返回层级、文档核对修正 |
 | `docs/问题排查与避坑记录.md` | **卡顿、均衡器全套避坑、启动页白屏/系统 splash、开源启动图调研、gitee 发版避坑** |
+| `docs/多用户画像测试走查报告.md` | 六类画像用户走查汇总结论（下载收藏/多音源管理/平板重度/新手中老年/通勤在线/音质发烧友） |
 | `docs/research/` | 6 份启动图源码调研分报告（保留未整合） |
+| `docs/走查子报告/` | 6 份画像走查分报告（保留） |
 | `readme.md` / `changelog.md` | 用户使用说明 / 版本历史（保留未动） |
 
 ---
@@ -131,8 +133,9 @@
 - **0.6.2.21 正式发版**（2026-10-21，versionCode 400032）：**音源探测播放验证方案 B + 50 个精选音源清单**（Node 沙箱真实搜索验证，`音源清单-20261022/`）+ **热门搜索改纯实时接口**（腾讯 musicu.fcg 主源 + 酷我 hotword.s 备源，移除本地搜索排行，6h 缓存）+ **首页三卡与统计页完全同源**（播放事件流真实收听秒数、短播<30s 剔除，统计页第二卡改"播放次数"）+ 本地歌曲时长双重兜底与重复去重 + 弹窗分隔线修复 + **平板/手机布局判定重写**（竖屏手机全宽 / 横屏车机平板双栏）+ **三 ABI 固化**（arm64-v8a/armeabi-v7a/x86_64）+ 关闭 release 构建期 lintVital
 
 **待办/未决**：
+- **音源订阅现状**：`sources/plugins.json` 现为 **30 源 A 类筛选**（2026-10-23，来源=音乐Free插件Hub 聚合器 + onemusic/moro 订阅站，HTTP 200 + ≥1KB + 特征词筛选），与 gitee `xunwulove/jiyuejie` `sources/plugins.json` 逐字节一致；`音源清单-20261022/`（50 源精选）为历史探测产物，非当前订阅清单
 - 已装 0.6.2.21 的用户不会收到更新提示（当前即最新版本，同版本号盲区同理）；下次发版是否升版本号按用户当前偏好执行（本地打包不升、正式发布才升）
-- git 仓库已由接手 AI 整理：游离头恢复为本地 `main` 分支，纳入其他 AI 的新文件（根 `plugins.json`、`音源清单-20261022/`），移除过时根 `version.json`（权威在 `updates/version.json`）；本地 `main` 与远端 `origin/main`（Git Data API 镜像线）内容等价但提交历史分叉，**不 merge 远端，推送走 API 覆盖**
+- git 仓库已由接手 AI 整理：游离头恢复为本地 `main` 分支；根 `plugins.json`（97 源）与 `plugins_verify.json` 已于整理时删除，`音源清单-20261022/`（50 源精选）保留为历史探测产物；过时根 `version.json` 已移除（权威在 `updates/version.json`）；开源参考源码统一移至 `E:\xunwu\deepseek\reference\`（`musicfree-upstream` 不随本仓库上传，已入 .gitignore）；本地 `main` 与远端 `origin/main` 提交历史分叉，**不 merge 远端，推送固定走 Git Data API**（本地 HEAD `76dbc27` 已推送，远端 main = `10a3c487`，远端 tree 与本地 `HEAD^{tree}` 逐字节一致）
 
 **已闭环（原待办，经代码核对确认）**：
 - 卡顿问题已解决，不再卡顿

@@ -4,6 +4,10 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.23（音源订阅维护 + 仓库整理，非发版）`
+1. 【维护】**音源订阅清单 `sources/plugins.json` 更新为 30 源 A 类筛选**（来源=音乐Free插件Hub 聚合器 + onemusic/moro 订阅站，HTTP 200 + ≥1KB + 特征词筛选；`音源清单-20261022/` 50 源精选保留为历史探测产物）
+2. 【维护】**开源参考源码整理**：`MusicFree-upstream` 上游快照移出仓库至 `E:\xunwu\deepseek\reference\musicfree-upstream`（统一参考库，不随源码上传，入 .gitignore）；根 `plugins.json`（97 源）/`plugins_verify.json`/`build_log.txt` 等冗余文件清理删除；过时根 `version.json` 移除，权威在 `updates/version.json`
+
 `2026.10.21 0.6.2.21（正式发版，versionName 0.6.2.18→0.6.2.21，versionCode 400032）`
 1. 【功能】**音源探测播放验证方案 B + 50 个精选音源清单**（`音源清单-20261022/`，Node 沙箱真实搜索验证「周杰伦」，6 订阅站去重 90 源 → A 档 44 真实可搜 + B 档 6 权重补位 + X 档 14 失效排除，产出 `plugins.json` 与验证报表；重验脚本与原始数据保留在 `E:\Temp\Deepseek\source-check\`）。大体积混淆插件（>300KB：酷狗/酷我/汽水/咪咕/网易云）App 列表底部有手动安装通道
 2. 【规范】**三级弹窗间距统一**（全屏播放页弹窗与普通页弹窗一致，`dialogs/components/base/index.tsx`）
