@@ -17,6 +17,7 @@ import Config from "@/core/appConfig";
 import { IAppConfigProperties } from "@/types/core/config";
 import Empty from "@/components/base/empty";
 import HorizontalSafeAreaView from "@/components/base/horizontalSafeAreaView.tsx";
+import Portal from "@/components/base/portal";
 import { showDialog } from "@/components/dialogs/useDialog";
 import AppBar from "@/components/base/appBar";
 import Fab from "@/components/base/fab";
@@ -60,9 +61,47 @@ export default function PluginList() {
     // 批量安装进度：{phase:"download"|"mount", done, total, name?}，null 表示无安装任务
     const [installProgress, setInstallProgress] =
         useState<IInstallProgress | null>(null);
-    // 音源检测进度：{phase:"probe", done, total, name?}，null 表示无检测任务
+    // 音源检测进度：{phase:"probe", done, total, name?, ready?}，null 表示无检测任务
     const [probeProgress, setProbeProgress] =
         useState<IInstallProgress | null>(null);
+
+    /** 真正启动探测（弹窗"开始检测"触发）：置运行态并全量深度探测 */
+    function startProbe() {
+        if (probeService.isProbing()) {
+            Toast.warn("音源检测进行中，请稍候");
+            return;
+        }
+        setProbeProgress(prev =>
+            prev ? { ...prev, ready: false } : prev,
+        );
+        void probeService
+            .probeAllPlugins({
+                deep: true,
+                onProgress(done, total, name) {
+                    setProbeProgress({
+                        phase: "probe",
+                        done,
+                        total,
+                        name,
+                    });
+                },
+            })
+            .then(report => {
+                setProbeProgress(null);
+                // 防御性兜底：竞态下被互斥拒绝时收回弹窗
+                if (!report) {
+                    Toast.warn("音源检测进行中，请稍候");
+                    return;
+                }
+                Toast.success(
+                    `检测完成：可搜索 ${report.searchOk}/${report.total} · 可解析 ${report.parseOk}/${report.total} · 可播放 ${report.playable}/${report.total}`,
+                );
+            })
+            .catch(() => {
+                setProbeProgress(null);
+                Toast.warn("音源检测失败，请稍后重试");
+            });
+    }
     // 未挂载的大插件（批量安装跳过，列表底部提供手动安装入口；持久化本地）
     const [pendingLarge, setPendingLarge] = useState<IPendingLargePlugin[]>([]);
     // 从网络安装：输入框组件级状态（三级浮窗 SimpleDialog 内，关闭重开不丢失）
@@ -547,6 +586,12 @@ export default function PluginList() {
                         // 进度弹窗三行显示，可点"后台运行"收起、任务继续）
                         icon: "signal",
                         onPress() {
+                            // 已有轮次在跑（启动自动探测/后台运行中的手动探测）→ 不重复进入
+                            if (probeService.isProbing()) {
+                                Toast.warn("音源检测进行中，请稍候");
+                                return;
+                            }
+                            // 仅弹出"准备态"弹窗（说明 + 开始检测按钮），点击开始后才真正探测
                             const plugins =
                                 PluginManager.getSortedSearchablePlugins(
                                     "music",
@@ -556,31 +601,8 @@ export default function PluginList() {
                                 done: 0,
                                 total: plugins.length,
                                 name: undefined,
+                                ready: true,
                             });
-                            void probeService
-                                .probeAllPlugins({
-                                    deep: true,
-                                    onProgress(done, total, name) {
-                                        setProbeProgress({
-                                            phase: "probe",
-                                            done,
-                                            total,
-                                            name,
-                                        });
-                                    },
-                                })
-                                .then(report => {
-                                    setProbeProgress(null);
-                                    Toast.success(
-                                        `检测完成：可搜索 ${report.searchOk}/${report.total} · 可解析 ${report.parseOk}/${report.total} · 可播放 ${report.playable}/${report.total}`,
-                                    );
-                                })
-                                .catch(() => {
-                                    setProbeProgress(null);
-                                    Toast.warn(
-                                        "音源检测失败，请稍后重试",
-                                    );
-                                });
                         },
                     },
                     {
@@ -608,20 +630,25 @@ export default function PluginList() {
             <HorizontalSafeAreaView style={style.wrapper}>
                 <>
                     {loading ? (
-                        <PluginInstallProgressDialog
-                            progress={installProgress}
-                            onClose={() => {
-                                setLoading(false);
-                            }}
-                        />
+                        <Portal>
+                            <PluginInstallProgressDialog
+                                progress={installProgress}
+                                onClose={() => {
+                                    setLoading(false);
+                                }}
+                            />
+                        </Portal>
                     ) : null}
                     {probeProgress ? (
-                        <PluginInstallProgressDialog
-                            progress={probeProgress}
-                            onClose={() => {
-                                setProbeProgress(null);
-                            }}
-                        />
+                        <Portal>
+                            <PluginInstallProgressDialog
+                                progress={probeProgress}
+                                onStart={startProbe}
+                                onClose={() => {
+                                    setProbeProgress(null);
+                                }}
+                            />
+                        </Portal>
                     ) : null}
                     <FlatList
                         ListEmptyComponent={Empty}

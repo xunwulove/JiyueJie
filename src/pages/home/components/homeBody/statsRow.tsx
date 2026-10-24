@@ -1,10 +1,9 @@
 import Icon, { IIconName } from "@/components/base/icon.tsx";
 import ThemeText from "@/components/base/themeText";
-import { useMusicHistory } from "@/core/musicHistory";
+import { usePlayEvents } from "@/core/playEvents";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
 import useColors from "@/hooks/useColors";
 import useIsTablet from "@/hooks/useIsTablet";
-import { normalizeDurationSec } from "@/utils/durationUtil";
 import Color from "color";
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -20,35 +19,50 @@ export default function StatsRow() {
     const navigate = useNavigate();
     const isTablet = useIsTablet();
 
-    const history = useMusicHistory();
+    const playEvents = usePlayEvents();
 
     const stats = useMemo(() => {
         const today0 = new Date();
         today0.setHours(0, 0, 0, 0);
         const todayTs = today0.getTime();
 
-        const todayEvents = history.filter(
-            h => (h.playedAt ?? 0) >= todayTs,
+        // 三卡与统计页完全同源（播放事件流）同口径（短播<30s 不入流）：
+        // 今日听歌 = 今日事件真实收听秒数 Σ → 分钟；今日播放 = 今日事件数；
+        // 最常听 = 全时段按 key 聚合事件次数取 top1 —— 修复原先首页用 musicHistory
+        // （歌曲标称时长、含短播）导致与统计页数字不符
+        const todayEvents = (playEvents ?? []).filter(
+            e => (e.ts ?? 0) >= todayTs,
         );
-        // MusicFree duration 单位为秒：今日听歌时长 = Σ歌曲时长(秒) → 分钟
-        // （第三方插件可能返回毫秒，normalizeDurationSec 防御性归一化）
         const totalSeconds = todayEvents.reduce(
-            (sum, h) => sum + normalizeDurationSec(h.duration),
+            (sum, e) => sum + (e.listenedSec ?? 0),
             0,
         );
         const minutes = Math.floor(totalSeconds / 60);
 
-        const mostPlayedItem = [...history].sort(
-            (a, b) => (b.playCount ?? 0) - (a.playCount ?? 0),
+        // 最常听：全时段按 key 聚合事件次数取 top1
+        const countMap = new Map<
+            string,
+            { title?: string; count: number }
+        >();
+        for (const e of playEvents ?? []) {
+            const rec = countMap.get(e.key) ?? {
+                title: e.title,
+                count: 0,
+            };
+            rec.count += 1;
+            countMap.set(e.key, rec);
+        }
+        const mostPlayed = Array.from(countMap.values()).sort(
+            (a, b) => b.count - a.count,
         )[0];
 
         return {
             todayMinutes: minutes,
             todayPlays: todayEvents.length,
-            mostPlayed: mostPlayedItem?.title ?? "--",
-            mostPlayedCount: mostPlayedItem?.playCount ?? 0,
+            mostPlayed: mostPlayed?.title ?? "--",
+            mostPlayedCount: mostPlayed?.count ?? 0,
         };
-    }, [history]);
+    }, [playEvents]);
 
     const formatDuration = (min: number) => {
         if (min <= 0) {
@@ -67,18 +81,22 @@ export default function StatsRow() {
         label: string;
         value: string;
         color: string;
+        /** 点卡进入统计页的初始时段：今日两卡 → 今日；最常听 → 全部（口径与卡片一致） */
+        initialPeriod: "DAY" | "ALL";
     }> = [
         {
             icon: "clock-outline",
             label: "今日听歌",
             value: formatDuration(stats.todayMinutes),
             color: "#2F6FED",
+            initialPeriod: "DAY",
         },
         {
             icon: "play-circle-outline",
             label: "今日播放",
             value: `${stats.todayPlays} 次`,
             color: "#2F6FED",
+            initialPeriod: "DAY",
         },
         {
             icon: "fire",
@@ -88,6 +106,7 @@ export default function StatsRow() {
                     : "最常听",
             value: stats.mostPlayed,
             color: "#2F6FED",
+            initialPeriod: "ALL",
         },
     ];
 
@@ -109,7 +128,11 @@ export default function StatsRow() {
                             }
                             : null,
                     ]}
-                    onPress={() => navigate(ROUTE_PATH.STATISTICS)}>
+                    onPress={() =>
+                        navigate(ROUTE_PATH.STATISTICS, {
+                            period: card.initialPeriod,
+                        })
+                    }>
                     <LinearGradient
                         colors={[
                             Color(primary).alpha(0.14).toString(),

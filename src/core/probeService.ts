@@ -37,6 +37,17 @@ const PROBE_STALE_MS = 24 * 60 * 60 * 1000;
 /** 探测样本关键词（中文歌在各源命中率高） */
 const PROBE_KEYWORD = "海阔天空";
 
+/**
+ * 运行互斥：自动（probeAuto）与手动（probeAllPlugins）共用同一执行体，
+ * 防"后台探测未结束又触发新轮"造成并发（同源重复请求、统计写入乱序、风控风险）。
+ * 互斥粒度为一整轮：任一模式在跑时，另一模式直接放弃本轮（不排队、不合并）。
+ */
+let probing = false;
+/** 当前是否有探测轮次在运行（供 UI 入口先行提示，避免弹窗闪现） */
+export function isProbing(): boolean {
+    return probing;
+}
+
 /** 单源探测结果 */
 export interface IProbeItem {
     platform: string;
@@ -233,69 +244,82 @@ async function probeSingle(
     return out;
 }
 
-/** 探测一组插件（串行 + 间隔 + 总预算） */
+/** 探测一组插件（串行 + 间隔 + 总预算）；整轮持有互斥锁，finally 必复位 */
 async function probePlugins(
     plugins: any[],
     deep: boolean,
     onProgress?: (done: number, total: number, name: string) => void,
 ): Promise<IProbeReport> {
-    const startTime = Date.now();
-    const lastRuns = readLastRuns();
-    const results: IProbeItem[] = [];
-    let searchOk = 0;
-    let parseOk = 0;
-    let playable = 0;
+    probing = true;
+    try {
+        const startTime = Date.now();
+        const lastRuns = readLastRuns();
+        const results: IProbeItem[] = [];
+        let searchOk = 0;
+        let parseOk = 0;
+        let playable = 0;
 
-    for (let i = 0; i < plugins.length; i++) {
-        if (Date.now() - startTime > PROBE_BUDGET_MS) {
-            devLog("info", "音源探测：总预算耗尽，剩余源跳过", plugins.length - i);
-            break;
-        }
-        const plugin = plugins[i];
-        const platform = plugin.instance.platform;
-        try {
-            const item = await probeSingle(plugin, deep);
-            results.push(item);
-            if (item.searchOk) {
-                searchOk += 1;
+        for (let i = 0; i < plugins.length; i++) {
+            if (Date.now() - startTime > PROBE_BUDGET_MS) {
+                devLog("info", "音源探测：总预算耗尽，剩余源跳过", plugins.length - i);
+                break;
             }
-            if (item.parseOk) {
-                parseOk += 1;
+            const plugin = plugins[i];
+            const platform = plugin.instance.platform;
+            try {
+                const item = await probeSingle(plugin, deep);
+                results.push(item);
+                if (item.searchOk) {
+                    searchOk += 1;
+                }
+                if (item.parseOk) {
+                    parseOk += 1;
+                }
+                if (item.playable) {
+                    playable += 1;
+                }
+                lastRuns[platform] = Date.now();
+            } catch (e: any) {
+                devLog("error", "音源探测异常", platform, e?.message ?? e);
             }
-            if (item.playable) {
-                playable += 1;
+            onProgress?.(results.length, plugins.length, plugin.name);
+            if (i < plugins.length - 1) {
+                await sleep(PROBE_INTERVAL_MS);
             }
-            lastRuns[platform] = Date.now();
-        } catch (e: any) {
-            devLog("error", "音源探测异常", platform, e?.message ?? e);
         }
-        onProgress?.(results.length, plugins.length, plugin.name);
-        if (i < plugins.length - 1) {
-            await sleep(PROBE_INTERVAL_MS);
-        }
+        writeLastRuns(lastRuns);
+        return {
+            results,
+            total: plugins.length,
+            searchOk,
+            parseOk,
+            playable,
+            usedMs: Date.now() - startTime,
+        };
+    } finally {
+        probing = false;
     }
-    writeLastRuns(lastRuns);
-    return {
-        results,
-        total: plugins.length,
-        searchOk,
-        parseOk,
-        playable,
-        usedMs: Date.now() - startTime,
-    };
 }
 
-/** 手动全量探测（音源管理页"检测音源"按钮）：随时可跑，深度验证可播性 */
+/** 手动全量探测（音源管理页"检测音源"按钮）：随时可跑，深度验证可播性；
+ *  返回 null 表示已有其他轮次在跑（本次未执行） */
 export async function probeAllPlugins(options?: {
     deep?: boolean;
     onProgress?: (done: number, total: number, name: string) => void;
-}): Promise<IProbeReport> {
+}): Promise<IProbeReport | null> {
+    if (probing) {
+        return null;
+    }
     const plugins = PluginManager.getSortedSearchablePlugins("music");
     return probePlugins(plugins, options?.deep ?? true, options?.onProgress);
 }
 
-/** 自动探测（启动后延迟调度）：每天最多一轮，只探测数据过期（>24h）的源，轻量 */
+/** 自动探测（启动后延迟调度）：每天最多一轮，只探测数据过期（>24h）的源，轻量；
+ *  若已有轮次在跑（含手动检测）则本轮放弃 */
 export async function probeAuto(): Promise<IProbeReport | null> {
+    if (probing) {
+        return null;
+    }
     try {
         const today = todayStr();
         if (readAutoDate() === today) {
@@ -323,6 +347,7 @@ export async function probeAuto(): Promise<IProbeReport | null> {
 const probeService = {
     probeAllPlugins,
     probeAuto,
+    isProbing,
 };
 
 export default probeService;

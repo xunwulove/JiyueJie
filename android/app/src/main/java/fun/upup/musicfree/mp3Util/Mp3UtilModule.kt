@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.util.Log
 import com.facebook.react.bridge.*
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
@@ -22,6 +23,49 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
         return uri?.scheme?.equals("content", ignoreCase = true) == true
     }
 
+    /** null 值不写入 map（WritableNativeMap.putString 传 null 会抛异常，导致整条 meta 丢失） */
+    private fun WritableMap.putMeta(key: String, value: String?) {
+        if (value != null) {
+            putString(key, value)
+        }
+    }
+
+    /**
+     * 解析时长（毫秒字符串）：优先 MMR 元数据；取不到/为 0 时，
+     * 用 码率(bps) × 文件大小 估算兜底（业界第③层；播放后由 JS 侧用播放器真实时长校准）。
+     * 文件大小未知（content:// 场景）或无码率 → 返回 "0"。
+     */
+    private fun resolveDurationMs(
+        filePath: String,
+        mmr: MediaMetadataRetriever,
+    ): String {
+        val meta = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+        if (!meta.isNullOrEmpty() && (meta.toLongOrNull() ?: 0L) > 0L) {
+            return meta
+        }
+        val bitrate = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+            ?.toLongOrNull() ?: 0L
+        val size = if (isContentUri(Uri.parse(filePath))) 0L else runCatching { File(filePath).length() }.getOrDefault(0L)
+        if (bitrate > 0L && size > 0L) {
+            return (size * 8L * 1000L / bitrate).toString()
+        }
+        return "0"
+    }
+
+    private fun metaMap(
+        filePath: String,
+        mmr: MediaMetadataRetriever,
+    ): WritableMap = Arguments.createMap().apply {
+        putMeta("duration", resolveDurationMs(filePath, mmr))
+        putMeta("bitrate", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE))
+        putMeta("artist", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST))
+        putMeta("author", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR))
+        putMeta("album", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))
+        putMeta("title", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE))
+        putMeta("date", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE))
+        putMeta("year", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR))
+    }
+
     @ReactMethod
     fun getBasicMeta(filePath: String, promise: Promise) {
         try {
@@ -33,16 +77,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
                 mmr.setDataSource(filePath)
             }
 
-            val properties = Arguments.createMap().apply {
-                putString("duration", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION))
-                putString("bitrate", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE))
-                putString("artist", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST))
-                putString("author", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR))
-                putString("album", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))
-                putString("title", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE))
-                putString("date", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE))
-                putString("year", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR))
-            }
+            val properties = metaMap(filePath, mmr)
             promise.resolve(properties)
         } catch (e: Exception) {
             promise.reject("Exception", e.message)
@@ -64,17 +99,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
                     mmr.setDataSource(filePath)
                 }
 
-                val properties = Arguments.createMap().apply {
-                    putString("duration", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION))
-                    putString("bitrate", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE))
-                    putString("artist", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST))
-                    putString("author", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR))
-                    putString("album", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))
-                    putString("title", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE))
-                    putString("date", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE))
-                    putString("year", mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR))
-                }
-                metas.pushMap(properties)
+                metas.pushMap(metaMap(filePath, mmr))
             } catch (e: Exception) {
                 metas.pushNull()
             }
@@ -194,7 +219,9 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
     /**
      * 写入内嵌专辑图（ID3 APIC / 封面 Artwork）：
      * - coverUri 支持网络 URL（下载到缓存后嵌入）与本地 file:// 路径
-     * - 下载/嵌入失败会 reject，由 JS 侧 catch（不影响歌曲入库）
+     * - 下载加 UA；防盗链拒绝时带网易 Referer 重试一次；下载字节统一转 JPEG 后嵌入
+     *   （jaudiotagger 对 jpg/png 支持最稳，webp 等格式可被 BitmapFactory 解码）
+     * - 下载/嵌入失败会 reject，由 JS 侧 catch（不影响歌曲入库），但 Log.w 留痕便于排查
      */
     @ReactMethod
     fun setMediaCover(filePath: String, coverUri: String, promise: Promise) {
@@ -204,29 +231,15 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
                 promise.reject("Error", "File Not Exist")
                 return
             }
-            // 解析封面来源：网络 URL 先下载到缓存；本地 file:// 直接取路径
-            val coverFile: File = if (coverUri.startsWith("http://") || coverUri.startsWith("https://")) {
-                val conn = URL(coverUri).openConnection() as HttpURLConnection
-                conn.connectTimeout = 10000
-                conn.readTimeout = 15000
-                conn.setRequestProperty("Referer", "https://music.163.com")
-                conn.connect()
-                val tmp = File(reactContext.cacheDir, "cover_${System.currentTimeMillis()}.img")
-                try {
-                    conn.inputStream.use { input ->
-                        FileOutputStream(tmp).use { output ->
-                            input.copyTo(output, 1024 * 64)
-                        }
-                    }
-                } finally {
-                    conn.disconnect()
+            // 解析封面来源：网络 URL 先下载（统一转 JPEG）；本地 file:// 直接取路径
+            val coverFile: File? =
+                if (coverUri.startsWith("http://") || coverUri.startsWith("https://")) {
+                    downloadCoverToJpeg(coverUri)
+                } else {
+                    val p = if (coverUri.startsWith("file://")) coverUri.removePrefix("file://") else coverUri
+                    File(p)
                 }
-                tmp
-            } else {
-                val p = if (coverUri.startsWith("file://")) coverUri.removePrefix("file://") else coverUri
-                File(p)
-            }
-            if (!coverFile.exists()) {
+            if (coverFile == null || !coverFile.exists()) {
                 promise.reject("Error", "Cover File Not Found")
                 return
             }
@@ -238,10 +251,86 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
                 tag.deleteArtworkField()
                 tag.setField(artwork)
                 audioFile.commit()
+                promise.resolve(true)
+            } else {
+                promise.reject("Error", "Cover artwork null")
             }
-            promise.resolve(true)
         } catch (e: Exception) {
+            Log.w("Mp3Util", "setMediaCover failed: ${e.message}")
             promise.reject("Error", e.message)
+        }
+    }
+
+    /**
+     * 下载封面并统一转 JPEG：加浏览器 UA；失败（非 2xx）带网易 Referer 重试一次
+     * （网易系封面图床防盗链）；BitmapFactory 解码 jpg/png/webp → 压缩 JPEG 落盘，
+     * 过大图先采样（长边 >1024 降采样防 OOM）。
+     */
+    private fun downloadCoverToJpeg(coverUri: String): File? {
+        val userAgent =
+            "Mozilla/5.0 (Linux; Android 12; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36"
+        var tmpRaw: File? = null
+        var ok = false
+        for (attempt in 0..1) {
+            try {
+                val conn = URL(coverUri).openConnection() as HttpURLConnection
+                conn.connectTimeout = 10000
+                conn.readTimeout = 15000
+                conn.setRequestProperty("User-Agent", userAgent)
+                if (attempt == 1) {
+                    conn.setRequestProperty("Referer", "https://music.163.com")
+                }
+                conn.connect()
+                if (conn.responseCode in 200..299) {
+                    val tmp = File(reactContext.cacheDir, "cover_${System.currentTimeMillis()}.raw")
+                    FileOutputStream(tmp).use { out ->
+                        conn.inputStream.use { input ->
+                            input.copyTo(out, 1024 * 64)
+                        }
+                    }
+                    tmpRaw = tmp
+                    ok = true
+                }
+                conn.disconnect()
+                if (ok) break
+            } catch (ignored: Exception) {
+                // 重试一次（带 Referer）
+            }
+        }
+        if (!ok || tmpRaw == null || tmpRaw.length() == 0L) {
+            tmpRaw?.delete()
+            return null
+        }
+        // 捕获非空引用供 finally 清理（消除 var 智能转换丢失导致的冗余安全调用警告）
+        val rawForCleanup = tmpRaw
+        return try {
+            // 采样解码：长边 >1024 降采样，防大封面 OOM
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(rawForCleanup.absolutePath, bounds)
+            var sample = 1
+            while (
+                (bounds.outWidth / (sample * 2)) >= 1024 ||
+                (bounds.outHeight / (sample * 2)) >= 1024
+            ) {
+                sample *= 2
+            }
+            val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sample }
+            val bmp = BitmapFactory.decodeFile(rawForCleanup.absolutePath, decodeOpts)
+            if (bmp == null) {
+                // 非可解码图片，直接用原字节（罕见，交给 jaudiotagger 判定）
+                rawForCleanup
+            } else {
+                val tmpJpg = File(reactContext.cacheDir, "cover_${System.currentTimeMillis()}.jpg")
+                FileOutputStream(tmpJpg).use { out ->
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 92, out)
+                }
+                tmpJpg
+            }
+        } catch (e: Exception) {
+            Log.w("Mp3Util", "cover decode failed, fallback raw: ${e.message}")
+            rawForCleanup
+        } finally {
+            rawForCleanup.delete()
         }
     }
 }

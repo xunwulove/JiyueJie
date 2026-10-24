@@ -186,7 +186,9 @@ export default function MusicItemLyricOptionsDialog(
                 </ThemeText>
             </Dialog.Title>
             <FlatList
-                data={options}
+                // 过滤隐藏项（show:false）：否则 renderItem 返回 null 仍占 getItemLayout 固定行高，
+                // 且 ItemSeparatorComponent 在不可见行之间照常画线 → 双线叠加/错位
+                data={options.filter(_ => _.show !== false)}
                 getItemLayout={(_, index) => ({
                     length: ITEM_HEIGHT,
                     offset: ITEM_HEIGHT * index,

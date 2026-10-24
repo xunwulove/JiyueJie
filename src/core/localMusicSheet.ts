@@ -18,6 +18,38 @@ import {
 } from "@/core/scanSettings";
 import CryptoJs from "crypto-js";
 import { nanoid } from "nanoid";
+
+/**
+ * 同一本地文件的判定：下载完成即时入库（localPath 带 file://、保留原音源 id/platform）
+ * 与目录扫描入库（localPath 为 raw 路径、platform="本地"）会产生同文件两条目，
+ * isSameMediaItem（id+platform）判不出重复；这里按"去除 scheme 前缀后的本地路径"比对
+ * （对齐 downloader 同款惯例）。
+ */
+function sameLocalFile(
+    a: IMusic.IMusicItem,
+    b: IMusic.IMusicItem,
+): boolean {
+    const pa = getLocalPath(a);
+    const pb = getLocalPath(b);
+    if (!pa || !pb) {
+        return false;
+    }
+    return (
+        pa.replace(/^file:\/\//, "") === pb.replace(/^file:\/\//, "")
+    );
+}
+
+/** 去重判定：常规同曲 或 同一本地文件 */
+function isDuplicateIn(
+    item: IMusic.IMusicItem,
+    list: IMusic.IMusicItem[],
+): boolean {
+    return (
+        list.findIndex(
+            _ => isSameMediaItem(item, _) || sameLocalFile(item, _),
+        ) !== -1
+    );
+}
 import { useEffect, useState } from "react";
 import { ReadDirItem, exists, readDir, unlink } from "react-native-fs";
 import getOrCreateMMKV from "@/utils/getOrCreateMMKV";
@@ -119,6 +151,18 @@ export async function setup() {
         if (validSheet.length !== sheet.length) {
             await setStorage(StorageKeys.LocalMusicSheet, validSheet);
         }
+        // 存量去重：下载入库（file:// + 原音源 id）与扫描入库（raw + 本地 id）的
+        // 同文件条目合并为一条（保留先入库的条目）
+        const dedup: IMusic.IMusicItem[] = [];
+        for (const item of validSheet) {
+            if (!isDuplicateIn(item, dedup)) {
+                dedup.push(item);
+            }
+        }
+        if (dedup.length !== validSheet.length) {
+            await setStorage(StorageKeys.LocalMusicSheet, dedup);
+            validSheet = dedup;
+        }
         localSheet = validSheet;
     } else {
         await setStorage(StorageKeys.LocalMusicSheet, []);
@@ -138,7 +182,7 @@ export async function addMusic(
     }
     let newSheet = [...localSheet];
     musicItem.forEach(mi => {
-        if (localSheet.findIndex(_ => isSameMediaItem(mi, _)) === -1) {
+        if (!isDuplicateIn(mi, newSheet)) {
             // 入库时间：新加入的歌曲补 $timestamp（排序"添加时间"使用）
             if (!mi.$timestamp) {
                 mi.$timestamp = Date.now();
@@ -158,7 +202,7 @@ function addMusicDraft(musicItem: IMusic.IMusicItem | IMusic.IMusicItem[]) {
     }
     let newSheet = [...localSheet];
     musicItem.forEach(mi => {
-        if (localSheet.findIndex(_ => isSameMediaItem(mi, _)) === -1) {
+        if (!isDuplicateIn(mi, newSheet)) {
             if (!mi.$timestamp) {
                 mi.$timestamp = Date.now();
                 mi.$sortIndex = 0;
@@ -373,6 +417,32 @@ async function updateMusicList(newSheet: IMusic.IMusicItem[]) {
     } catch {}
 }
 
+/**
+ * 回填本地歌曲实际时长（播放器校准，第④层兜底）：
+ * 扫描时 MMR 缺失/估算的时长在真实播放后用 ExoPlayer 解析值覆盖；
+ * 值一致（±5s）则跳过避免无谓写入。
+ */
+async function backfillDuration(
+    musicItem: IMusic.IMusicItem,
+    durationSec: number,
+): Promise<void> {
+    const idx = localSheet.findIndex(_ => isSameMediaItem(_, musicItem));
+    if (idx === -1 || !Number.isFinite(durationSec) || durationSec <= 0) {
+        return;
+    }
+    const cur = localSheet[idx].duration;
+    if (cur && cur > 0 && Math.abs(cur - durationSec) < 5) {
+        return;
+    }
+    const newSheet = [...localSheet];
+    newSheet[idx] = { ...newSheet[idx], duration: durationSec };
+    try {
+        await setStorage(StorageKeys.LocalMusicSheet, newSheet);
+        localSheet = newSheet;
+        localSheetStateMapper.notify();
+    } catch {}
+}
+
 const LocalMusicSheet = {
     setup,
     addMusic,
@@ -386,6 +456,7 @@ const LocalMusicSheet = {
     getMusicList,
     useMusicList: localSheetStateMapper.useMappedState,
     updateMusicList,
+    backfillDuration,
 };
 
 export default LocalMusicSheet;
