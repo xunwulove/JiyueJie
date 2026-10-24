@@ -133,6 +133,10 @@ interface RouterParams extends RouterParamsBase {
     "api-sheet-detail": {
         sheetInfo: IMusic.IMusicSheetItemBase;
     };
+    /** 统计页：首页卡片带参进入的初始时段（最常听卡 → 全部，今日两卡 → 今日） */
+    statistics:
+        | { period?: "DAY" | "WEEK" | "YEAR" | "ALL" }
+        | undefined;
 }
 
 /** 路由参数Hook */
