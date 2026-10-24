@@ -6,28 +6,33 @@ import Loading from "@/components/base/loading";
 import useColors from "@/hooks/useColors";
 import ThemeText from "@/components/base/themeText";
 
-/** 安装进度（download=下载阶段 / mount=挂载阶段），null = 无进度数据（仅转圈） */
+/** 安装进度（download=下载阶段 / mount=挂载阶段 / probe=检测音源），null = 无进度数据（仅转圈）；
+ *  ready=true：probe 弹窗"准备态"——点击图标后仅展示说明与"开始检测"按钮，未真正开始 */
 export interface IInstallProgress {
     phase: "download" | "mount" | "probe";
     done: number;
     total: number;
     name?: string;
+    ready?: boolean;
 }
 
 /**
  * 音源安装/检测进度 - 三级弹窗（符合 Dialog 规范：52dp 渐变标题 / vh(70) 内容 / 52dp 按钮行）。
  * 与探测软件保持一致的三行布局：行1 状态+计数 / 行2 进度条+百分比 / 行3 当前插件名。
  * phase="probe" 时为"检测音源"进度（由音源管理页检测按钮驱动）。
- * 由 PluginList 声明式渲染（props 实时更新，不走命令式 showDialog 快照）；
- * "后台运行"= 仅收起弹窗，安装/检测任务继续后台执行（无法中途取消）。
+ * ready 准备态：按钮栏为"开始检测 + 取消"，点击开始（onStart）后才真正启动探测；
+ * 运行态按钮为"后台运行"（= 仅收起弹窗，检测任务继续后台执行，无法中途取消）。
+ * 由 PluginList 声明式渲染（props 实时更新，不走命令式 showDialog 快照）。
  */
 export default function PluginInstallProgressDialog(props: {
     progress: IInstallProgress | null;
     onClose: () => void;
+    onStart?: () => void;
 }) {
-    const { progress, onClose } = props;
+    const { progress, onClose, onStart } = props;
     const colors = useColors();
     const isProbe = progress?.phase === "probe";
+    const ready = isProbe && progress?.ready === true;
 
     return (
         <Dialog onDismiss={onClose}>
@@ -35,7 +40,24 @@ export default function PluginInstallProgressDialog(props: {
                 {isProbe ? "检测音源" : "安装音源"}
             </Dialog.Title>
             <Dialog.Content style={style.content}>
-                {progress ? (
+                {ready ? (
+                    /* 准备态：未开始，展示说明等待"开始检测" */
+                    <View style={style.progressCard}>
+                        <View style={style.progressRow1}>
+                            <ThemeText
+                                fontSize="content"
+                                fontWeight="medium">
+                                将检测 {progress?.total ?? 0} 个音源
+                            </ThemeText>
+                        </View>
+                        <ThemeText
+                            fontSize="description"
+                            fontColor="textSecondary">
+                            点击开始后逐源检测搜索/解析/可播性，预计 1 分钟内完成；
+                            检测期间可点"后台运行"收起弹窗，任务继续执行。
+                        </ThemeText>
+                    </View>
+                ) : progress ? (
                     <View style={style.progressCard}>
                         {/* 行1 状态 + 计数 */}
                         <View style={style.progressRow1}>
@@ -125,13 +147,28 @@ export default function PluginInstallProgressDialog(props: {
                 )}
             </Dialog.Content>
             <Dialog.Actions
-                actions={[
-                    {
-                        title: "后台运行",
-                        type: "normal",
-                        onPress: onClose,
-                    },
-                ]}
+                actions={
+                    ready
+                        ? [
+                            {
+                                title: "取消",
+                                type: "normal",
+                                onPress: onClose,
+                            },
+                            {
+                                title: "开始检测",
+                                type: "primary",
+                                onPress: onStart ?? onClose,
+                            },
+                        ]
+                        : [
+                            {
+                                title: "后台运行",
+                                type: "normal",
+                                onPress: onClose,
+                            },
+                        ]
+                }
             />
         </Dialog>
     );
