@@ -11,7 +11,7 @@
 |---|---|
 | 项目名 | 极悦界（JiyueJie） |
 | 性质 | MusicFree 系 二次开发 的 React Native 安卓音乐播放器（fork 上游 maotoumao/MusicFree） |
-| 当前版本 | 0.6.2.16（versionCode 400027） |
+| 当前版本 | 0.6.2.21（versionCode 400032） |
 | 包名 | fun.upup.musicfree |
 | 项目根 | `E:\xunwu\Deepseek\jiyuejie` |
 | 上游 | https://github.com/maotoumao/MusicFree（AGPL） |
@@ -29,7 +29,7 @@
 2. **较大代码改动前必须备份**被改部分到 `E:\Temp\Deepseek\`（备份命名 `<文件>.bak<序号>-<日期>`）。
 3. **尽量不写 C 盘**；临时文件（日志/中间产物/备份）统一放 `E:\Temp\Deepseek\`，不散落 temp 根目录。
 4. **UI 改动默认以平板/车机版为主**，手机版自适应由助手自行决定。
-5. **打包版本规则**：每次打包 versionName 末位 `+0.0.1`、versionCode `+1`；改 `package.json` 必须 **UTF-8 无 BOM** 写入（BOM 会导致 RN autolink 解析失败）。
+5. **打包版本规则（2026-10 用户最新偏好，取代旧的"每次打包 +0.0.1"）**：**本地打包（构建 APK 验证/装机）时不更新版本号**——`package.json` version 与 `android/app/build.gradle` `appVersionCode` 均保持不变；仅**正式发布 gitee/GitHub** 时才升版本号（versionName 末位 +0.0.1、versionCode +1）；改 `package.json` 必须 **UTF-8 无 BOM** 写入（BOM 会导致 RN autolink 解析失败）。
 6. **文档修改慎重**：所有文档改动须符合实际代码（以 Grep/Read 源码为准），不臆断。
 7. **APK 不入 git 仓库**；产物命名"极悦界 v版本 (abi).apk"放项目根。
 8. 均衡器、启动页、gitee 发版等**已踩过的坑**见 `docs/问题排查与避坑记录.md`，动手前先查。
@@ -126,10 +126,13 @@
 - **第九次 0.6.2.16 同版本号重新发布**（2026-10-20）：**自制封面缺陷修复**——合成封面改纯底图（去除歌名文字与底部压暗遮罩 `rgba(0,0,0,0.36)`，`syntheticCover.tsx` 去掉 titleWrap/Text，`songCover.tsx` 不再传 title）；修复播放页/全屏播放页合成封面「左右显示一半」（根因=FastImage 用 `StyleSheet.absoluteFill` 尺寸=容器 box，但取图位置平移量按真实图 cover 溢出算，导致把只有 box 大小的 view 移出容器露出背景；修复=FastImage 显示尺寸改显式 cover 缩放真实尺寸 `drawW×drawH` + `position:absolute;left/top:0`，容器 overflow hidden 裁掉溢出一侧后再 transform 平移 offset）；沉浸播放页保持不显示自选图（`immersiveLayer` 不集成）。本次打包同时纳入上一条「未发版批次」全部改动（浮层层级编码规范落地等）；gitee 双 release 重建 + GitHub main 同步推送；同版本号更新盲区同上
 - **第十次 0.6.2.16 同版本号重新发布**（2026-10-20）：**沉浸播放页右边封面占位无封面时显示默认封面**（`immersiveLayer.tsx` coverBlock 无 `artwork` 时由 ♪ 占位改为 `ImgAsset.albumDefault`；背景/渐变/光效保持原样，不集成自制合成封面底图）；gitee 双 release 重建 + GitHub main 同步推送；同版本号更新盲区同上
 - **第十一次 0.6.2.16 同版本号重新发布**（2026-10-20）：**更新订阅清单拉取改为并发**（`pluginManager/index.ts` `updatePluginsFromSubscription` 阶段1 由串行 for 循环改为 `runWithConcurrency` worker 池并发拉取，上限 10，多个订阅地址同时拉取不再被慢地址拖住整批；`needDownload` 并发 push 原子安全、版本对比不变）；gitee 双 release 重建 + GitHub main 同步推送；同版本号更新盲区同上
+- **0.6.2.17 正式发版**（2026-10-20）：并入此前「未发版改动 2026.10.19」20 项（浮窗 Dialog 化、音质标识循环切换、浮窗层级编码规范、弹窗外部退出、自制封面底图+取图位置、听歌时长事件流统计等，详见 changelog）+ **弹窗 UI 全量统一**（标题行去分割线/列表项统一分隔线/歌曲菜单信息头渐变）+ 批量编辑弹窗性能修复 + **歌词本地缓存/更换** + 下载提示修复 + 自选封面取色优先 + Toast i18n 整理/删除 Hermes 采样；**插件批量安装性能优化**（下载/挂载分离 + 分批让出 JS 线程修混淆插件卡顿 + 进度显示 + 批量下载超时放宽 30s + 音源拉取分档 >300KB 手动安装 + gradle 堆内存 2G）
+- **0.6.2.18 正式发版**（2026-10-20）：手机版卡片标题 2 行、订阅源可删除恢复默认、下载超时恢复全局
+- **0.6.2.21 正式发版**（2026-10-21，versionCode 400032）：**音源探测播放验证方案 B + 50 个精选音源清单**（Node 沙箱真实搜索验证，`音源清单-20261022/`）+ **热门搜索改纯实时接口**（腾讯 musicu.fcg 主源 + 酷我 hotword.s 备源，移除本地搜索排行，6h 缓存）+ **首页三卡与统计页完全同源**（播放事件流真实收听秒数、短播<30s 剔除，统计页第二卡改"播放次数"）+ 本地歌曲时长双重兜底与重复去重 + 弹窗分隔线修复 + **平板/手机布局判定重写**（竖屏手机全宽 / 横屏车机平板双栏）+ **三 ABI 固化**（arm64-v8a/armeabi-v7a/x86_64）+ 关闭 release 构建期 lintVital
 
 **待办/未决**：
-- 已装 0.6.2.16 的用户收不到第七次重发提示（同版本号），如需覆盖提示需在下次升版本时发布
-- 下一次发版应**升版本号**（0.6.2.17），避免同版本号重发的更新盲区
+- 已装 0.6.2.21 的用户不会收到更新提示（当前即最新版本，同版本号盲区同理）；下次发版是否升版本号按用户当前偏好执行（本地打包不升、正式发布才升）
+- git 仓库已由接手 AI 整理：游离头恢复为本地 `main` 分支，纳入其他 AI 的新文件（根 `plugins.json`、`音源清单-20261022/`），移除过时根 `version.json`（权威在 `updates/version.json`）；本地 `main` 与远端 `origin/main`（Git Data API 镜像线）内容等价但提交历史分叉，**不 merge 远端，推送走 API 覆盖**
 
 **已闭环（原待办，经代码核对确认）**：
 - 卡顿问题已解决，不再卡顿

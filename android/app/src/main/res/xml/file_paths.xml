@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<paths>
-    <!-- 应用专属外部目录（RNFS.ExternalDirectoryPath）下的下载目录，用于软件内更新安装包 -->
-    <external-files-path name="app_files" path="." />
-</paths>
