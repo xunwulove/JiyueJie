@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>引导页平板版重设计示意（3 屏）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #EEF2F7; padding: 28px 16px; }
+  h1 { text-align: center; font-size: 20px; color: #1E293B; margin-bottom: 6px; }
+  .sub { text-align: center; font-size: 13px; color: #64748B; margin-bottom: 24px; }
+  .stage { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+
+  /* 平板轮廓（横屏 4:3 示意） */
+  .pad {
+    width: 500px; height: 380px;
+    background: linear-gradient(180deg, #F8F9FA 0%, #EAF0FA 100%);
+    border-radius: 18px; border: 1px solid #CBD5E1;
+    position: relative; overflow: hidden;
+    box-shadow: 0 6px 18px rgba(30,41,59,.08);
+  }
+  .pad::before { /* 内容区限宽容器示意 */
+    content: ""; position: absolute; left: 50%; top: 0; bottom: 0;
+    width: 300px; transform: translateX(-50%);
+    border-left: 1px dashed rgba(47,111,237,.35);
+    border-right: 1px dashed rgba(47,111,237,.35);
+  }
+  .pad .label { position: absolute; top: 8px; left: 12px; font-size: 11px; color: #2F6FED; background: rgba(47,111,237,.1); padding: 2px 8px; border-radius: 999px; z-index: 5; }
+  .pad .maxw { position: absolute; top: 8px; right: 12px; font-size: 10px; color: #94A3B8; z-index: 5; }
+
+  .skip { position: absolute; top: 12px; right: 18px; font-size: 12px; color: #64748B; z-index: 6; }
+  .center-col { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 300px; display: flex; flex-direction: column; align-items: center; }
+
+  /* 第 1 屏 */
+  .brand-icon { width: 52px; height: 52px; border-radius: 14px; background: #2F6FED; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; box-shadow: 0 4px 10px rgba(47,111,237,.3); }
+  .brand-name { margin-top: 8px; font-size: 18px; font-weight: 700; color: #1E293B; }
+  .brand-slogan { margin-top: 3px; font-size: 11px; color: #64748B; }
+  .features { margin-top: 18px; display: flex; gap: 10px; width: 100%; }
+  .fcard {
+    flex: 1; background: #fff; border-radius: 12px; padding: 12px 8px;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    box-shadow: 0 2px 6px rgba(30,41,59,.06);
+  }
+  .fcard .fi { width: 26px; height: 26px; border-radius: 8px; background: rgba(47,111,237,.12); color: #2F6FED; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .fcard .ft { margin-top: 6px; font-size: 11px; font-weight: 600; color: #1E293B; }
+  .fcard .fd { margin-top: 2px; font-size: 9px; line-height: 1.4; color: #64748B; }
+
+  /* 第 2 屏 */
+  .perm-head { width: 100%; margin-bottom: 14px; }
+  .perm-head .t { font-size: 15px; font-weight: 700; color: #1E293B; }
+  .perm-head .s { font-size: 10px; color: #64748B; margin-top: 2px; }
+  .perm-cards { display: flex; gap: 10px; width: 100%; }
+  .pcard { flex: 1; background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 6px rgba(30,41,59,.06); }
+  .pcard .pt { font-size: 12px; font-weight: 700; color: #1E293B; display: flex; align-items: center; gap: 6px; }
+  .pcard .pi { width: 20px; height: 20px; border-radius: 6px; background: rgba(47,111,237,.12); color: #2F6FED; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+  .pcard .pd { font-size: 9px; line-height: 1.5; color: #64748B; margin-top: 4px; }
+  .pcard .btn { display: inline-block; margin-top: 8px; background: #2F6FED; color: #fff; font-size: 10px; font-weight: 600; padding: 4px 14px; border-radius: 999px; }
+  .pcard .ok { display: inline-block; margin-top: 8px; color: #16A34A; font-size: 10px; font-weight: 600; }
+  .tip { width: 100%; margin-top: 10px; font-size: 9px; color: #64748B; }
+
+  /* 第 3 屏 */
+  .scard { width: 100%; background: #fff; border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 6px rgba(30,41,59,.06); }
+  .scard .si { width: 26px; height: 26px; border-radius: 8px; background: rgba(47,111,237,.12); color: #2F6FED; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+  .scard .st { flex: 1; }
+  .scard .st .t { font-size: 12px; font-weight: 700; color: #1E293B; }
+  .scard .st .d { font-size: 9px; color: #64748B; margin-top: 1px; }
+  .switch { width: 30px; height: 17px; border-radius: 999px; background: #2F6FED; position: relative; flex-shrink: 0; }
+  .switch::after { content: ""; position: absolute; top: 2px; right: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; }
+
+  /* 底部 */
+  .footer { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 300px; }
+  .dots { display: flex; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #CBD5E1; }
+  .dot.on { width: 16px; border-radius: 999px; background: #2F6FED; }
+  .main-btn { width: 150px; background: #2F6FED; color: #fff; text-align: center; font-size: 12px; font-weight: 700; padding: 8px 0; border-radius: 999px; }
+
+  .notes { max-width: 1100px; margin: 26px auto 0; background: #fff; border-radius: 14px; padding: 18px 22px; box-shadow: 0 4px 14px rgba(30,41,59,.06); }
+  .notes h2 { font-size: 15px; color: #1E293B; margin-bottom: 10px; }
+  .notes li { font-size: 12.5px; line-height: 2; color: #334155; }
+  .notes b { color: #2F6FED; }
+</style>
+</head>
+<body>
+<h1>引导页 · 平板版重设计示意</h1>
+<div class="sub">横屏平板 4:3 轮廓；虚线框 = 内容区限宽容器（maxWidth 620dp 居中），卡片不再占满全屏</div>
+
+<div class="stage">
+  <!-- 第 1 屏 -->
+  <div class="pad">
+    <span class="label">第 1 屏 · 欢迎</span>
+    <span class="maxw">内容区限宽居中</span>
+    <span class="skip">跳过</span>
+    <div class="center-col">
+      <div class="brand-icon">♪</div>
+      <div class="brand-name">极悦界</div>
+      <div class="brand-slogan">本地优先 · 多音源聚合 · 数据都在本机</div>
+      <div class="features">
+        <div class="fcard"><div class="fi">⤓</div><div class="ft">导入音乐源</div><div class="fd">MusicFree 生态音源<br>一键订阅更新</div></div>
+        <div class="fcard"><div class="fi">⌕</div><div class="ft">搜索全网歌曲</div><div class="fd">多源聚合搜索<br>自动择优播放</div></div>
+        <div class="fcard"><div class="fi">▽</div><div class="ft">下载到本地</div><div class="fd">歌曲内嵌专辑图<br>离线也能听</div></div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="main-btn">下一步</div>
+    </div>
+  </div>
+
+  <!-- 第 2 屏 -->
+  <div class="pad">
+    <span class="label">第 2 屏 · 权限</span>
+    <span class="maxw">内容区限宽居中</span>
+    <span class="skip">跳过</span>
+    <div class="center-col" style="top:46%">
+      <div class="perm-head">
+        <div class="t">授予必要权限</div>
+        <div class="s">只申请最核心的两项，其余权限用到时再引导</div>
+      </div>
+      <div class="perm-cards">
+        <div class="pcard">
+          <div class="pt"><span class="pi">📁</span>文件访问</div>
+          <div class="pd">扫描本地音乐，并把下载的歌曲保存到设备</div>
+          <span class="btn">去开启</span>
+        </div>
+        <div class="pcard">
+          <div class="pt"><span class="pi">💬</span>通知</div>
+          <div class="pd">下载完成、后台播放时提醒你</div>
+          <span class="ok">✓ 已开启</span>
+        </div>
+      </div>
+      <div class="tip">未开启也不影响使用，之后可在「我的 → 设置 → 权限管理」补开</div>
+    </div>
+    <div class="footer">
+      <div class="dots"><span class="dot"></span><span class="dot on"></span><span class="dot"></span></div>
+      <div class="main-btn">下一步</div>
+    </div>
+  </div>
+
+  <!-- 第 3 屏 -->
+  <div class="pad">
+    <span class="label">第 3 屏 · 就绪 + 偏好</span>
+    <span class="maxw">内容区限宽居中</span>
+    <span class="skip">跳过</span>
+    <div class="center-col" style="top:45%">
+      <div class="perm-head">
+        <div class="t">一切就绪</div>
+        <div class="s">打开即用的最后一步</div>
+      </div>
+      <div class="scard"><div class="si">☰</div><div class="st"><div class="t">已内置常用音源</div><div class="d">当前已启用 38 个音源，搜索 / 听歌 / 下载即刻可用</div></div></div>
+      <div class="scard"><div class="si">♪</div><div class="st"><div class="t">扫描本地音乐</div><div class="d">引导结束后自动扫描设备音乐</div></div><span class="switch"></span></div>
+      <div class="scard" style="border:1.5px solid #2F6FED"><div class="si">▶</div><div class="st"><div class="t">进入软件自动播放</div><div class="d">启动后自动续播上次的歌曲（新增）</div></div><span class="switch"></span></div>
+    </div>
+    <div class="footer">
+      <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot on"></span></div>
+      <div class="main-btn">开始使用</div>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <h2>设计要点（平板）</h2>
+  <ul>
+    <li><b>限宽容器</b>：三屏内容统一放进 maxWidth≈620dp 的居中容器，不再铺满全屏宽——长条感消失</li>
+    <li><b>第 1 屏</b>：三张特色卡由"全宽竖条"改为<b>三列并排小卡</b>（图标在上），一眼看出是卡片不是按钮</li>
+    <li><b>第 2 屏</b>：两个权限卡<b>左右并排</b>（各半宽），右侧是操作区，不再整屏长条</li>
+    <li><b>第 3 屏</b>：音源卡 + 扫描开关 + <b>新增「进入软件自动播放」开关</b>（默认开，可关）</li>
+    <li>手机版保持现状（单列竖排，当前效果已认可）</li>
+    <li>底部进度点 + 主按钮限宽居中（按钮 ≈280dp，不占满）</li>
+  </ul>
+</div>
+</body>
+</html>

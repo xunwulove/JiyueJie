@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- sw480-599dp（大屏手机/小平板）：容器=短边×42%≈210 -->
+    <dimen name="splash_note_container">210dp</dimen>
+    <dimen name="splash_note_icon">164dp</dimen>
+    <dimen name="splash_note_corner">46dp</dimen>
+    <dimen name="splash_brand_text_width">115.5dp</dimen>
+    <dimen name="splash_brand_text_height">38.5dp</dimen>
+    <dimen name="splash_brand_text_top">280.5dp</dimen>
+</resources>

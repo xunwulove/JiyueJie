@@ -1,0 +1,222 @@
+import { timingConfig } from "@/constants/commonConst";
+import { fontSizeConst } from "@/constants/uiConst";
+import useColors from "@/hooks/useColors";
+import rpx from "@/utils/rpx";
+import { GlobalState } from "@/utils/stateMapper";
+import { nanoid } from "nanoid";
+import React, { useCallback, useEffect } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import {
+    Directions,
+    Gesture,
+    GestureDetector,
+} from "react-native-gesture-handler";
+import Animated, {
+    cancelAnimation,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withTiming,
+} from "react-native-reanimated";
+import Icon from "@/components/base/icon.tsx";
+import ThemeText from "./themeText";
+
+export interface IToastConfig {
+    /** 类型 */
+    type: "success" | "warn";
+    /** 消息内容 */
+    message?: string;
+    /** 行动点 */
+    actionText?: string;
+    /** 行动点按钮行为 */
+    onActionClick?: () => void;
+    /** 展示时间 */
+    duration?: number;
+}
+
+type IToastConfigInner = IToastConfig & {
+    id: string;
+};
+
+const toastQueue: IToastConfigInner[] = [];
+
+const fixedTop = rpx(250);
+
+const activeToastStore = new GlobalState<IToastConfigInner | null>(null);
+
+const typeConfig = {
+    success: {
+        name: "check-circle",
+        color: "#457236",
+    },
+    warn: {
+        name: "exclamation-circle",
+        color: "#de7622",
+    },
+} as const;
+
+export function ToastBaseComponent() {
+    const activeToast = activeToastStore.useValue();
+    const colors = useColors();
+
+    const toastAnim = useSharedValue(0);
+
+    const setNextToast = useCallback(() => {
+        activeToastStore.setValue(toastQueue.shift() || null);
+    }, []);
+
+    useEffect(() => {
+        if (activeToast) {
+            toastAnim.value = withTiming(1, timingConfig.animationSlow, () => {
+                toastAnim.value = withDelay(
+                    activeToast.duration || 1200,
+                    withTiming(0, timingConfig.animationSlow, finished => {
+                        if (finished) {
+                            runOnJS(setNextToast)();
+                        }
+                    }),
+                );
+            });
+        }
+    }, [activeToast]);
+
+    function removeCurrentToast() {
+        if (toastAnim.value === 1) {
+            cancelAnimation(toastAnim);
+            toastAnim.value = withTiming(
+                0,
+                timingConfig.animationSlow,
+                finished => {
+                    if (finished) {
+                        runOnJS(setNextToast)();
+                    }
+                },
+            );
+        }
+    }
+
+    const flingGesture = Gesture.Fling()
+        .direction(Directions.UP)
+        .onEnd(() => {
+            removeCurrentToast();
+        })
+        .runOnJS(true);
+
+    const toastAnimStyle = useAnimatedStyle(() => {
+        return {
+            transform: [
+                {
+                    translateY: (toastAnim.value - 1) * fixedTop,
+                },
+            ],
+            opacity: toastAnim.value,
+        };
+    });
+
+    return activeToast ? (
+        <GestureDetector gesture={flingGesture}>
+            <View style={styles.container}>
+                <Animated.View
+                    style={[
+                        styles.contentContainer,
+                        {
+                            backgroundColor: colors.notification,
+                            shadowColor: colors.shadow,
+                        },
+                        toastAnimStyle,
+                    ]}>
+                    <Icon
+                        size={fontSizeConst.appbar}
+                        name={typeConfig[activeToast.type].name}
+                        color={typeConfig[activeToast.type].color}
+                    />
+                    <ThemeText
+                        fontSize="title"
+                        color={colors.text}
+                        numberOfLines={2}
+                        style={styles.text}>
+                        {activeToast.message}
+                    </ThemeText>
+                    {activeToast.actionText && activeToast.onActionClick ? (
+                        <Pressable
+                            style={[
+                                styles.actionTextContainer,
+                                { backgroundColor: colors.primary },
+                            ]}
+                            onPress={activeToast.onActionClick}>
+                            <ThemeText fontSize="content" color="white" numberOfLines={1}>
+                                {activeToast.actionText}
+                            </ThemeText>
+                        </Pressable>
+                    ) : null}
+                </Animated.View>
+            </View>
+        </GestureDetector>
+    ) : null;
+}
+
+const styles = StyleSheet.create({
+    container: {
+        position: "absolute",
+        top: rpx(128),
+        width: "100%",
+        alignItems: "center",
+        zIndex: 1301,
+        // Android 绘制顺序由 elevation 主导：层级编码规范主层 13（Toast 最高层），
+        // 盖过弹窗层(0909)/次级界面层(0513)；否则浮窗打开期间 Toast 被遮住（"点了删除、弹窗关闭后才看到提示"）
+        elevation: 1301,
+    },
+    contentContainer: {
+        minWidth: rpx(420),
+        maxWidth: rpx(688),
+        minHeight: rpx(88),
+        borderRadius: rpx(12),
+        backgroundColor: "blue",
+        flexDirection: "row",
+        alignItems: "center",
+        // 图标+文字（+行动按钮）整体水平居中；text 不撑满（flexShrink 非 flex:1），整体才居中
+        justifyContent: "center",
+        paddingHorizontal: rpx(24),
+        paddingVertical: rpx(16),
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+
+        elevation: 2,
+    },
+    text: {
+        // 不撑满剩余宽度（flexShrink 允许换行收缩），配合容器 justifyContent:center 使图标+文字整体居中
+        flexShrink: 1,
+        marginLeft: rpx(24),
+    },
+    actionTextContainer: {
+        marginLeft: rpx(24),
+        width: rpx(120),
+        paddingHorizontal: rpx(12),
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: rpx(30),
+        height: rpx(58),
+    },
+});
+
+export function showToast(config: IToastConfig) {
+    const id = nanoid();
+    const _config = {
+        ...config,
+        id,
+    };
+    const activeToast = activeToastStore.getValue();
+    if (!activeToast) {
+        activeToastStore.setValue(_config);
+    } else {
+        toastQueue.push(_config);
+    }
+
+    return id;
+}

@@ -1,0 +1,31 @@
+﻿Starting a Gradle Daemon, 2 busy and 1 incompatible and 1 stopped Daemons could not be reused, use --status for details
+.\gradlew.bat : 
+所在位置 行:1 字符: 57
++ ... e\android"; .\gradlew.bat assembleRelease *> "E:\xunwu\MusicFreeApp\M ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not determine the dependencies of task ':gradle-plugin:settings-plugin:compileKotlin'.
+> Cannot find a Java installation on your machine matching this tasks requirements: {languageVersion=17, vendor=any ven
+dor, implementation=vendor-specific} for WINDOWS on x86_64.
+   > No matching toolchain could be found in the locally installed toolchains or the configured toolchain download repo
+sitories. Some toolchain resolvers had provisioning failures: foojay (Unable to download toolchain matching the require
+ments ({languageVersion=17, vendor=any vendor, implementation=vendor-specific}) from 'https://api.foojay.io/disco/v3.0/
+ids/c9869437c9afb245b55b746fc0c53348/redirect', due to: Could not HEAD 'https://github.com/adoptium/temurin17-binaries/
+releases/download/jdk-17.0.20.1+1/OpenJDK17U-jdk_x64_windows_hotspot_17.0.20.1_1.zip'.).
+
+* Try:
+> Learn more about toolchain auto-detection at https://docs.gradle.org/8.10.2/userguide/toolchains.html#sec:auto_detect
+ion.
+> Learn more about toolchain repositories at https://docs.gradle.org/8.10.2/userguide/toolchains.html#sub:download_repo
+sitories.
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 40s
