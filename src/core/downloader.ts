@@ -13,11 +13,32 @@ import EventEmitter from "eventemitter3";
 import { atom, getDefaultStore, useAtomValue } from "jotai";
 import path from "path-browserify";
 import { useEffect, useState } from "react";
-import { appendFile, copyFile, downloadFile, exists, readDir, readFile, stat, unlink } from "react-native-fs";
+import { appendFile, copyFile, downloadFile, exists, moveFile, readDir, readFile, stat, unlink } from "react-native-fs";
 import LocalMusicSheet from "./localMusicSheet";
 import pluginReliability from "./pluginReliability";
 import { IPluginManager } from "@/types/core/pluginManager";
 import { setStorage, getStorage } from "@/utils/storage";
+
+
+/** MIME → 扩展名映射（用于下载后真实格式探测与扩展名校正）。m4a 容器常被报成 video/mp4。 */
+const mimeToExt: Record<string, string> = {
+    "audio/mpeg": "mp3",
+    "audio/mp3": "mp3",
+    "audio/flac": "flac",
+    "audio/x-flac": "flac",
+    "audio/wav": "wav",
+    "audio/x-wav": "wav",
+    "audio/wave": "wav",
+    "audio/mp4": "m4a",
+    "audio/x-m4a": "m4a",
+    "audio/m4a": "m4a",
+    "video/mp4": "m4a",
+    "audio/ogg": "ogg",
+    "audio/opus": "opus",
+    "audio/aac": "aac",
+    "audio/x-aac": "aac",
+    "audio/aacp": "aac",
+};
 
 
 export enum DownloadStatus {
@@ -411,7 +432,7 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
         this.updateDownloadTask(musicItem, { tempPath: partPath });
 
         // 真实下载地址
-        const targetDownloadPath = addFileScheme(
+        let targetDownloadPath = addFileScheme(
             this.getDownloadPath(`${nextTask.filename}.${extension}`),
         );
 
@@ -513,6 +534,38 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                 await unlink(targetDownloadPath).catch(() => {});
                 this.cleanupCancelledTask(musicItem);
             } else {
+                // P2 修复（扩展名错配）：MMR 探测真实 MIME，与当前扩展名不符且受支持时改名再内嵌。
+                // 背景：CDN 直链常无后缀，getExtensionName 默认 mp3，实际可能是 flac/aac/m4a，
+                // jaudiotagger 按错误扩展名解析会导致封面/歌词内嵌静默失败。
+                try {
+                    const realMime = await Mp3Util.getMimeType(targetDownloadPath);
+                    const realExt = realMime ? mimeToExt[realMime.toLowerCase()] : null;
+                    if (
+                        realExt &&
+                        realExt !== extension &&
+                        supportLocalMediaType.includes(`.${realExt}`)
+                    ) {
+                        const newPath = addFileScheme(
+                            this.getDownloadPath(`${nextTask.filename}.${realExt}`),
+                        );
+                        await moveFile(targetDownloadPath, newPath);
+                        targetDownloadPath = newPath;
+                        devLog(
+                            "info",
+                            "下载扩展名校正",
+                            nextTask.filename,
+                            `${extension} → ${realExt}`,
+                        );
+                    }
+                } catch (e: any) {
+                    // 探测/改名失败：保持原扩展名与路径，不影响入库
+                    devLog(
+                        "warn",
+                        "下载扩展名探测失败，保持原扩展名",
+                        nextTask.filename,
+                        e?.message ?? e,
+                    );
+                }
                 // 内嵌专辑图：有 artwork 时写入音频文件（失败不影响入库，留痕便于排查）
                 if (musicItem.artwork) {
                     Mp3Util.setMediaCover(

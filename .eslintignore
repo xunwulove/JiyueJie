@@ -2,3 +2,5 @@ src/lib/*
 # 非本项目交付代码，不纳入 lint 范围（上游 MusicFree 对照副本 / 音源插件脚本）
 MusicFree-upstream/
 jiyuejie-resources/
+# 独立工具工程（source-probe 自带独立 lint）与第三方音源脚本副本，不纳入主仓 lint
+tools/

@@ -20,6 +20,8 @@ interface IMp3Util {
     getMediaCoverImg: (mediaPath: string) => Promise<string>;
     /** 读取内嵌歌词 */
     getLyric: (mediaPath: string) => Promise<string>;
+    /** 探测文件真实 MIME 类型（用于扩展名校正） */
+    getMimeType: (filePath: string) => Promise<string | null>;
     /** 写入meta信息 */
     setMediaTag: (filePath: string, meta: IWritableMeta) => Promise<void>;
     getMediaTag: (filePath: string) => Promise<IWritableMeta>;

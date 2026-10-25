@@ -113,6 +113,19 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
 
 
     @ReactMethod
+    fun getMimeType(filePath: String, promise: Promise) {
+        try {
+            val mmr = MediaMetadataRetriever()
+            mmr.setDataSource(filePath)
+            val mime = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
+            mmr.release()
+            promise.resolve(mime)
+        } catch (e: Exception) {
+            promise.reject("Error", e.message)
+        }
+    }
+
+    @ReactMethod
     fun getMediaCoverImg(filePath: String, promise: Promise) {
         try {
             val file = File(filePath)
