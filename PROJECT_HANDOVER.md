@@ -19,7 +19,8 @@
 
 **远程仓库**：
 - **GitHub**（源代码）：`github.com/xunwulove/JiyueJie`，main 分支。push 凭据已在 `.git/config` 的 origin URL 内（含 PAT，勿外泄、勿复制到公开文档）；**github.com:443 持续封锁，git 直连/镜像均不可靠——固定用 Git Data API 推送（api.github.com 走 REST，保留完整 commit 历史），脚本思路见 `docs/问题排查与避坑记录.md` §6.3**。
-- **Gitee**（软件更新仓）：`gitee.com/xunwulove/jiyuejie`，master 分支。结构：`updates/version.json`（更新兜底）+ Release tag `latest`（主更新地址，附件 = version.json / app-arm64-v8a-release.apk / app-universal-release.apk，**文件名不可变**）。gitee token 见原交接人对话记录，勿写入本文档。
+- **Gitee**（发布仓库，非源码仓）：`gitee.com/xunwulove/jiyuejie`，master 分支。结构：`updates/version.json`（更新兜底）+ `sources/`（音源订阅：`plugins.json` 正式 21 源 + `test-plugins.json` 测试订阅，探测软件依赖）+ Release tag `latest`（主更新地址，附件 = version.json / app-arm64-v8a-release.apk / app-universal-release.apk，**文件名不可变**）。gitee token 见原交接人对话记录，勿写入本文档。
+  - **仓库分工硬约束（2026-10-26 确认）**：**gitee 只提交发布仓文件**（README / `sources/` / `updates/` / release 附件），**源码不进 gitee**——本地 main 是完整源码树（src/docs/tools/android…），**禁止把本地 main push 到 gitee master**（会把整套源码灌进公开仓、且删除 gitee 的 `sources/test-plugins.json`）。gitee 侧文件更新一律走 **API contents PUT**（GET sha → PUT base64+sha，见 `docs/音源全流程.md` §六 发布流程）；源码只存本地与 GitHub（Git Data API 推送）。
 
 ---
 
