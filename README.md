@@ -31,25 +31,33 @@ https://gitee.com/xunwulove/jiyuejie/raw/master/sources/plugins.json
 https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.json
 ```
 
-### 2.2 音源获取来源
+### 2.2 音源获取来源（参考库全集，2026-10-25 更新）
 
-统一从 MusicFree 插件订阅站获取，经去重、去失效后整合维护：
+音源为 **MusicFree 插件格式**，来自**订阅站聚合 + 开源源仓库 + 聚合站**，经去重、去失效、A 档筛选后整合维护（完整流程见项目 `docs/音源全流程.md`）：
 
-- 订阅站：https://hebijunge.github.io/musicfree-plugins/
-- 主清单：https://hebijunge.github.io/musicfree-plugins/plugins.json
-- 备用通道（内容一致，主通道失效时换用）：
-  - fastly：https://hebijunge.github.io/musicfree-plugins/plugins-fastly.json
-  - gcore：https://hebijunge.github.io/musicfree-plugins/plugins-gcore.json
-  - ghproxy：https://ghproxy.net/https://raw.githubusercontent.com/hebijunge/musicfree-plugins/main/plugins-ghproxy.json
+| 参考库 | 类型 | 说明 |
+|---|---|---|
+| 订阅站聚合（插件Hub 聚合器 + onemusic/moro） | 订阅站 | one-* 系列源；筛选口径 HTTP 200 + ≥1KB + 特征词 |
+| **Nairocy 音源插件聚合站**（2026-10-25 登记） | 聚合站 | `https://music.nairocy.com/down`，索引 38 插件，含自托管 7 个（酷狗Thomas / 酷我音乐Thomas / 腾讯音乐 / 网易音乐 / 网易专辑 / GD音乐台 / GitCode）+ 弥音QQ / 云云音乐 等独特源 |
+| maotoumao/MusicFreePlugins（**官方插件库**） | 开源仓库 | `gitee.com/maotoumao/MusicFreePlugins`（Hi~Res音乐 为猫头猫原生库插件，走 `adad23u.appinstall.life` CDN） |
+| kevinr/tvbox | 聚合仓库 | `gitee.com/kevinr/tvbox` `musicfree/plugins/`（含千千音乐 = `qianqian.js`） |
+| ThomasBy2025/musicfree | GitHub 单插件 | 走国内镜像 ghproxy.net / gh-proxy.com |
+| GuGuMur/MusicFreePlugin-NeteaseRadio | CDN 双通道 | `cdn.jsdelivr.net` / `fastly.jsdelivr.net` |
+| GitLab acoolbook | 综合订阅 | `gitlab.com/acoolbook/musicfree/-/raw/main/music.json` |
+| Huibq keep-alive | 综合订阅（CDN） | `fastly.jsdelivr.net/gh/Huibq/keep-alive/Music_Free/myPlugins.json` |
+| AkFace userScript | 综合订阅 | `raw.githubusercontent.com/akFace/userScript/refs/heads/master/plugins.json` |
 
-### 2.3 更新流程（AI 按此自动执行）
+> **2026-10-25 首轮真机实测拍板**：正式 `sources/plugins.json` 更新为 **21 源**（A 档 19 全通 + 歌单型 one-QQ / Hi~Res音乐；剔除猫耳FM、5sing、弥音QQ；碳酸系保留）。
 
-1. 下载订阅站主清单 `plugins.json`；
-2. 并发验证每个插件 URL 可用性（HTTP 200 判为有效，间歇性超时需重测确认）；
-3. **去除失效插件**（含间歇性超时、重测仍失败的）；
-4. 与本地现有 `plugins.json` 按 URL 去重后整合；
-5. 生成新 `plugins.json`（严格 MusicFree 格式）；
-6. 覆盖上传仓库 `sources/plugins.json`（**文件名必须保持 `plugins.json`，勿改名**，否则订阅地址失效无法拉取）。
+### 2.3 新增音源工作流程（创造新音源，AI + 用户协作）
+
+1. **从参考库拉取音源**：从 §2.2 参考库全集（订阅站聚合 / Nairocy 聚合站 / 官方 MusicFreePlugins / kevinr/tvbox / ThomasBy2025 / CDN 双通道）拉取候选插件清单；
+2. **AI 探测脚本初筛**：`verify_downloads` 下载 + 语法检查 → `verify_mf` 五维探测（搜索/解析/播放/歌词/歌单，并发 5 / 预算 120s）→ 档位归类（A / A1 / B1 / B2 / C / X）；
+3. **建立 gitee 测试音源**：把初筛后的集合写成测试订阅 JSON（`sources/` 下独立文件，如 `test-plugins.json`，**不覆盖正式 plugins.json**，PUT base64 + 先 GET sha）→ 提供订阅链接 → **你用探测软件（source-probe）** 在"订阅设置"添加链接拉取实测，获取探测报告（播放静音）；
+4. **AI 二次筛选**：读取你的探测报告，与电脑初筛结果**比对**（电脑可播/真机不可播的差异源重点复核）→ 档位归类 + 建议动作 → 分级清单；
+5. **用户确认后覆盖正式音源**：确认的 **A 档（真机可播）** PUT 覆盖 `sources/plugins.json`（**文件名必须保持 `plugins.json`**，base64 + 先 GET sha）→ 直链验证（主链 + 备用 CDN `raw.giteeusercontent.com`）。
+
+> 对应完整执行细节（责任分工/交接物/档位表）见项目 `docs/音源全流程.md` §8 测试执行 SOP。
 
 ### 2.4 格式规范（必须严格遵循 MusicFree）
 
@@ -65,38 +73,3 @@ https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.j
 - 缺失 version 的补占位 `1.0.0`；
 - 禁止添加额外字段，避免影响 MusicFree 导入识别。
 
-### 2.5 其他可用订阅站（备用/补充来源）
-
-以下订阅站经验证可用，可作 hebijunge 之外的补充音源来源：
-
-- **聚合器**（推荐补充）：https://musicfreepluginshub.2020818.xyz/plugins.json
-- **官方**：https://gitee.com/maotoumao/MusicFreePlugins/raw/master/plugins.json
-- **GitLab 综合**：https://gitlab.com/acoolbook/musicfree/-/raw/main/music.json
-- **Huibq 综合**：https://fastly.jsdelivr.net/gh/Huibq/keep-alive/Music_Free/myPlugins.json
-- **AkFace**：https://raw.githubusercontent.com/akFace/userScript/refs/heads/master/plugins.json
-
-> 注意：聚合器中的「网易 / 酷我 / 酷我_1 / qq / mg」为失效源（music.haitangw.net，HTTP 418），整合时需排除。
-
-### 2.6 更新记录
-
-- **2026-10-13**：音源订阅收口到本仓库（`updates/` + `sources/`），全部音源验证有效。
-- **2026-10-13**：整合 hebijunge 订阅站 + 聚合器补充插件，移除不稳定音源。
-- **2026-10-15**：补录 hebijunge 新增「聚合」音源；移除 `probe_plugin.js` / `package.json`（验证脚本已废弃，不再维护）；订阅清单数量不再单独声明。
-- **2026-10-16**：软件音效引擎切换为 **JamesDSP 核心算法库**（均衡器 15 段 + 输出增益/动态低音/立体声增强/混响/电子管/交叉馈送/卷积器等进阶音效），替换系统 AudioEffect；对应更新日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-17**：发布 **0.6.2.15**——新增 **DDC 耳机补偿**（内置 5 款 AutoEQ 真实频响补偿 IR：QCY T13/AirPods Pro 2/Sony WH-1000XM4/Bose QC45/Sennheiser HD 650）、耳机补偿预设**导入**（三级文件选择器/48kHz WAV/可删除）、混响 5 预设替换为**真实空间 IR**、移除英文界面仅中文；完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-17（同日同版本号重新发布 0.6.2.15）**：修复批次 16 项（播放失败重试链路、下载队列失败卡死、听歌统计失真、切歌换采样率 DSP 静默重置、IR 按引擎采样率重采样、插件歌单分页误判、平板面板遮挡等）+ 新增下载**断点续传与队列持久化**（重启恢复未完成任务并自动续跑）+ 全项目 **lint 清零**（pre-commit 校验恢复）。版本号未变：已装 0.6.2.15 的用户不会收到更新提示，需手动下载覆盖安装。
-- **2026-10-18（同日同版本号再次重新发布 0.6.2.15）**：修复**两次闪退**——播放补充信息 artwork 空串导致 RNTP `updateMetadataForTrack` 崩溃（Java 层）、JamesDSP `nativeInit` 重初始化与 `setEqualizer` 并发竞态空指针崩溃（JNI 层 pthread 互斥锁根治）+ 全部文字胶囊统一固定 36/16/18（消除平板 600dp 临界跳变）+ WebDAV 设置改三级浮窗（修复原面板输入框弹不出键盘）+ 浮窗遮罩点击穿透修复 + 音效页文案调整（删除均衡器/生效提示/混响胶囊下说明）。版本号未变：已装 0.6.2.15 的用户不会收到更新提示，需手动下载覆盖安装。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-18（深夜，同日同版本号第三次重新发布 0.6.2.15）**：**两次闪退修复经打包生效**（artwork 空串、JamesDSP `setEqualizer` 竞态加锁，此前已提交未打包，用户端复现崩溃后紧急重发）+ 底部面板补 elevation（修复搜索结果列表三点菜单唤不出、浮窗遮罩点击穿透）+ 搜索失败音源改进（翻页从失败页重试不丢数据、同轮失败自动重试一次）+ 此前 10-18 全部改动。版本号未变：已装 0.6.2.15 的用户不会收到更新提示，需手动下载覆盖安装。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-19（同日同版本号第四次重新发布 0.6.2.15）**：**播放页与迷你播放条显示当前音质标识**（低音质/标准音质/高音质/超高音质，切音质实时刷新，全屏播放页标题区歌手行下居中标签 + 播放条 `标题 ·高音质`）。版本号未变：已装 0.6.2.15 的用户不会收到更新提示，需手动下载覆盖安装。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-19（同日同版本号第五次重新发布 0.6.2.15）**：**平板浮窗穿透修复**——Panel/Dialog 浮窗弹出时左 30% 播放区补透明拦截层，点击播放区/播放条只关闭浮窗，不再穿透进全屏播放页（含三级浮窗/嵌套 Dialog）。版本号未变：已装 0.6.2.15 的用户不会收到更新提示，需手动下载覆盖安装。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-19**：发布 **0.6.2.16**（正式发版，版本号 0.6.2.15→0.6.2.16，versionCode 400026→400027）——**平板浮窗穿透彻底根治**：Panel 遮罩交互层改 100% 全屏（点击浮窗外任意区域即关闭浮窗）、视觉暗色层仍限右 70% 内容区；Dialog 新增与弹窗本体同级同 elevation 16300 的 `screenTouchBlock` 全屏点击拦截层，删除早期两个补丁层；同步音源订阅清单修复（plugins.json 99→98 个插件）。已装 0.6.2.15 的用户会收到更新提示。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-19（同日同版本号第七次重新发布 0.6.2.16）**：**歌单歌曲列表与全屏播放页三点菜单改为三级浮窗 Dialog**（根治底部面板被 KeyboardAvoidingView/覆盖层压住只见阴影的问题）+ 核查问题批量修复——本地歌单详情页补 Header（收藏/批量入口恢复）、全屏版三点菜单文案走 i18n、Toast 补 elevation 16320（浮窗打开期间可见）、播放队列歌曲行加三点菜单、歌单删除加确认弹窗、平板全屏播放页弹窗整屏居中（读 fullPlayingAtom 对齐 Panel）；**下载音质选择改三级弹窗并高亮当前音质**；底部面板标题圆角直角阴影修复（wrapper overflow 裁剪）。版本号未变：已装 0.6.2.16 的用户不会收到更新提示，需手动下载覆盖安装。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-20（同日同版本号第八次重新发布 0.6.2.16）**：**自制封面**——播放时自动给「无封面」歌曲套用所选本地底图+歌名合成封面（设置→「歌曲&歌单&专辑」分组，底图本地选图，播放条/列表/全屏大封面三处集成，仅界面展示）；**取图位置选择**（按图片短边取最大内接正方形选框，沿图片长边滑动 offset 调截取位置）；新增 `coverBase` 配置存储 + `syntheticCover`/`songCover` 分发组件。版本号未变：已装 0.6.2.16 的用户不会收到更新提示，需手动下载覆盖安装。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-20（同日同版本号第九次重新发布 0.6.2.16）**：**自制封面缺陷修复**——合成封面改纯底图（去除歌名文字与底部压暗遮罩）；修复播放页/全屏播放页合成封面「左右显示一半」（根因=FastImage 用 absoluteFill 尺寸=容器，但取图位置平移量按真实图 cover 溢出计算，导致 view 被移出容器露出背景；改为显式 cover 缩放尺寸 + 容器 overflow 裁剪后平移 offset）；沉浸播放页保持不显示自选图。版本号未变：已装 0.6.2.16 的用户不会收到更新提示，需手动下载覆盖安装。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-20（同日同版本号第十次重新发布 0.6.2.16）**：**沉浸播放页右边封面占位无封面时显示默认封面**（原为 ♪ 占位符）；背景/渐变/光效保持原样。版本号未变：已装 0.6.2.16 的用户不会收到更新提示，需手动下载覆盖安装。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-20（同日同版本号第十一次重新发布 0.6.2.16）**：**更新订阅清单拉取改为并发**（原串行 for 循环 → `runWithConcurrency` worker 池并发拉取，上限 10），多个订阅地址同时拉取，不再被慢地址拖住整批。版本号未变：已装 0.6.2.16 的用户不会收到更新提示，需手动下载覆盖安装。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-20**：发布 **0.6.2.17**（并入此前"未发版改动"20 项）——**歌单/全屏播放页三点菜单改为三级浮窗 Dialog**、下载音质选择改弹窗并高亮当前音质、音质标识带框循环切换、**浮窗层级编码规范落地**（4 位码 01/05/09/13）、弹窗点击外部退出、自动搜索歌词默认开启、自制封面底图+取图位置、听歌时长改**播放事件流精确统计** + 弹窗 UI 全量统一 + 歌词本地缓存/更换 + **插件批量安装性能优化**（下载/挂载分离、分批让出 JS 线程、大混淆插件分档手动安装）。
-- **2026-10-20**：发布 **0.6.2.18**——手机版卡片标题 2 行、订阅源可删除恢复默认、下载超时恢复全局。
-- **2026-10-21**：发布 **0.6.2.21**——**音源探测播放验证方案 B**（50 个精选音源清单，Node 沙箱真实搜索验证，A 档 44 + B 档 6）、**热门搜索改纯实时接口**（腾讯 musicu.fcg 主源 + 酷我 hotword.s 备源）、首页三卡与统计页完全同源（播放事件流）、本地歌曲时长双重兜底、**平板/手机布局判定重写**（竖屏手机全宽 / 横屏车机平板双栏）+ **三 ABI 固化** + 关闭 release 构建期 lintVital。完整日志见 `updates/version.json` 的 `changeLog`。
-- **2026-10-23**：音源订阅清单 `sources/plugins.json` 更新为 **30 源 A 类筛选**（来源=音乐Free插件Hub 聚合器 + onemusic/moro 订阅站，HTTP 200 + ≥1KB + 特征词筛选），与 gitee `xunwulove/jiyuejie` `sources/plugins.json` 逐字节一致；`docs/archive/音源清单-20261022/`（50 源精选，已归档）保留为历史探测产物，非当前订阅清单。
-- **2026-10-25**：发布 **0.6.2.22**（versionCode 400033）——**下载扩展名 MIME 校正**（封面/歌词内嵌 P2 根因修复：flac/aac/m4a 无后缀 CDN 直链按真实格式改名后再内嵌）、**切歌预取方案 B**（剩余 15s 预解析下一首并入队预缓冲，消除连播空白；蜂窝网禁预取）、**App 内音源探测补全 5 维**（搜索/解析/播放/歌词/歌单，总预算 120s）、**探测软件报告 v2 + 播放验证静音**；gitee latest/v0.6.2.22 双 release 重建 + `updates/version.json` 更新。完整日志见 `updates/version.json` 的 `changeLog`。

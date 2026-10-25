@@ -68,10 +68,12 @@
 
 | 工具 | 定位 | 用途 |
 |---|---|---|
-| `tools/verify_sources/` | 开发期 Node 脚本 | 电脑批量验证音源可用性（搜索→取链→可播→下载）：`verify_lx.cjs`（洛雪 LX）/ `verify_mf.cjs`（MusicFree）/ `verify_downloads.cjs`（下载），音源脚本存 `dl2/`，结果 txt 输出 |
+| `tools/verify_sources/` | 开发期 Node 脚本 | 电脑批量验证音源可用性（搜索→取链→可播→下载）：`verify_mf.cjs`（MusicFree 五维）/ `verify_downloads.cjs`（下载+语法），音源脚本存 `dl2/`，结果 probe-report.json 输出（2026-10-25 已删除洛雪 LX 体系，App 只支持 MusicFree 格式） |
 | `tools/source-probe/` | 装机实测 App（独立 RN 工程，自带 git） | 打包「音源探测」APK 装机实测各音源能否真实搜索/播放；主仓库 `.gitignore` 已排除，仅文件归置在 tools/ |
 
 > 关系：verify_sources = 电脑脚本快速判「可搜 + 可取链 + 可下载」；source-probe = 真机跑引擎判「可播」。
+>
+> **source-probe 当前版本 0.1.6**（2026-10-25 发版，versionCode 7）：报告升级 v2（五档分类 🟢全通/🟠可解析不可播/🟡半可用/🟣歌单型/🔴死源 + 19 列全字段明细 + classifyPlayError 归一聚合）+ 播放验证静音（`setVolume(0)`，不抢焦点）；构建修复（webview 变体失败=缓存脏，清缓存后三 ABI 全量构建 37m11s）。发版记录/打包避坑/已知问题（checkUpdate 误用主仓库 version.json）见 `tools/source-probe/PROJECT_HANDOVER.md` §9。
 
 ### docs/ 文档导航（原 23 份已整合为主文档，原文档归档于 `E:\Temp\Deepseek\docs-archive-20261015\`）
 
@@ -80,7 +82,7 @@
 | `docs/开发知识库.md` | 二次开发指南、PROJECT_DECISIONS、音源插件、onboarding 设计、UI 规范（字体/层级） |
 | `docs/UI与适配核查记录.md` | **UI 现行规范（精简版，2026-10-25）**：字号/图标档位、全局组件规范、列表行规格、弹窗/面板视觉、布局与尺寸原则（短边法/rpx保留层）、音源进度弹窗与卡片标识、浮窗层级编码规范（**第8章**）；历史核查流水已归档至 `docs/archive/功能与代码核查记录.md` |
 | `docs/问题排查与避坑记录.md` | **卡顿、均衡器全套避坑、启动页白屏/系统 splash、开源启动图调研、gitee 发版避坑** |
-| `docs/音源检测闭环.md` | **音源检测完整闭环流程**（来源→验证→产出→发布→App生效；含 `tools/verify_sources`/`tools/source-probe` 用法与 probe_plugin.js 增强工具） |
+| `docs/音源全流程.md` | **音源全流程**（来源参考库全集→验证链路→档位处理→产出→发布→App生效；含 `tools/verify_sources`/`tools/source-probe` 用法与 probe_plugin.js 增强工具）；**§8 测试执行 SOP**（2026-10-25 固化：范围决策→电脑初筛→建测试音源依托 gitee→用户探测软件实测→报告回流→A档入库；测试结果不落档） |
 | `docs/archive/` | 历史归档（不随主文档导航，需时自取）：功能与代码核查记录、多用户画像测试走查报告 + 走查子报告（6 份）、research 启动图调研汇总、音源清单-20261022 |
 | `readme.md` / `changelog.md` | 用户使用说明 / 版本历史（保留未动） |
 
