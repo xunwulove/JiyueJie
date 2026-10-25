@@ -33,8 +33,9 @@ import ReactNativeTrackPlayer, {
     useProgress,
 } from "react-native-track-player";
 import LocalMusicSheet from "../localMusicSheet";
-import { matchMusic, prewarmApiSongs, platformMatches } from "../playMatcher";
+import { matchMusic, prewarmApiSongs, platformMatches, isApiSource } from "../playMatcher";
 import pluginReliability from "../pluginReliability";
+import probeService from "../probeService";
 import playEvents from "../playEvents";
 import { ensureSoundEffectAttached } from "@/core/soundEffect";
 
@@ -105,6 +106,21 @@ class TrackPlayer extends EventEmitter<{
     private playRetryFailed = false;
     // 播放队列索引map
     private playListIndexMap = createMediaIndexMap([] as IMusic.IMusicItem[]);
+
+    // ===== 下一首预取（方案 B：当前曲剩 ≤15s 预解析下一首并入队预缓冲，切歌几乎无缝） =====
+    /** 预取触发提前量（毫秒）：当前曲剩余时长 ≤ 该值触发 */
+    private static prefetchLeadMs = 15000;
+    /** 预取缓存：下一首真实源（自然连播到 index1 时转正使用） */
+    private prefetchCache: {
+        item: IMusic.IMusicItem;
+        url: string;
+        headers?: Record<string, string>;
+        quality: IMusic.IQualityKey;
+    } | null = null;
+    /** 预取进行中（防重入；解析含网络请求，可能数秒） */
+    private prefetchInFlight = false;
+    /** 已为哪个 currentIndex 预取过（防同一曲重复触发；切歌后自然失效） */
+    private prefetchedForIndex = -1;
 
     // ===== 听歌时长统计：当前曲收听会话（播放器 currentTime 增量累计，切歌/清空时提交） =====
     // 与旧实现（按歌聚合最近播放时间×累计次数）不同：按事件流记实际收听秒数，
@@ -263,6 +279,38 @@ class TrackPlayer extends EventEmitter<{
                             // 当前生效的歌曲是下一曲的标记
                             await this.skipToNext();
                         }
+                    } else if (
+                        evt.index === 1 &&
+                        evt.lastIndex === 0 &&
+                        !!evt.track?.url &&
+                        evt.track.url !== TrackPlayer.fakeAudioUrl &&
+                        evt.track.url !== TrackPlayer.proposedAudioUrl &&
+                        this.prefetchCache &&
+                        isSameMediaItem(
+                            evt.track as IMusic.IMusicItem,
+                            this.prefetchCache.item,
+                        )
+                    ) {
+                        // —— 预取真曲开始播放（方案 B）：ExoPlayer 播放完当前曲自动切到
+                        // 已预缓冲的下一首（index 1 为预取真曲），此处同步 JS 播放状态并压缩队列。
+                        // 队列从 [cur(0), next(1), fake(2)] → remove(0) → [next(0), fake(1)]，
+                        // 下一轮预取在 next 播放时继续。预取 URL 失效时走 PlaybackError → handlePlayFail 兜底。
+                        const prefetched = this.prefetchCache;
+                        this.prefetchCache = null;
+                        this.prefetchedForIndex = -1;
+                        // 与 fake 分支同语义：切歌边界事件（仅 scheduleClose "播放结束后退出" 消费）
+                        this.emit(TrackPlayerEvents.PlayEnd);
+                        this.setCurrentMusic(prefetched.item);
+                        this.setQuality(prefetched.quality);
+                        // 压缩队列：移除已播完的 index 0（当前活动 track 是 index 1，移除前项安全，不打断播放）。
+                        // 移除失败（概率极低）时队列保持 [cur,next,fake] 未压缩——此时若下一轮预取 add 到 index 1
+                        // 会把正在播的 next 挤到 index 2（active 重编号），故置回节流标记阻止下一轮预取，
+                        // 待队列被 play()/setQueue 重建后再恢复预取
+                        try {
+                            await ReactNativeTrackPlayer.remove([0]);
+                        } catch {
+                            this.prefetchedForIndex = this.currentIndex;
+                        }
                     }
                 },
             );
@@ -303,7 +351,19 @@ class TrackPlayer extends EventEmitter<{
                                 cur!.platform,
                                 true,
                             );
+                            // 真实播放成功 → 刷新 play 维度探测时间戳（播放过 = 已验证，
+                            // 24h 内不再重复探测播放功能；失败不刷新，留给探测核实）
+                            void probeService.refreshPlayProbed(cur!.platform);
                         }
+                    }
+                    // —— 下一首预取（方案 B）：当前曲剩余 ≤15s 时预解析下一首并入队（ExoPlayer 预缓冲，切歌几乎无缝）——
+                    const duration = evt?.duration ?? 0;
+                    if (
+                        position > 0 &&
+                        duration > 0 &&
+                        duration - position <= TrackPlayer.prefetchLeadMs
+                    ) {
+                        this.maybePrefetchNext();
                     }
                     // 播放进度增量累计实际收听秒数（播放中才加；seek/回退不累计负值）
                     const s = this.listenSession;
@@ -578,6 +638,10 @@ class TrackPlayer extends EventEmitter<{
             if (!musicItem) {
                 musicItem = this.currentMusic;
             }
+            // 手动播放/切歌/失败重试走完整取源流程（setQueue 会重置队列），
+            // 预取缓存仅服务"自然连播转正"（ActiveTrackChanged 分支），此处作废
+            this.prefetchCache = null;
+            this.prefetchedForIndex = -1;
             if (!musicItem) {
                 throw new Error(PlayFailReason.PLAY_LIST_IS_EMPTY);
             }
@@ -890,6 +954,8 @@ class TrackPlayer extends EventEmitter<{
     async clearPlayList(): Promise<void> {
         this.setPlayList([]);
         this.setCurrentMusic(null);
+        this.prefetchCache = null;
+        this.prefetchedForIndex = -1;
 
         await ReactNativeTrackPlayer.reset();
         PersistStatus.set("music.musicItem", undefined);
@@ -1104,6 +1170,10 @@ class TrackPlayer extends EventEmitter<{
 
         getDefaultStore().set(repeatModeAtom, mode);
         // 更新下一首歌的信息
+        // 注：此处会覆盖队列 index 1 的 track——若 index 1 是预取真曲（方案 B）则被覆盖回 fake，
+        // 故先作废预取缓存与节流标记，避免残留状态与队列不一致（覆盖后自然走原 PlayEnd→skipToNext 链路）
+        this.prefetchCache = null;
+        this.prefetchedForIndex = -1;
         ReactNativeTrackPlayer.updateMetadataForTrack(
             1,
             this.getFakeNextTrack(),
@@ -1115,6 +1185,111 @@ class TrackPlayer extends EventEmitter<{
     private setQuality(quality: IMusic.IQualityKey) {
         getDefaultStore().set(qualityAtom, quality);
         PersistStatus.set("music.quality", quality);
+    }
+
+    /**************** 下一首预取（方案 B：剩 ≤15s 预解析 + 入队预缓冲） ****************/
+
+    /** 触发入口（进度事件每帧调用，内部节流）：当前曲剩 ≤15s 且未预取过 → 启动预取 */
+    private maybePrefetchNext() {
+        if (
+            this.prefetchInFlight ||
+            this.prefetchedForIndex === this.currentIndex
+        ) {
+            return;
+        }
+        if (this.repeatMode === MusicRepeatMode.SINGLE) {
+            return; // 单曲循环无"下一首"，交给现有 play(null, true) 重播链路
+        }
+        // 蜂窝网下禁止预取：预取入队后 ExoPlayer 会预加载音频数据（发起网络请求），
+        // 若用户关闭了"使用移动网络播放"，预取会绕过该限制偷跑流量，故与 play() 同口径拦截
+        if (
+            Network.isCellular &&
+            this.configService.getConfig("basic.useCelluarNetworkPlay") ===
+                false
+        ) {
+            return;
+        }
+        const cur = this.currentMusic;
+        if (!cur) {
+            return;
+        }
+        const next = this.getPlayListMusicAt(this.currentIndex + 1);
+        if (!next || isSameMediaItem(next, cur)) {
+            return; // 无下一首（队列仅一首）
+        }
+        this.prefetchedForIndex = this.currentIndex;
+        this.prefetchInFlight = true;
+        void this.prefetchNextTrack(cur, next);
+    }
+
+    /**
+     * 预解析下一首真实源并插入 RNTP 队列 index 1（替换 fake 位）：
+     * ExoPlayer 播放当前曲时会对队列下一项预加载音频数据 → 播完自动无缝切到下一首。
+     * 全程不打断当前播放；任何一步失败都静默作废，切歌仍走原 play 链路（兜底）。
+     */
+    private async prefetchNextTrack(
+        cur: IMusic.IMusicItem,
+        next: IMusic.IMusicItem,
+    ) {
+        try {
+            // 1. 接口歌曲（推荐歌单/榜单，无音频地址）：先匹配"我们的源"
+            //    （命中 prewarmApiSongs 预热缓存最快），匹配失败则放弃预取
+            let playItem: IMusic.IMusicItem | null = next;
+            if (isApiSource(next)) {
+                const matched = await matchMusic(next);
+                if (!matched) {
+                    return;
+                }
+                // 原位替换，保持播放列表与 RNTP 队列一致（matched 的 currentIndex 位置不变）
+                this.replaceInPlayList(next, matched);
+                playItem = matched;
+            }
+            // 2. 与 play() 同口径：按音质顺序解析真实源
+            const qualityOrder = getQualityOrder(
+                this.configService.getConfig("basic.defaultPlayQuality") ?? "standard",
+                this.configService.getConfig("basic.playQualityOrder") ?? "asc",
+            );
+            const plugin = this.pluginManagerService.getByMedia(playItem);
+            let source: IPlugin.IMediaSourceResult | null = null;
+            let quality: IMusic.IQualityKey | undefined;
+            for (const q of qualityOrder) {
+                source =
+                    (await plugin?.methods?.getMediaSource(playItem, q)) ?? null;
+                if (source?.url) {
+                    quality = q;
+                    break;
+                }
+            }
+            if (!source?.url || !quality) {
+                return; // 解析失败：不阻塞，切歌走原链路
+            }
+            // 3. 竞态守卫：预取期间用户可能已手动切歌/换列表，预取结果作废
+            if (!this.isCurrentMusic(cur)) {
+                this.prefetchCache = null;
+                return;
+            }
+            this.prefetchCache = {
+                item: playItem,
+                url: source.url,
+                headers: source.headers,
+                quality,
+            };
+            // 4. 入队 index 1（替换 fake 位）：RNTP add 不重置当前播放；
+            //    ExoPlayer 播放当前曲时预加载队列下一项 → 播完无缝切歌
+            const prefetchedTrack = this.patchMediaArtwork({
+                ...playItem,
+                url: source.url,
+                headers: source.headers,
+            } as Track);
+            if (!prefetchedTrack) {
+                return;
+            }
+            await ReactNativeTrackPlayer.add([prefetchedTrack], 1);
+        } catch (e: any) {
+            trace("预取下一首失败（不影响播放）", e?.message);
+        } finally {
+            this.prefetchInFlight = false;
+        }
     }
 
     // 设置音源

@@ -94,7 +94,7 @@ export default function PluginList() {
                     return;
                 }
                 Toast.success(
-                    `检测完成：可搜索 ${report.searchOk}/${report.total} · 可解析 ${report.parseOk}/${report.total} · 可播放 ${report.playable}/${report.total}`,
+                    `检测完成：可搜索 ${report.searchOk}/${report.total} · 可解析 ${report.parseOk}/${report.total} · 可播放 ${report.playable}/${report.total} · 可歌词 ${report.lyricOk}/${report.total} · 歌单 ${report.sheetOk}/${report.total}`,
                 );
             })
             .catch(() => {

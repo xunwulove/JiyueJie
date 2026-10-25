@@ -5,6 +5,7 @@ import getOrCreateMMKV from "@/utils/getOrCreateMMKV";
 import PersistStatus from "@/utils/persistStatus";
 import pluginReliability, {
     getRecommendReliabilitySync,
+    getRecommendLatencySync,
     ensureRecommendLoaded,
 } from "@/core/pluginReliability";
 import Config from "@/core/appConfig";
@@ -76,6 +77,9 @@ export async function fetchPluginRecommendSheets(
     if (!plugin) {
         return null;
     }
+    // 拉取耗时统计：真实网络请求前计时（getByHash 为本地查找，不计入）
+    const fetchStart = Date.now();
+    const elapsed = () => Date.now() - fetchStart;
     try {
         // 超时保护：插件 getRecommendSheetTags 无超时约定，卡住的源会拖住首页推荐区
         // 串行择优（首次打开零缓存时逐个真请求）。对齐 getRecommendSheetsByTag 的 8s。
@@ -91,6 +95,7 @@ export async function fetchPluginRecommendSheets(
             pluginReliability.recordRecommendResult(
                 plugin.instance.platform,
                 false,
+                elapsed(),
             );
             return null;
         }
@@ -110,12 +115,14 @@ export async function fetchPluginRecommendSheets(
             pluginReliability.recordRecommendResult(
                 plugin.instance.platform,
                 false,
+                elapsed(),
             );
             return null;
         }
         pluginReliability.recordRecommendResult(
             plugin.instance.platform,
             true,
+            elapsed(),
         );
         return { pluginHash, pluginName: plugin.name, pinned, groups };
     } catch (e: any) {
@@ -128,6 +135,7 @@ export async function fetchPluginRecommendSheets(
         pluginReliability.recordRecommendResult(
             plugin.instance.platform,
             false,
+            elapsed(),
         );
         return null;
     }
@@ -254,11 +262,28 @@ export async function getFirstAvailablePluginRecommend(): Promise<IPluginRecomme
         "getRecommendSheetTags",
     )
         .slice()
-        .sort(
-            (a, b) =>
-                getRecommendReliabilitySync(b.instance.platform) -
-                getRecommendReliabilitySync(a.instance.platform),
-        );
+        .sort((a, b) => {
+            // 主排序：推荐歌单可用率降序（可用率高的源优先展示）
+            const ra = getRecommendReliabilitySync(a.instance.platform);
+            const rb = getRecommendReliabilitySync(b.instance.platform);
+            if (ra !== rb) {
+                return rb - ra;
+            }
+            // 次排序（成功率相同）：有平均耗时数据的优先、平均耗时短者优先，
+            // 避免"能用但慢"的源与"快但无数据"的源混为一谈
+            const la = getRecommendLatencySync(a.instance.platform);
+            const lb = getRecommendLatencySync(b.instance.platform);
+            if (la != null && lb != null) {
+                return la - lb;
+            }
+            if (la != null) {
+                return -1;
+            }
+            if (lb != null) {
+                return 1;
+            }
+            return 0;
+        });
 
     // 手动指定的来源优先（仅在指定源仍启用且具备能力时生效）
     const manualHash = Config.getConfig("plugin.recommendSource");

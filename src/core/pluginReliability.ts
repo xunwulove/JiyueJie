@@ -16,6 +16,10 @@
  *
  * 另设一套"推荐歌单专用可用率"（独立 key、独立计数）：
  * 推荐歌单页/首页横滑区按它择优排序，避免"能搜索但推荐歌单拉胯"的源抢占推荐位。
+ * 写入方：①推荐歌单页真实拉取（拉到非空数据记 ok）；②App 内音源探测
+ * （probeService 歌单维度：歌单能显示 + 歌单内第一首能解析/可播才算 ok）。
+ * 独立于 search/parse/play 合成可用率——歌单显示有问题但播放路径正常的源
+ * 不会被歌单维度拖累合成可用率。
  */
 import { getStorage, setStorage } from "@/utils/storage";
 import { StorageKeys } from "@/constants/commonConst";
@@ -56,6 +60,10 @@ const ALL_DIMENSIONS = DIMENSION_WEIGHTS.map(w => w[0]) as ReliabilityDimension[
 interface IRecommendReliabilityRecord {
     ok: number;
     fail: number;
+    /** 累计拉取耗时（毫秒；timeCount>0 时有效） */
+    timeCost?: number;
+    /** 耗时样本数 */
+    timeCount?: number;
 }
 
 let reliabilityMap: Record<string, IReliabilityRecord> = {};
@@ -297,6 +305,20 @@ export function hasRecommendRecordSync(platform: string | undefined): boolean {
     return !!r && r.ok + r.fail > 0;
 }
 
+/** 同步取推荐歌单平均拉取耗时（毫秒；无耗时样本返回 null，供"成功率相近时快者优先"排序） */
+export function getRecommendLatencySync(
+    platform: string | undefined,
+): number | null {
+    if (!platform) {
+        return null;
+    }
+    const r = recommendMap[platform];
+    if (!r || !r.timeCount || r.timeCount <= 0) {
+        return null;
+    }
+    return (r.timeCost ?? 0) / r.timeCount;
+}
+
 /** 异步取推荐歌单可用率 */
 export async function getRecommendReliability(
     platform: string | undefined,
@@ -308,20 +330,33 @@ export async function getRecommendReliability(
     return calcRecommend(recommendMap[platform]);
 }
 
-/** 记录一次推荐歌单获取结果（ok=是否成功返回非空数据）；同 recordResult 的竞态处理 */
+/**
+ * 记录一次推荐歌单获取结果（ok=是否成功返回非空数据；elapsedMs=本次拉取耗时毫秒，
+ * 可选，传入后累加进 timeCost/timeCount 供平均耗时统计）；同 recordResult 的竞态处理
+ */
 export async function recordRecommendResult(
     platform: string | undefined,
     ok: boolean,
+    elapsedMs?: number,
 ): Promise<void> {
     if (!platform) {
         return;
     }
     await ensureRecommendLoaded();
-    const r = recommendMap[platform] ?? { ok: 0, fail: 0 };
+    const r = recommendMap[platform] ?? {
+        ok: 0,
+        fail: 0,
+        timeCost: 0,
+        timeCount: 0,
+    };
     if (ok) {
         r.ok += 1;
     } else {
         r.fail += 1;
+    }
+    if (typeof elapsedMs === "number" && elapsedMs >= 0) {
+        r.timeCost = (r.timeCost ?? 0) + elapsedMs;
+        r.timeCount = (r.timeCount ?? 0) + 1;
     }
     recommendMap[platform] = r;
     void setStorage(
@@ -376,6 +411,7 @@ const pluginReliability = {
     recordRecommendResult,
     getRecommendReliability,
     getRecommendReliabilitySync,
+    getRecommendLatencySync,
     hasRecommendRecordSync,
     RECOMMEND_DEFAULT,
     resetRecommendReliability,
