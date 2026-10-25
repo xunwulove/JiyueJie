@@ -742,9 +742,15 @@ class PluginManager implements IPluginManager, IInjectable {
         if (targetIndex !== -1) {
             try {
                 const pluginName = plugins[targetIndex].name;
+                const pluginPath = plugins[targetIndex].path;
                 await unlink(plugins[targetIndex].path);
                 plugins = plugins.filter(_ => _.hash !== hash);
                 this.setPlugins(plugins);
+                // 同步清理持久化缓存（含 sourceTag/missingRounds）：
+                // 否则卸载后以 path 为 key 的缓存条目残留（path 为 nanoid 不复用，纯垃圾累积）
+                if (pluginPath) {
+                    pluginCacheStore.delete(pluginPath);
+                }
                 // 防止其他重名
                 if (plugins.every(_ => _.name !== pluginName)) {
                     removeAllMediaExtra(pluginName);
@@ -763,6 +769,10 @@ class PluginManager implements IPluginManager, IInjectable {
                 try {
                     const pluginName = plugin.name;
                     await unlink(plugin.path);
+                    // 全部卸载时同样清理持久化缓存（含 sourceTag/missingRounds）
+                    if (plugin.path) {
+                        pluginCacheStore.delete(plugin.path);
+                    }
                     removeAllMediaExtra(pluginName);
                 } catch (e) {}
             }),
