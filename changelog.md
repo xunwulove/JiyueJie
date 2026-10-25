@@ -4,6 +4,37 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.25（下载扩展名校正，非发版）`
+1. 【修复】**下载后 MMR 探测真实格式并校正扩展名**（封面/歌词内嵌的 P2 根因）：CDN 直链常无后缀，`getExtensionName` 按 URL 后缀判定、无后缀默认 `.mp3`，但实际文件可能是 flac/aac/m4a——jaudiotagger 按错误扩展名解析导致内嵌封面/歌词静默失败（走查报告 P2）。
+   - 原生 `Mp3UtilModule.kt` 新增 `getMimeType`（`MediaMetadataRetriever` 取 `METADATA_KEY_MIMETYPE`）；JS 接口 `native/mp3Util` 同步暴露
+   - `downloader.ts` copyFile 成品后、内嵌前：探测 MIME → 按 `mimeToExt` 映射（含 m4a 报成 `video/mp4` 的兼容）→ 与当前扩展名不符且受 `supportLocalMediaType` 支持 → `moveFile` 改名 → 后续封面/歌词内嵌与入库 `localPath` 均用校正后路径
+   - 探测失败/改名失败：保持原扩展名与路径，不影响入库（warn 留痕）；取消任务分支不改动
+
+`2026.10.25（切歌预取方案 B，非发版）`
+1. 【优化】**切歌预取（剩 15s 预解析 + 入队预缓冲，消除连播空白）**（`src/core/trackPlayer/index.ts`）：
+   - **根因**：RNTP 队列只放「当前曲 + fake 占位下一首」（`setQueue`），切歌那一刻才 `getMediaSource` 动态解析 URL → load → 缓冲（0.5~2s + 1~3s 空白）；`prewarmApiSongs` 只预热接口歌曲的**搜索匹配**，不预取 URL、不预缓冲音频
+   - **预取触发**：`PlaybackProgressUpdated` 中当前曲剩余 ≤15s → `maybePrefetchNext`（节流：单曲循环跳过、每 index 只触发一次、防重入）
+   - **预取解析**：`prefetchNextTrack` 解析下一首真实源（接口歌曲先 `matchMusic` 匹配并 `replaceInPlayList` 原位替换）→ 按音质顺序 `getMediaSource` → 存 `prefetchCache`（item+url+headers+quality）
+   - **入队预缓冲**：`ReactNativeTrackPlayer.add([预取真曲], 1)` 插入队列 index 1（替换 fake 位；RNTP add 不重置当前播放）→ **ExoPlayer 播放当前曲时预加载队列下一项**，播完自动无缝切歌
+   - **真曲转正**：`PlaybackActiveTrackChanged` 新增分支（index 0→1、URL 非 fake/占位、与预取缓存匹配）→ `setCurrentMusic`/`setQuality` 同步 JS 状态 + `await remove([0])` 压缩队列（[cur,next,fake]→[next,fake]），下一轮预取在 next 播放中继续
+   - **兜底**：预取任何一步失败静默作废（切歌仍走原 `play` 链路）；预取 URL 失效 → `PlaybackError` → `handlePlayFail` 重试/换源（现有机制）；手动切歌/失败重试在 `play()` 入口作废缓存，清空列表在 `clearPlayList` 清理
+   - **核查加固（同日追加，RNTP 源码核实）**：① `add`/`remove` **不触发** `PlaybackActiveTrackChanged`（RNTP 该事件仅由 `event.audioItemTransition` 触发，队列操作不改音频项）→ 转正分支不会因入队/压缩队列误触发；② 蜂窝网下**禁止预取**（对齐"使用移动网络播放"配置，防止 ExoPlayer 预加载绕过该限制偷跑流量）；③ 转正 `remove([0])` 失败时置回节流标记（队列未压缩前阻止下一轮预取，避免 `add` 把正在播的曲目挤错位）；④ `setRepeatMode` 时作废预取缓存（`updateMetadataForTrack(1, fake)` 会覆盖预取真曲，清残留防状态不一致）；⑤ 转正路径补 `emit(PlayEnd)`（PlayEnd 仅 scheduleClose"播放结束后退出"消费，保持其切歌边界语义不变）
+
+`2026.10.25（探测功能补全，非发版）`
+1. 【功能】**App 内音源探测补全为 5 维**（`src/core/probeService.ts`，原 search/parse/play 三维 → +歌词 +歌单）：
+   - **歌词维度**：搜索结果第 1 首 `getLyric`（5s 超时）返回非空记 lyric 维度；无 `getLyric` 能力的源不记录不误伤
+   - **歌单维度**：链路与推荐歌单一致（`getRecommendSheetTags` 8s → 真实歌单/标签 `getRecommendSheetsByTag` 8s → `getMusicSheetInfo` 8s 歌曲列表）→ **歌单能显示 + 歌单第 1 首能解析**（深度模式再静音真实可播）才算 ok；结果记**独立 recommend 统计，不写合成可用率**——歌单显示有问题但播放路径正常的源不被拖累
+   - **播放维度**：深度模式静音 ExoPlayer ≥2s（音量 0、不抢焦点、不打断当前播放），主链路与歌单第一首串行验证
+2. 【优化】**探测总预算 60s → 120s**（`PROBE_BUDGET_MS`），单步调用均加超时保护（歌词 5s / 歌单各段 8s），其余约束（串行 1.5s 间隔、互斥、失败不重试）不变
+3. 【UI】检测完成 Toast 增加「可歌词 n/N · 歌单 n/N」计数
+4. 【修复】`tsconfig.json` exclude 补 `tools/source-probe`（工具归置后主仓库 tsc 误扫独立工程导致的类型报错）
+5. 【优化】**自动探测按维度过滤 + 维度级执行**：`lastRuns` 由整源单时间戳升级为每源每维度时间戳（旧数据自动兼容）；自动探测**只执行缺失或 >24h 未探测的维度**（已验维度不重跑，单维失败/超时不整源豁免）；play 维度只由手动深度维护；**真实播放成功刷新该源 play 维度探测时间戳**（`refreshPlayProbed`，播放过即证明可播、24h 内不重复探测播放功能；播放失败不刷新留给探测核实）
+
+`2026.10.25（歌单可用率时延维度，非发版）`
+1. 【功能】**推荐歌单可用率增记拉取耗时**（`src/core/pluginReliability.ts`）：`recordRecommendResult(platform, ok, elapsedMs?)` 新增耗时入账——`IRecommendReliabilityRecord` 增 `timeCost/timeCount`（累计耗时/样本数，旧数据兼容）；新增 `getRecommendLatencySync` 同步取平均拉取耗时（无样本返回 null）
+2. 【优化】**记录端统一计时**：`pluginRecommend.ts` `fetchPluginRecommendSheets`（推荐歌单页/首页横滑区真实拉取；超时/空壳/异常分支均入账）与 `probeService.ts` 歌单探测段（`probeSingle` sheet 段全程计时）统一传入拉取耗时
+3. 【优化】**择优排序耗时决胜**：`getFirstAvailablePluginRecommend` 主排序仍按推荐歌单可用率降序；成功率相同 → 有平均耗时数据的优先、平均耗时短者优先——"能用但慢"的源不再与"快但无数据"的源混同
+
 `2026.10.23（音源订阅维护 + 仓库整理，非发版）`
 1. 【维护】**音源订阅清单 `sources/plugins.json` 更新为 30 源 A 类筛选**（来源=音乐Free插件Hub 聚合器 + onemusic/moro 订阅站，HTTP 200 + ≥1KB + 特征词筛选；`docs/archive/音源清单-20261022/`（已归档）50 源精选保留为历史探测产物）
 2. 【维护】**开源参考源码整理**：`MusicFree-upstream` 上游快照移出仓库至 `E:\xunwu\deepseek\reference\musicfree-upstream`（统一参考库，不随源码上传，入 .gitignore）；根 `plugins.json`（97 源）/`plugins_verify.json`/`build_log.txt` 等冗余文件清理删除；过时根 `version.json` 移除，权威在 `updates/version.json`

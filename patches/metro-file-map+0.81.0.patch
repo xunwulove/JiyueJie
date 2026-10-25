@@ -1,0 +1,13 @@
+diff --git a/node_modules/metro-file-map/src/Watcher.js b/node_modules/metro-file-map/src/Watcher.js
+index 0b134de..cced018 100644
+--- a/node_modules/metro-file-map/src/Watcher.js
++++ b/node_modules/metro-file-map/src/Watcher.js
+@@ -46,7 +46,7 @@ function _interopRequireDefault(e) {
+   return e && e.__esModule ? e : { default: e };
+ }
+ const debug = require("debug")("Metro:Watcher");
+-const MAX_WAIT_TIME = 240000;
++const MAX_WAIT_TIME = 900000;
+ let nextInstanceId = 0;
+ class Watcher extends _events.default {
+   _backends = [];

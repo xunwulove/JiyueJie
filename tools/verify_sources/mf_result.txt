@@ -1,0 +1,24 @@
+﻿===== 5singMF =====
+导出键(3): pageSize, headers, default
+[FAIL] 无 search 方法
+===== 哔哩哔哩MF =====
+导出键(17): platform, appVersion, version, author, cacheControl, srcUrl, primaryKey, hints, supportedSearchType, search, getMediaSource, getAlbumInfo, getArtistWorks, getTopLists, getTopListDetail, importMusicSheet, getMusicComments
+search 返回 20 条, isEnd=false
+第一首: 【周杰伦】50首精选合集/后台播放/无损音质/HIFI音质/华语流行音乐才是最叼的 - 超级爱下雨天
+播放URL: https://xy123x88x176x12xy.mcdn.bilivideo.cn:8082/v1/resource/upgcxcode/32/13/39252201332/39252201332-1-30232.m
+[OK] 播放链接可访问 (HTTP 200, 2777407 bytes, application/octet-stream)
+===== 歌曲宝MF =====
+导出键(2): host, default
+[FAIL] 无 search 方法
+===== 网易云W音乐MF =====
+导出键(24): platform, author, version, appVersion, srcUrl, cacheControl, description, hints, userVariables, supportedSearchType, search, importMusicSheet, importMusicItem, getMusicInfo, getAlbumInfo, getArtistWorks, getMusicSheetInfo, getTopLists, getTopListDetail, getRecommendSheetTags, getRecommendSheetsByTag, getMediaSource, getLyric, getMusicComments
+search 返回 20 条, isEnd=false
+第一首: 屋顶 - 周杰伦&温岚&吴宗宪
+播放URL: http://m701.music.126.net/20261005040323/1a9f877dbd61affc3b8f65f4302d69b3/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/94
+[OK] 播放链接可访问 (HTTP 200, 12764517 bytes, audio/mpeg; charset=UTF-8)
+===== 酷狗MF =====
+导出键(15): platform, version, appVersion, order, srcUrl, cacheControl, primaryKey, hints, search, getMediaSource, getLyric, getTopLists, getTopListDetail, getAlbumInfo, importMusicSheet
+[unhandledRejection] Cannot read properties of undefined (reading 'match')
+search 返回 0 条, isEnd=false
+[FAIL] 搜索无结果
+===== MusicFree 验证完毕 =====

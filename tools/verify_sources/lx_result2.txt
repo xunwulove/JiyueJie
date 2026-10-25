@@ -1,0 +1,8 @@
+﻿===== Flower源LX (LX) =====
+[FAIL] 加载/执行失败: Cannot read properties of undefined (reading 'version')
+===== Huibq源LX (LX) =====
+sources: (空)
+[FAIL] 无 lx.methods.search
+===== LX官方源LX (LX) =====
+[FAIL] 加载/执行失败: Cannot read properties of undefined (reading 'md5')
+===== 六音源LX (LX) =====

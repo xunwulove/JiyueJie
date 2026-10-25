@@ -62,6 +62,16 @@
 | `android/app/src/main/res/` | 原生资源（splash 图标、window 背景、styles） |
 | `docs/` | 整合后文档（见下表） |
 | `E:\Temp\Deepseek\` | 项目外临时区：备份 *.bak*、打包日志 build-*.log、生成脚本 |
+| `tools/` | 音源辅助工具（见下）：verify_sources（音源验证脚本）、source-probe（音源探测软件） |
+
+### tools/ 音源辅助工具（2026-10-25 归置）
+
+| 工具 | 定位 | 用途 |
+|---|---|---|
+| `tools/verify_sources/` | 开发期 Node 脚本 | 电脑批量验证音源可用性（搜索→取链→可播→下载）：`verify_lx.cjs`（洛雪 LX）/ `verify_mf.cjs`（MusicFree）/ `verify_downloads.cjs`（下载），音源脚本存 `dl2/`，结果 txt 输出 |
+| `tools/source-probe/` | 装机实测 App（独立 RN 工程，自带 git） | 打包「音源探测」APK 装机实测各音源能否真实搜索/播放；主仓库 `.gitignore` 已排除，仅文件归置在 tools/ |
+
+> 关系：verify_sources = 电脑脚本快速判「可搜 + 可取链 + 可下载」；source-probe = 真机跑引擎判「可播」。
 
 ### docs/ 文档导航（原 23 份已整合为主文档，原文档归档于 `E:\Temp\Deepseek\docs-archive-20261015\`）
 
@@ -70,6 +80,7 @@
 | `docs/开发知识库.md` | 二次开发指南、PROJECT_DECISIONS、音源插件、onboarding 设计、UI 规范（字体/层级） |
 | `docs/UI与适配核查记录.md` | **UI 现行规范（精简版，2026-10-25）**：字号/图标档位、全局组件规范、列表行规格、弹窗/面板视觉、布局与尺寸原则（短边法/rpx保留层）、音源进度弹窗与卡片标识、浮窗层级编码规范（**第8章**）；历史核查流水已归档至 `docs/archive/功能与代码核查记录.md` |
 | `docs/问题排查与避坑记录.md` | **卡顿、均衡器全套避坑、启动页白屏/系统 splash、开源启动图调研、gitee 发版避坑** |
+| `docs/音源检测闭环.md` | **音源检测完整闭环流程**（来源→验证→产出→发布→App生效；含 `tools/verify_sources`/`tools/source-probe` 用法与 probe_plugin.js 增强工具） |
 | `docs/archive/` | 历史归档（不随主文档导航，需时自取）：功能与代码核查记录、多用户画像测试走查报告 + 走查子报告（6 份）、research 启动图调研汇总、音源清单-20261022 |
 | `readme.md` / `changelog.md` | 用户使用说明 / 版本历史（保留未动） |
 
@@ -128,13 +139,18 @@
 - **0.6.2.17 正式发版**（2026-10-20）：并入此前「未发版改动 2026.10.19」20 项（浮窗 Dialog 化、音质标识循环切换、浮窗层级编码规范、弹窗外部退出、自制封面底图+取图位置、听歌时长事件流统计等，详见 changelog）+ **弹窗 UI 全量统一**（标题行去分割线/列表项统一分隔线/歌曲菜单信息头渐变）+ 批量编辑弹窗性能修复 + **歌词本地缓存/更换** + 下载提示修复 + 自选封面取色优先 + Toast i18n 整理/删除 Hermes 采样；**插件批量安装性能优化**（下载/挂载分离 + 分批让出 JS 线程修混淆插件卡顿 + 进度显示 + 批量下载超时放宽 30s + 音源拉取分档 >300KB 手动安装 + gradle 堆内存 2G）
 - **0.6.2.18 正式发版**（2026-10-20）：手机版卡片标题 2 行、订阅源可删除恢复默认、下载超时恢复全局
 - **0.6.2.21 正式发版**（2026-10-21，versionCode 400032）：**音源探测播放验证方案 B + 50 个精选音源清单**（Node 沙箱真实搜索验证，`音源清单-20261022/`）+ **热门搜索改纯实时接口**（腾讯 musicu.fcg 主源 + 酷我 hotword.s 备源，移除本地搜索排行，6h 缓存）+ **首页三卡与统计页完全同源**（播放事件流真实收听秒数、短播<30s 剔除，统计页第二卡改"播放次数"）+ 本地歌曲时长双重兜底与重复去重 + 弹窗分隔线修复 + **平板/手机布局判定重写**（竖屏手机全宽 / 横屏车机平板双栏）+ **三 ABI 固化**（arm64-v8a/armeabi-v7a/x86_64）+ 关闭 release 构建期 lintVital
+- **探测功能补全（2026-10-25，未发版）**：`src/core/probeService.ts` 由 search/parse/play 三维补全为 **5 维探测**（搜索/解析/播放/歌词/歌单）——歌词 = 搜索结果第 1 首 `getLyric`（5s 超时）返回非空记 lyric 维度；歌单 = `getRecommendSheetTags`（8s）→ 真实歌单（有封面）或标签 `getRecommendSheetsByTag`（8s）→ `getMusicSheetInfo`（8s）歌曲列表非空 + 歌单第 1 首解析（深度模式再静音真实可播），结果记入**独立 recommend 统计**、不写合成可用率（歌单显示有问题但播放路径正常的源不被拖累）；**总预算 60s→120s**（`PROBE_BUDGET_MS`），单步调用加超时保护，其余约束（串行 1.5s 间隔、互斥、失败不重试）不变；检测完成 Toast 增加「可歌词 n/N · 歌单 n/N」；`tsconfig.json` exclude 补 `tools/source-probe`（修复归置后主仓库 tsc 误扫独立工程）。**自动探测记账按维度化**（同日追加）：`lastRuns` 由"整源单时间戳"升级为**每源每维度时间戳**（旧数据 number 自动归一化兼容），自动探测**只执行缺失/ >24h 未探测的维度**（`probeSingle` 支持维度级执行，依赖前置自动补全：parse/lyric/play 需搜索样本自动跑 search，play 需解析地址自动跑 parse；已验维度不重跑，单维失败/超时不整源豁免）；play 维度只由手动深度维护；**真实播放成功刷新该源 play 维度探测时间戳**（`refreshPlayProbed`，trackPlayer 播放成功判定处调用——播放过即证明可播，24h 内不再重复探测播放功能；失败不刷新留给探测核实）
+- **切歌预取方案 B（2026-10-25，未发版）**：**消除歌单连播切歌空白**——根因 = RNTP 队列只放「当前曲 + fake 占位」（`trackPlayer/index.ts` setQueue），切歌那一刻才 `getMediaSource` 动态解析 + load + 缓冲；`prewarmApiSongs` 只预热接口歌曲搜索匹配、不预取 URL 不预缓冲。实现：**当前曲剩余 ≤15s**（`PlaybackProgressUpdated` 判定，节流每 index 一次、单曲循环跳过）→ `prefetchNextTrack` 解析下一首真实源（接口歌曲先 `matchMusic` 匹配 + `replaceInPlayList` 原位替换；按音质顺序 `getMediaSource`）→ **`ReactNativeTrackPlayer.add([真曲], 1)` 插入队列 index 1（替换 fake 位，add 不重置当前播放）→ ExoPlayer 播放当前曲时预加载队列下一项**，播完自动无缝切歌；`PlaybackActiveTrackChanged` 新增**真曲转正分支**（index 0→1、非 fake/占位 URL、与 `prefetchCache` 匹配）→ `setCurrentMusic`/`setQuality` 同步 + `await remove([0])` 压缩队列（[cur,next,fake]→[next,fake]），下一轮预取继续。兜底：预取任何失败静默作废（切歌走原 `play` 链路）；预取 URL 失效 → `PlaybackError` → `handlePlayFail` 重试/换源（现有机制）；`play()` 入口与 `clearPlayList` 作废/清理预取缓存
 
 **待办/未决**：
-- **音源订阅现状**：`sources/plugins.json` 现为 **30 源 A 类筛选**（2026-10-23，来源=音乐Free插件Hub 聚合器 + onemusic/moro 订阅站，HTTP 200 + ≥1KB + 特征词筛选），与 gitee `xunwulove/jiyuejie` `sources/plugins.json` 逐字节一致；`docs/archive/音源清单-20261022/`（50 源精选，已归档）为历史探测产物，非当前订阅清单
-- 已装 0.6.2.21 的用户不会收到更新提示（当前即最新版本，同版本号盲区同理）；下次发版是否升版本号按用户当前偏好执行（本地打包不升、正式发布才升）
+- **探测软件修改报告类型**（新增待办 2026-10-25）：`tools/source-probe` 的报告（`src/core/probe/report.ts`）类型需修改——具体改法（报告维度/分档/字段）待用户确认后再落
 - git 仓库已由接手 AI 整理：游离头恢复为本地 `main` 分支；根 `plugins.json`（97 源）与 `plugins_verify.json` 已于整理时删除，`docs/archive/音源清单-20261022/`（50 源精选，已归档）保留为历史探测产物；过时根 `version.json` 已移除（权威在 `updates/version.json`）；开源参考源码统一移至 `E:\xunwu\deepseek\reference\`（`musicfree-upstream` 不随本仓库上传，已入 .gitignore）；本地 `main` 与远端 `origin/main` 提交历史分叉，**不 merge 远端，推送固定走 Git Data API**（本地 HEAD `e4ade73` 含文档核对更新；推送受 GitHub secondary rate limit 影响暂未完成，视需要稍后重推）
 
 **已闭环（原待办，经代码核对确认）**：
+- **下载内嵌扩展名错配（P2）修复**（2026-10-25 已实现）：原生 `Mp3UtilModule.kt` 新增 `getMimeType`（MMR 探测真实 MIME）；`downloader.ts` copyFile 后按 `mimeToExt` 映射（兼容 m4a 报 `video/mp4`）探测校正——扩展名不符且受支持则 `moveFile` 改名后再内嵌/入库；失败保持原路径不影响入库。封面/歌词内嵌至此真正闭环
+- **下载音乐封面+歌词内嵌**（2026-10-25 核查确认已实现）：`downloader.ts:516-551` 下载完成 copyFile 后——①有 artwork → `Mp3Util.setMediaCover` 内嵌封面（网络 URL 下载转 JPEG，带 UA + 防盗链 Referer 重试 + 长边 >1024 降采样防 OOM，jaudiotagger 写 APIC）；②音源有 `getLyric` → 拉歌词 → `Mp3Util.setMediaTag({lyric})` 写 LYRICS 标签（顺带 `recordLyricResult` 记歌词可用率）；两者失败均不影响入库（warn 留痕）。读取闭环：`localSongCover.tsx` 本地歌异步读内嵌封面显示；`plugin.ts:1057-1098` 播放本地歌时从文件读封面/歌词/元数据（内嵌即生效）
+- **歌单可用率以「可播放」为前提——按方案 A 关闭**（2026-10-25）：探测链路（`probeService` 歌单段）已按"显示 + 第一首可解析/可播"判定写 `recordRecommendResult`；**推荐歌单页/首页横滑区真实拉取（`fetchPluginRecommendSheets`）保持轻量**（只记非空，不加额外抽查），可播前提由探测链路覆盖（play 维度已有真实可播数据，排序按可用率+耗时隐式覆盖）；决策理由=真实拉取加抽查会拖慢推荐区（额外串行 getMusicSheetInfo+getMediaSource），不划算
+- **歌单可用率时延维度**（2026-10-25 已实现）：`recordRecommendResult` 增记拉取耗时（`timeCost/timeCount` 平均耗时 + `getRecommendLatencySync`）；`fetchPluginRecommendSheets`（超时/空壳/异常分支）与 `probeService` 歌单探测段统一计时；择优排序成功率相同 → 有耗时数据的优先、平均耗时短者优先
 - 卡顿问题已解决，不再卡顿
 - 歌单批量编辑入口重复（D1）：已落地——`navBar.tsx` 三点菜单已删（仅留搜索），`playAllBar.tsx` ✎ 按钮改弹 `MusicListEditorDialog`
 - UI 冲突 C14（PanelHeader / Dialog.Title 两套规格）：实际共存状态即候选B（承认两套规格为有意区分），右侧浮出层用 PanelHeader、居中弹窗用 Dialog.Title，各自内部一致
