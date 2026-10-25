@@ -6,6 +6,7 @@
 
 `2026.10.25 0.6.2.22（正式发版，versionName 0.6.2.21→0.6.2.22，versionCode 400033）`
 1. 【发版】正式发布 0.6.2.22：含以下三条非发版期累积变更（下载扩展名校正 / 切歌预取方案 B / 探测功能补全与报告 v2），并同步更新 gitee `updates/version.json`（version=0.6.2.22，download 指向 v0.6.2.22 release 双 APK），latest 与 v0.6.2.22 双 release 重建。
+   - ⚠️ **【已知问题·用户实测标记 2026-10-25】歌词/歌曲封面内嵌功能不能用**：本条以下第 2 项（扩展名校正）与内嵌代码路径虽已实现，但发版后实测内嵌功能不生效，**不得视为已修复**，排查方向见 PROJECT_HANDOVER「待办/未决」首条。
 2. 【修复】**下载后 MMR 探测真实格式并校正扩展名**（封面/歌词内嵌的 P2 根因）：CDN 直链常无后缀，`getExtensionName` 按 URL 后缀判定、无后缀默认 `.mp3`，但实际文件可能是 flac/aac/m4a——jaudiotagger 按错误扩展名解析导致内嵌封面/歌词静默失败（走查报告 P2）。
    - 原生 `Mp3UtilModule.kt` 新增 `getMimeType`（`MediaMetadataRetriever` 取 `METADATA_KEY_MIMETYPE`）；JS 接口 `native/mp3Util` 同步暴露
    - `downloader.ts` copyFile 成品后、内嵌前：探测 MIME → 按 `mimeToExt` 映射（含 m4a 报成 `video/mp4` 的兼容）→ 与当前扩展名不符且受 `supportLocalMediaType` 支持 → `moveFile` 改名 → 后续封面/歌词内嵌与入库 `localPath` 均用校正后路径
