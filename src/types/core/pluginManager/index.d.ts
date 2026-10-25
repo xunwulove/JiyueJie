@@ -3,7 +3,7 @@ type Plugin = any; // Placeholder for the actual Plugin type
 /**
  * 插件来源标记：subscription=来自订阅清单（记录订阅 URL）；manual=手动导入/安装（永不被自动清理）
  */
-type IPluginSourceTag =
+export type IPluginSourceTag =
     | { type: "subscription"; url: string }
     | { type: "manual" };
 
@@ -157,6 +157,16 @@ export interface IPluginManager {
      * @param enabled - 是否启用插件
      */
     setPluginEnabled(plugin: Plugin, enabled: boolean): void;
+
+    /**
+     * 订阅增量清理（自动更新与手动「更新订阅」共用）：
+     * 仅来源=对应订阅地址、且连续 2 轮不在其清单的已装插件自动卸载；
+     * 手动导入（manual）/其他订阅来源不受影响。
+     * @param namesBySub 订阅地址 → 本轮清单插件名集合
+     */
+    cleanupSubscriptionPlugins(
+        namesBySub: Map<string, Set<string>>,
+    ): Promise<void>;
 
     /**
      * 检查插件是否已启用

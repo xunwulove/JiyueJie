@@ -30,7 +30,7 @@ import { devLog, errorLog, trace } from "../../utils/log";
 import Network from "../../utils/network";
 import MediaCache from "../mediaCache";
 import _internalPluginMeta from "./meta";
-import { IPluginManager } from "@/types/core/pluginManager";
+import { IPluginManager, IPluginSourceTag } from "@/types/core/pluginManager";
 
 
 axios.defaults.timeout = 2000;
@@ -153,9 +153,7 @@ export interface ILazyProps {
 }
 
 /** 插件来源标记：subscription=来自订阅清单（记录订阅 URL）；manual=手动导入/安装（永不被自动清理） */
-export type IPluginSourceTag =
-    | { type: "subscription"; url: string }
-    | { type: "manual" };
+// 类型定义统一在 @/types/core/pluginManager（避免重复定义）
 
 class PluginMethodsWrapper implements IPlugin.IPluginInstanceMethods {
     private plugin: Plugin;

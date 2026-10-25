@@ -155,13 +155,9 @@ class PluginManager implements IPluginManager, IInjectable {
         try {
             const raw = pluginCacheStore.getString(plugin.path);
             const cached = raw ? safeParse(raw) : null;
+            // 只合并来源标记与连续缺位轮数，不覆盖既有缓存（instance/supportedMethods 等原样保留）
             const merged = {
                 ...(cached && typeof cached === "object" ? cached : {}),
-                name: plugin.name,
-                hash: plugin.hash,
-                path: plugin.path,
-                instance: plugin.instance,
-                supportedMethods: [...plugin.supportedMethods],
                 sourceTag: plugin.sourceTag,
                 missingRounds: plugin.missingRounds,
             };
@@ -244,6 +240,20 @@ class PluginManager implements IPluginManager, IInjectable {
                             "utf8",
                         );
                         plugin = new Plugin(funcCode, pluginFileItem.path);
+                        // 非懒加载分支同样从缓存恢复来源标记与连续缺位轮数：
+                        // 否则懒加载关闭（basic.lazyLoadPlugin=false）时 sourceTag/missingRounds
+                        // 全部丢失，订阅增量清理将静默失效（插件变"无标记"，永不被自动卸载）
+                        if (pluginCacheStore.contains(pluginFileItem.path)) {
+                            const cachedMeta = safeParse(
+                                pluginCacheStore.getString(pluginFileItem.path),
+                            );
+                            if (cachedMeta && typeof cachedMeta === "object") {
+                                plugin.sourceTag = (cachedMeta as any)
+                                    .sourceTag;
+                                plugin.missingRounds = (cachedMeta as any)
+                                    .missingRounds ?? 0;
+                            }
+                        }
                     }
 
                     const _pluginIndex = allPlugins.findIndex(
@@ -898,36 +908,10 @@ class PluginManager implements IPluginManager, IInjectable {
                     }
                 },
             );
-            // 自动清理：仅来源=当前订阅地址、且连续 2 轮不在清单的已装插件
-            for (const [subUrl, entry] of listsBySub) {
-                const installed = this.getPlugins();
-                for (const plugin of installed) {
-                    if (
-                        plugin.sourceTag?.type !== "subscription" ||
-                        plugin.sourceTag.url !== subUrl
-                    ) {
-                        continue;
-                    }
-                    if (entry.names.has(plugin.name)) {
-                        // 在清单 → 清零连续缺位
-                        if (plugin.missingRounds !== 0) {
-                            plugin.missingRounds = 0;
-                            this.persistPluginSourceMeta(plugin);
-                        }
-                    } else {
-                        // 不在清单 → 累计；第 2 轮起自动卸载
-                        plugin.missingRounds += 1;
-                        this.persistPluginSourceMeta(plugin);
-                        if (plugin.missingRounds >= 2) {
-                            devLog(
-                                "info",
-                                `订阅增量清理：${plugin.name} 连续 2 轮不在订阅清单，自动卸载`,
-                            );
-                            await this.uninstallPlugin(plugin.hash);
-                        }
-                    }
-                }
-            }
+            // 自动清理：仅来源=对应订阅地址、且连续 2 轮不在其清单的已装插件
+            await this.cleanupSubscriptionPlugins(
+                new Map([...listsBySub].map(([url, entry]) => [url, entry.names])),
+            );
             // 下载/挂载：按订阅地址分组打标
             for (const [subUrl, entry] of listsBySub) {
                 if (!entry.urls.length) {
@@ -964,6 +948,64 @@ class PluginManager implements IPluginManager, IInjectable {
             }
         } catch {
             // 整体静默，不阻塞启动
+        }
+    }
+
+    /**
+     * 订阅增量清理（自动更新与手动「更新订阅」共用）：
+     * 仅来源=对应订阅地址、且连续 2 轮不在其清单的已装插件自动卸载；
+     * 手动导入（manual）/其他订阅来源不受影响。
+     * @param namesBySub 订阅地址 → 本轮清单插件名集合
+     *                    （仅清单拉取成功的订阅传入；未传入/失败的订阅不参与判定）
+     */
+    async cleanupSubscriptionPlugins(
+        namesBySub: Map<string, Set<string>>,
+    ): Promise<void> {
+        if (!namesBySub.size) {
+            return;
+        }
+        for (const [subUrl, names] of namesBySub) {
+            const installed = this.getPlugins();
+            for (const plugin of installed) {
+                if (
+                    plugin.sourceTag?.type !== "subscription" ||
+                    plugin.sourceTag.url !== subUrl
+                ) {
+                    continue;
+                }
+                if (names.has(plugin.name)) {
+                    // 在清单 → 清零连续缺位
+                    if (plugin.missingRounds !== 0) {
+                        plugin.missingRounds = 0;
+                        this.persistPluginSourceMeta(plugin);
+                    }
+                } else {
+                    // 不在清单 → 累计；第 2 轮起自动卸载
+                    plugin.missingRounds += 1;
+                    this.persistPluginSourceMeta(plugin);
+                    if (plugin.missingRounds >= 2) {
+                        // 误删防护：同名插件仍在本轮其他订阅地址清单中（跨订阅共用源）→
+                        // 只累计不卸载，避免"源在别的订阅还在用，却被本订阅移除误删"
+                        const inOtherSub = [...namesBySub.entries()].some(
+                            ([otherUrl, otherNames]) =>
+                                otherUrl !== subUrl &&
+                                otherNames.has(plugin.name),
+                        );
+                        if (inOtherSub) {
+                            devLog(
+                                "info",
+                                `订阅增量清理：${plugin.name} 仍在本轮其他订阅清单中，跳过卸载（仅累计）`,
+                            );
+                            continue;
+                        }
+                        devLog(
+                            "info",
+                            `订阅增量清理：${plugin.name} 连续 2 轮不在订阅清单，自动卸载`,
+                        );
+                        await this.uninstallPlugin(plugin.hash);
+                    }
+                }
+            }
         }
     }
 

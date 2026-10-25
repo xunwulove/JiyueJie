@@ -378,6 +378,8 @@ export default function PluginList() {
             if (Array.isArray(urlItems)) {
                 // 逐个订阅地址拉取清单并按订阅地址分组（保留来源归属，安装时打 subscription 标）
                 const urlsBySub = new Map<string, string[]>();
+                // 订阅地址 → 本轮清单插件名集合（清理判定用：连续 2 轮不在清单的订阅源自动卸载）
+                const namesBySub = new Map<string, Set<string>>();
                 const noCacheHeaders = {
                     "Cache-Control": "no-cache",
                     Pragma: "no-cache",
@@ -397,6 +399,13 @@ export default function PluginList() {
                             ).data;
                             const subUrls: string[] = [];
                             (text?.plugins ?? []).forEach((p: any) => {
+                                if (p?.name) {
+                                    const names =
+                                        namesBySub.get(url) ??
+                                        new Set<string>();
+                                    names.add(p.name);
+                                    namesBySub.set(url, names);
+                                }
                                 if (p?.url) {
                                     subUrls.push(p.url);
                                 }
@@ -409,6 +418,9 @@ export default function PluginList() {
                         // 单条订阅地址拉取失败静默（与其他地址互不影响）
                     }
                 }
+                // 手动「更新订阅」与自动更新保持同一清理行为：
+                // 来源=对应订阅地址、连续 2 轮不在清单的已装插件自动卸载（含跨订阅误删防护）
+                await PluginManager.cleanupSubscriptionPlugins(namesBySub);
                 // 按订阅地址分组安装：来源标记=该订阅 URL（增量更新可据此识别与清理）
                 for (const [subUrl, subUrls] of urlsBySub) {
                     const uniqueUrls = [...new Set(subUrls)];
