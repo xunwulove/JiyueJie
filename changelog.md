@@ -4,6 +4,16 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.25 0.6.2.22（正式发版，versionName 0.6.2.21→0.6.2.22，versionCode 400033）`
+1. 【发版】正式发布 0.6.2.22：含以下三条非发版期累积变更（下载扩展名校正 / 切歌预取方案 B / 探测功能补全与报告 v2），并同步更新 gitee `updates/version.json`（version=0.6.2.22，download 指向 v0.6.2.22 release 双 APK），latest 与 v0.6.2.22 双 release 重建。
+2. 【修复】**下载后 MMR 探测真实格式并校正扩展名**（封面/歌词内嵌的 P2 根因）：CDN 直链常无后缀，`getExtensionName` 按 URL 后缀判定、无后缀默认 `.mp3`，但实际文件可能是 flac/aac/m4a——jaudiotagger 按错误扩展名解析导致内嵌封面/歌词静默失败（走查报告 P2）。
+   - 原生 `Mp3UtilModule.kt` 新增 `getMimeType`（`MediaMetadataRetriever` 取 `METADATA_KEY_MIMETYPE`）；JS 接口 `native/mp3Util` 同步暴露
+   - `downloader.ts` copyFile 成品后、内嵌前：探测 MIME → 按 `mimeToExt` 映射（含 m4a 报成 `video/mp4` 的兼容）→ 与当前扩展名不符且受 `supportLocalMediaType` 支持 → `moveFile` 改名 → 后续封面/歌词内嵌与入库 `localPath` 均用校正后路径
+   - 探测失败/改名失败：保持原扩展名与路径，不影响入库（warn 留痕）；取消任务分支不改动
+3. 【优化】**切歌预取（剩 15s 预解析 + 入队预缓冲，消除连播空白）**：RNTP 队列只放当前曲 + fake 占位，切歌瞬间才解析 URL 导致 1.5~2s + 1~3s 空白；改为剩余 ≤15s 触发 `maybePrefetchNext`（单曲循环跳过、每 index 只一次、防重入），预解析下一首真实源并入队 index 1，ExoPlayer 播放当前曲时预加载下一曲，播完无缝切换；蜂窝网禁止预取；`remove([0])` 失败时置回节流标记防挤错位。
+4. 【功能】**App 内音源探测补全 5 维**（`src/core/probeService.ts`，原 search/parse/play 三维 → +歌词 +歌单）：歌词维度（搜索结果第 1 首 `getLyric` 5s 超时返回非空）、歌单维度（返回 `musicSheet` 列表）；探测软件（tools/source-probe）报告升级 v2（五档分类 🟢全通/🟠可解析不可播/🟡半可用/🟣歌单型/🔴死源 + 19 列全字段明细 + classifyPlayError 归一聚合），播放验证静音（`setVolume(0)`）。
+5. 【仓库整理】filter-branch 从历史 commit 移除误跟踪的 `updates/app-*-release.apk`（61.8MB/commit），源码仓库体积回归正常。
+
 `2026.10.25（下载扩展名校正，非发版）`
 1. 【修复】**下载后 MMR 探测真实格式并校正扩展名**（封面/歌词内嵌的 P2 根因）：CDN 直链常无后缀，`getExtensionName` 按 URL 后缀判定、无后缀默认 `.mp3`，但实际文件可能是 flac/aac/m4a——jaudiotagger 按错误扩展名解析导致内嵌封面/歌词静默失败（走查报告 P2）。
    - 原生 `Mp3UtilModule.kt` 新增 `getMimeType`（`MediaMetadataRetriever` 取 `METADATA_KEY_MIMETYPE`）；JS 接口 `native/mp3Util` 同步暴露
