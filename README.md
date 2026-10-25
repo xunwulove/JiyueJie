@@ -65,11 +65,13 @@ https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.j
 
 - 每个已装插件带**来源标记**：订阅清单安装 = `subscription + 订阅地址`；手动导入（本地/URL/备份恢复）= `manual`；
 - 软件内「更新插件」（维护者更新）**继承旧标记**，标记链路不断；
-- 每次订阅增量更新后，对**来源=当前订阅地址**、且**连续 2 轮不在清单**的已装插件自动卸载；
+- **自动更新与手动「更新订阅」共用同一清理逻辑**：对**来源=当前订阅地址**、且**连续 2 轮不在清单**的已装插件自动卸载；
 - **手动导入的源永不自动清理**；其他订阅地址装的源只受其自身订阅影响；
+- **跨订阅误删防护**：同名插件仍在本轮其他订阅地址清单中 → 只累计不卸载；
+- **关闭懒加载（`basic.lazyLoadPlugin=false`）下标记仍恢复**，清理不会静默失效；
 - 从清单移除某源后，已装用户连点 2 次「更新订阅」即自动卸载，无需手动处理。
 
-> 实现细节（Plugin.sourceTag / missingRounds 持久化、清理段位置）见项目 `docs/音源全流程.md` §7.1 与源码 `src/core/pluginManager/index.ts`。
+> 实现细节（Plugin.sourceTag / missingRounds 持久化、`cleanupSubscriptionPlugins` 入口）见项目 `docs/音源全流程.md` §7.1 与源码 `src/core/pluginManager/index.ts`。
 
 ```json
 {

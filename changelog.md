@@ -4,6 +4,20 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.26（音源订阅同步清理，非发版）`
+1. 【功能】**音源订阅同步清理机制**（源码 `src/core/pluginManager/`）：增量更新只增不删会让清单移除的旧源长期滞留、无用源越积越多。本次新增：
+   - **来源标记 sourceTag**：`Plugin.sourceTag` = `{type:"subscription", url}`（订阅清单安装）/ `{type:"manual"}`（手动导入/深链/备份恢复），持久化进 `plugin.cache`（MMKV），懒加载与 setup 非懒加载分支均恢复；
+   - **安装入口打标**：自动更新 `updatePluginsFromSubscription` 与手动「更新订阅」`onSubscribeClick` 按订阅地址分组打 subscription 标；本地文件/URL 直装/深链/备份恢复打 manual 标；软件内「更新插件」（维护者更新）继承旧标记，链路不断；
+   - **manual 保护**：手动源标记优先级最高，即使订阅清单后来收录同名源且版本更高，`installFromCode` 也不把 manual 覆盖成 subscription；
+   - **自动卸载**：清理逻辑抽成公共方法 `cleanupSubscriptionPlugins`，自动更新与手动「更新订阅」共用——来源=对应订阅地址且**连续 2 轮不在清单**的已装插件自动卸载（复用 `uninstallPlugin`：删文件+移除+mediaExtra 清理）；手动/其他订阅来源不受影响；
+   - **跨订阅误删防护**：同名插件仍在本轮其他订阅地址清单中 → 只累计不卸载。
+2. 【修复】**订阅清理审查修复**（评审 3 漏洞 + 2 瑕疵全修）：
+   - 关闭懒加载（`basic.lazyLoadPlugin=false`）时 setup 非 lazy 分支**恢复 sourceTag/missingRounds**（原丢失会导致订阅清理静默失效）；
+   - `persistPluginSourceMeta` **只更新来源字段**，不再覆盖 instance/supportedMethods；
+   - `IPluginSourceTag` 类型统一到 `@/types/core/pluginManager`（去除 plugin.ts 重复定义），接口补 `cleanupSubscriptionPlugins` 声明。
+   - 验证：tsc --noEmit exit 0、eslint 0 errors、lint-staged/commitlint 通过。
+   - 文档同步：`docs/音源全流程.md` §7.1、README §2.5、PROJECT_HANDOVER 已闭环、gitee README 已更新。
+
 `2026.10.25 0.6.2.22（正式发版，versionName 0.6.2.21→0.6.2.22，versionCode 400033）`
 1. 【发版】正式发布 0.6.2.22：含以下三条非发版期累积变更（下载扩展名校正 / 切歌预取方案 B / 探测功能补全与报告 v2），并同步更新 gitee `updates/version.json`（version=0.6.2.22，download 指向 v0.6.2.22 release 双 APK），latest 与 v0.6.2.22 双 release 重建。
    - ⚠️ **【已知问题·用户实测标记 2026-10-25】歌词/歌曲封面内嵌功能不能用**：本条以下第 2 项（扩展名校正）与内嵌代码路径虽已实现，但发版后实测内嵌功能不生效，**不得视为已修复**，排查方向见 PROJECT_HANDOVER「待办/未决」首条。
@@ -14,6 +28,7 @@
 3. 【优化】**切歌预取（剩 15s 预解析 + 入队预缓冲，消除连播空白）**：RNTP 队列只放当前曲 + fake 占位，切歌瞬间才解析 URL 导致 1.5~2s + 1~3s 空白；改为剩余 ≤15s 触发 `maybePrefetchNext`（单曲循环跳过、每 index 只一次、防重入），预解析下一首真实源并入队 index 1，ExoPlayer 播放当前曲时预加载下一曲，播完无缝切换；蜂窝网禁止预取；`remove([0])` 失败时置回节流标记防挤错位。
 4. 【功能】**App 内音源探测补全 5 维**（`src/core/probeService.ts`，原 search/parse/play 三维 → +歌词 +歌单）：歌词维度（搜索结果第 1 首 `getLyric` 5s 超时返回非空）、歌单维度（返回 `musicSheet` 列表）；探测软件（tools/source-probe）报告升级 v2（五档分类 🟢全通/🟠可解析不可播/🟡半可用/🟣歌单型/🔴死源 + 19 列全字段明细 + classifyPlayError 归一聚合），播放验证静音（`setVolume(0)`）。
 5. 【仓库整理】filter-branch 从历史 commit 移除误跟踪的 `updates/app-*-release.apk`（61.8MB/commit），源码仓库体积回归正常。
+6. 【发版】**探测软件 0.1.6 独立发版**（`tools/source-probe`，versionCode 6→7）：报告升级 v2（五档分类 🟢全通/🟠可解析不可播/🟡半可用/🟣歌单型/🔴死源 + 19 列全字段明细 + classifyPlayError 归一聚合）；播放验证静音（`setVolume(0)`，不抢焦点不打扰当前播放）；构建修复——react-native-webview 变体匹配失败（`No variants exist`）= 构建缓存脏，清 `android\.gradle` + `app\build` + `node_modules\react-native-webview\android\build` 后三 ABI 全量构建成功（37m11s / 1370 tasks）。三 APK（arm64/armeabi/universal）放 `tools/source-probe` 工程根，详见该工程 PROJECT_HANDOVER §9.6。
 
 `2026.10.25（下载扩展名校正，非发版）`
 1. 【修复】**下载后 MMR 探测真实格式并校正扩展名**（封面/歌词内嵌的 P2 根因）：CDN 直链常无后缀，`getExtensionName` 按 URL 后缀判定、无后缀默认 `.mp3`，但实际文件可能是 flac/aac/m4a——jaudiotagger 按错误扩展名解析导致内嵌封面/歌词静默失败（走查报告 P2）。
