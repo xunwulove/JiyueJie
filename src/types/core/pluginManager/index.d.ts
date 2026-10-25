@@ -1,10 +1,23 @@
 type Plugin = any; // Placeholder for the actual Plugin type
 
 /**
+ * 插件来源标记：subscription=来自订阅清单（记录订阅 URL）；manual=手动导入/安装（永不被自动清理）
+ */
+type IPluginSourceTag =
+    | { type: "subscription"; url: string }
+    | { type: "manual" };
+
+/**
  * 插件安装配置接口
  */
 export interface IInstallPluginConfig {
     notCheckVersion?: boolean;
+    /**
+     * 插件来源标记。未显式传入时：
+     * - 安装同名旧插件（升级/维护者更新）→ 继承旧插件的 sourceTag；
+     * - 全新安装 → 无标记（不会被增量更新自动清理）。
+     */
+    sourceTag?: IPluginSourceTag;
 }
 
 /**

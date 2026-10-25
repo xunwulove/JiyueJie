@@ -31,7 +31,7 @@ https://gitee.com/xunwulove/jiyuejie/raw/master/sources/plugins.json
 https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.json
 ```
 
-### 2.2 音源获取来源（参考库全集，2026-10-25 更新）
+### 2.2 音源获取来源（参考库全集，2026-10-26 更新）
 
 音源为 **MusicFree 插件格式**，来自**订阅站聚合 + 开源源仓库 + 聚合站**，经去重、去失效、A 档筛选后整合维护（完整流程见项目 `docs/音源全流程.md`）：
 
@@ -59,7 +59,17 @@ https://raw.giteeusercontent.com/xunwulove/jiyuejie/raw/master/sources/plugins.j
 
 > 对应完整执行细节（责任分工/交接物/档位表）见项目 `docs/音源全流程.md` §8 测试执行 SOP。
 
-### 2.4 格式规范（必须严格遵循 MusicFree）
+### 2.5 订阅同步清理（增量更新自动卸载无用源）
+
+增量更新只增不删会导致**从清单移除的旧源长期滞留**。极悦界已实现来源标记 + 自动清理（2026-10-26）：
+
+- 每个已装插件带**来源标记**：订阅清单安装 = `subscription + 订阅地址`；手动导入（本地/URL/备份恢复）= `manual`；
+- 软件内「更新插件」（维护者更新）**继承旧标记**，标记链路不断；
+- 每次订阅增量更新后，对**来源=当前订阅地址**、且**连续 2 轮不在清单**的已装插件自动卸载；
+- **手动导入的源永不自动清理**；其他订阅地址装的源只受其自身订阅影响；
+- 从清单移除某源后，已装用户连点 2 次「更新订阅」即自动卸载，无需手动处理。
+
+> 实现细节（Plugin.sourceTag / missingRounds 持久化、清理段位置）见项目 `docs/音源全流程.md` §7.1 与源码 `src/core/pluginManager/index.ts`。
 
 ```json
 {

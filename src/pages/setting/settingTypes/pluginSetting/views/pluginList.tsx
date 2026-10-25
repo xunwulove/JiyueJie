@@ -145,6 +145,7 @@ export default function PluginList() {
                 notCheckVersion: Config.getConfig(
                     "basic.notCheckPluginVersion",
                 ),
+                sourceTag: { type: "manual" },
             });
             if (result.success) {
                 setPendingLarge(prev => {
@@ -297,6 +298,7 @@ export default function PluginList() {
                 const result = await installPluginFromUrl(
                     text,
                     p => setInstallProgress(p),
+                    { type: "manual" },
                 );
 
                 // 检查是否全部安装成功
@@ -374,8 +376,8 @@ export default function PluginList() {
         try {
             const urlItems = JSON.parse(urls!);
             if (Array.isArray(urlItems)) {
-                // 收集全部订阅清单的插件 URL（去重），统一批量安装（下载并发 + 挂载分批让出）
-                const allUrls: string[] = [];
+                // 逐个订阅地址拉取清单并按订阅地址分组（保留来源归属，安装时打 subscription 标）
+                const urlsBySub = new Map<string, string[]>();
                 const noCacheHeaders = {
                     "Cache-Control": "no-cache",
                     Pragma: "no-cache",
@@ -393,41 +395,53 @@ export default function PluginList() {
                                     headers: noCacheHeaders,
                                 })
                             ).data;
+                            const subUrls: string[] = [];
                             (text?.plugins ?? []).forEach((p: any) => {
                                 if (p?.url) {
-                                    allUrls.push(p.url);
+                                    subUrls.push(p.url);
                                 }
                             });
+                            urlsBySub.set(url, subUrls);
                         } else {
-                            allUrls.push(url);
+                            urlsBySub.set(url, [url]);
                         }
                     } catch {
                         // 单条订阅地址拉取失败静默（与其他地址互不影响）
                     }
                 }
-                const uniqueUrls = [...new Set(allUrls)];
-                const { results, skipped } =
-                    await PluginManager.installPluginsFromUrls(
-                        uniqueUrls,
-                        p => setInstallProgress(p),
-                        {
-                            notCheckVersion: Config.getConfig(
-                                "basic.notCheckPluginVersion",
-                            ),
-                        },
-                        false,
-                    );
-                results.forEach(it => {
-                    if (it.success) {
-                        successResults.push(it);
-                    } else {
-                        failResults.push(it);
+                // 按订阅地址分组安装：来源标记=该订阅 URL（增量更新可据此识别与清理）
+                for (const [subUrl, subUrls] of urlsBySub) {
+                    const uniqueUrls = [...new Set(subUrls)];
+                    if (!uniqueUrls.length) {
+                        continue;
                     }
-                });
-                // 跳过的大插件：持久化到列表底部"未挂载"区块
-                if (skipped?.length) {
-                    skippedCount = skipped.length;
-                    mergePendingLarge(skipped);
+                    const { results, skipped } =
+                        await PluginManager.installPluginsFromUrls(
+                            uniqueUrls,
+                            p => setInstallProgress(p),
+                            {
+                                notCheckVersion: Config.getConfig(
+                                    "basic.notCheckPluginVersion",
+                                ),
+                                sourceTag: {
+                                    type: "subscription",
+                                    url: subUrl,
+                                },
+                            },
+                            false,
+                        );
+                    results.forEach(it => {
+                        if (it.success) {
+                            successResults.push(it);
+                        } else {
+                            failResults.push(it);
+                        }
+                    });
+                    // 跳过的大插件：持久化到列表底部"未挂载"区块
+                    if (skipped?.length) {
+                        skippedCount += skipped.length;
+                        mergePendingLarge(skipped);
+                    }
                 }
             } else {
                 throw new Error();
@@ -467,7 +481,7 @@ export default function PluginList() {
 
         } catch {
             if (urls?.length) {
-                const result = await installPluginFromUrl(urls, p => setInstallProgress(p));
+                const result = await installPluginFromUrl(urls, p => setInstallProgress(p), { type: "manual" });
                 if (result[0]) {
                     if (result[0].success) {
                         Toast.success(t("toast.installPluginSuccess"));
@@ -838,6 +852,7 @@ async function installPluginFromUrl(
         done: number;
         total: number;
     }) => void,
+    sourceTag?: { type: "manual" } | { type: "subscription"; url: string },
 ): Promise<IInstallPluginResult[]> {
     try {
         let urls: string[] = [];
@@ -865,6 +880,8 @@ async function installPluginFromUrl(
             urls = [inputUrl];
         }
         // 批量安装：下载并发、挂载逐个让出（清单含大量混淆插件时不再打满 JS 线程）
+        // 手动输入 URL / 订阅地址安装 → 打 manual 来源标记，永不被增量更新自动清理；
+        // 更新已有插件（onUpdateAllClick）不传 sourceTag → installFromCode 继承旧标记。
         const { results } = await PluginManager.installPluginsFromUrls(
             urls,
             onProgress,
@@ -872,6 +889,7 @@ async function installPluginFromUrl(
                 notCheckVersion: Config.getConfig(
                     "basic.notCheckPluginVersion",
                 ),
+                ...(sourceTag ? { sourceTag } : {}),
             },
         );
         return results;

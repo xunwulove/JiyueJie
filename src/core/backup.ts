@@ -66,7 +66,9 @@ async function resume(
             ) {
                 return;
             }
-            return PluginManager.installPluginFromUrl(_.srcUrl);
+            return PluginManager.installPluginFromUrl(_.srcUrl, {
+                sourceTag: { type: "manual" },
+            });
         })
         : [];
 

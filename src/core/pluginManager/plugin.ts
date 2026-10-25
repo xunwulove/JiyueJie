@@ -146,7 +146,16 @@ export interface ILazyProps {
     supportedMethods?: string[];
     loadFuncCode?: () => Promise<string>;
     instance?: IPlugin.IPluginDefine;
+    /** 插件来源标记：订阅安装 / 手动安装（增量更新清理用，订阅来源不在清单才可能被清） */
+    sourceTag?: IPluginSourceTag;
+    /** 连续不在订阅清单的轮数（>=2 才自动卸载） */
+    missingRounds?: number;
 }
+
+/** 插件来源标记：subscription=来自订阅清单（记录订阅 URL）；manual=手动导入/安装（永不被自动清理） */
+export type IPluginSourceTag =
+    | { type: "subscription"; url: string }
+    | { type: "manual" };
 
 class PluginMethodsWrapper implements IPlugin.IPluginInstanceMethods {
     private plugin: Plugin;
@@ -869,6 +878,11 @@ export class Plugin {
 
     public supportedMethods: Set<keyof IPlugin.IPluginInstanceMethods> = new Set();
 
+    /** 插件来源标记：订阅安装 / 手动安装（增量更新清理用） */
+    public sourceTag?: IPluginSourceTag;
+    /** 连续不在订阅清单的轮数（>=2 才自动卸载） */
+    public missingRounds = 0;
+
     private lazyProps: ILazyProps | null = null;
 
     static pluginManager: IPluginManager;
@@ -898,6 +912,8 @@ export class Plugin {
                 platform: lazyProps.name,
             };
             this.supportedMethods = new Set((lazyProps.supportedMethods ?? []) as any);
+            this.sourceTag = lazyProps.sourceTag;
+            this.missingRounds = lazyProps.missingRounds ?? 0;
             // 初始化方法，但实际调用时会先挂载插件
             this.methods = new PluginMethodsWrapper(this, this.ensureMounted.bind(this));
         }

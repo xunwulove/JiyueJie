@@ -136,8 +136,38 @@ class PluginManager implements IPluginManager, IInjectable {
                     path: plugin.path,
                     instance: plugin.instance,
                     supportedMethods: [...plugin.supportedMethods],
+                    sourceTag: plugin.sourceTag,
+                    missingRounds: plugin.missingRounds,
                 }),
             );
+        }
+    }
+
+    /**
+     * 仅持久化插件的来源标记与连续缺位轮数（订阅清理段用）。
+     * 与 updatePluginCache 不同：不要求插件已挂载（lazy 未挂载插件也能写入），
+     * 用于订阅增量更新时累计"连续 2 轮不在清单"的状态。
+     */
+    private persistPluginSourceMeta(plugin: Plugin) {
+        if (!plugin.path) {
+            return;
+        }
+        try {
+            const raw = pluginCacheStore.getString(plugin.path);
+            const cached = raw ? safeParse(raw) : null;
+            const merged = {
+                ...(cached && typeof cached === "object" ? cached : {}),
+                name: plugin.name,
+                hash: plugin.hash,
+                path: plugin.path,
+                instance: plugin.instance,
+                supportedMethods: [...plugin.supportedMethods],
+                sourceTag: plugin.sourceTag,
+                missingRounds: plugin.missingRounds,
+            };
+            pluginCacheStore.set(plugin.path, JSON.stringify(merged));
+        } catch (e: any) {
+            errorLog("持久化插件来源标记失败", e);
         }
     }
 
@@ -352,6 +382,14 @@ class PluginManager implements IPluginManager, IInjectable {
                 const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
                 await copyFile(pluginPath, _pluginPath);
                 plugin.path = _pluginPath;
+                // 本地文件安装：默认视为手动安装（manual），显式传入时以 config 为准；
+                // 手动导入的旧插件永不被覆盖（与 installFromCode 规则一致）
+                plugin.sourceTag =
+                    oldVersionPlugin?.sourceTag?.type === "manual"
+                        ? oldVersionPlugin.sourceTag
+                        : config?.sourceTag ??
+                          oldVersionPlugin?.sourceTag ??
+                          { type: "manual" };
                 allPlugins = allPlugins.concat(plugin);
                 this.setPlugins(allPlugins);
 
@@ -443,6 +481,18 @@ class PluginManager implements IPluginManager, IInjectable {
             const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
             await writeFile(_pluginPath, funcCode, "utf8");
             plugin.path = _pluginPath;
+            // 来源标记规则（优先级从高到低）：
+            // 1. 手动导入的旧插件（manual）→ 永不被覆盖（订阅升级也不改标，保证手动源不被自动清理）
+            // 2. 显式传入的 config.sourceTag（订阅安装 → subscription+订阅URL）
+            // 3. 未传入（如软件内按 srcUrl 更新/维护者更新）→ 继承旧插件标记，链路不断
+            if (oldVersionPlugin?.sourceTag?.type === "manual") {
+                plugin.sourceTag = oldVersionPlugin.sourceTag;
+            } else {
+                plugin.sourceTag =
+                    config?.sourceTag ??
+                    oldVersionPlugin?.sourceTag ??
+                    plugin.sourceTag;
+            }
             allPlugins = allPlugins.concat(plugin);
             if (oldVersionPlugin) {
                 allPlugins = allPlugins.filter(
@@ -746,6 +796,11 @@ class PluginManager implements IPluginManager, IInjectable {
      * 2. 逐个订阅地址下载清单：.json 取 plugins[]，其余视为单个插件直链
      * 3. 与已安装插件按 name + version 增量对比：已装同名且版本不低于清单 → 跳过；否则加入待下载
      * 4. 限并发下载（失败静默，与历史行为一致）
+     * 5. 订阅来源标记 + 自动清理：
+     *    - 每个订阅地址解析出的待装插件打 sourceTag={type:"subscription", url: 订阅地址}
+     *    - 已装插件中来源为当前订阅地址、且连续 2 轮不在清单 → 自动卸载（复用 uninstallPlugin，
+     *      含文件删除与媒体额外数据清理）；手动导入/其他订阅来源不受影响
+     *    - 不在清单的第 1 轮只累计 missingRounds（持久化），避免"移出又加回"反复装卸
      */
     async updatePluginsFromSubscription(): Promise<void> {
         try {
@@ -770,7 +825,11 @@ class PluginManager implements IPluginManager, IInjectable {
                 Pragma: "no-cache",
                 Expires: "0",
             };
-            const needDownload: string[] = [];
+            // 每个订阅地址 → { 清单插件名集合, 待下载插件直链 }
+            const listsBySub = new Map<
+                string,
+                { names: Set<string>; urls: string[] }
+            >();
             await runWithConcurrency(
                 urlItems,
                 PLUGIN_UPDATE_CONCURRENCY,
@@ -797,6 +856,17 @@ class PluginManager implements IPluginManager, IInjectable {
                         } else {
                             list = [{ url }];
                         }
+                        // 记录本轮清单（仅在清单拉取成功时注册，失败不参与清理判定）
+                        const subEntry = listsBySub.get(url) ?? {
+                            names: new Set<string>(),
+                            urls: [],
+                        };
+                        list.forEach(p => {
+                            if (p?.name) {
+                                subEntry.names.add(p.name);
+                            }
+                        });
+                        listsBySub.set(url, subEntry);
                         const installed = this.getPlugins();
                         for (const p of list) {
                             if (!p?.url) {
@@ -821,20 +891,61 @@ class PluginManager implements IPluginManager, IInjectable {
                                     // 版本不可比 → 走下载，保守更新
                                 }
                             }
-                            needDownload.push(p.url);
+                            subEntry.urls.push(p.url);
                         }
                     } catch {
-                        // 清单拉取失败静默
+                        // 清单拉取失败静默（该订阅不参与清理判定）
                     }
                 },
             );
-            if (needDownload.length) {
+            // 自动清理：仅来源=当前订阅地址、且连续 2 轮不在清单的已装插件
+            for (const [subUrl, entry] of listsBySub) {
+                const installed = this.getPlugins();
+                for (const plugin of installed) {
+                    if (
+                        plugin.sourceTag?.type !== "subscription" ||
+                        plugin.sourceTag.url !== subUrl
+                    ) {
+                        continue;
+                    }
+                    if (entry.names.has(plugin.name)) {
+                        // 在清单 → 清零连续缺位
+                        if (plugin.missingRounds !== 0) {
+                            plugin.missingRounds = 0;
+                            this.persistPluginSourceMeta(plugin);
+                        }
+                    } else {
+                        // 不在清单 → 累计；第 2 轮起自动卸载
+                        plugin.missingRounds += 1;
+                        this.persistPluginSourceMeta(plugin);
+                        if (plugin.missingRounds >= 2) {
+                            devLog(
+                                "info",
+                                `订阅增量清理：${plugin.name} 连续 2 轮不在订阅清单，自动卸载`,
+                            );
+                            await this.uninstallPlugin(plugin.hash);
+                        }
+                    }
+                }
+            }
+            // 下载/挂载：按订阅地址分组打标
+            for (const [subUrl, entry] of listsBySub) {
+                if (!entry.urls.length) {
+                    continue;
+                }
                 // 下载/挂载分离 + 分批让出：不再并发同步挂载（多个混淆插件同步求值会把 JS 线程打满）
                 // 大插件（>300KB）被跳过时不静默丢弃：合并进持久化 pendingLarge，
                 // 插件列表底部"未挂载"区块可见并可手动安装（与手动订阅路径 onSubscribeClick 行为一致）
                 try {
                     const { skipped } = await this.installPluginsFromUrls(
-                        needDownload,
+                        entry.urls,
+                        undefined,
+                        {
+                            sourceTag: {
+                                type: "subscription",
+                                url: subUrl,
+                            },
+                        },
                     );
                     if (skipped?.length) {
                         const existing =

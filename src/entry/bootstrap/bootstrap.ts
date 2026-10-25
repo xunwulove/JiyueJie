@@ -248,7 +248,9 @@ async function extraMakeup() {
                     .map(decodeURIComponent);
                 await Promise.all(
                     plugins.map(it =>
-                        PluginManager.installPluginFromUrl(it).catch(emptyFunction),
+                        PluginManager.installPluginFromUrl(it, {
+                            sourceTag: { type: "manual" },
+                        }).catch(emptyFunction),
                     ),
                 );
                 Toast.success(i18n.t("toast.pluginInstallSuccess"));
