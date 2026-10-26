@@ -23,6 +23,13 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
         return uri?.scheme?.equals("content", ignoreCase = true) == true
     }
 
+    /**
+     * RNFS 路径体系带 file:// 前缀；File()/MediaMetadataRetriever.setDataSource(String)
+     * 只认绝对路径，传 file:// 会恒判"文件不存在"导致内嵌静默失败。
+     * 这里统一去前缀容错（2026-10-26 根因修复）。
+     */
+    private fun fsPath(p: String): String = p.removePrefix("file://")
+
     /** null 值不写入 map（WritableNativeMap.putString 传 null 会抛异常，导致整条 meta 丢失） */
     private fun WritableMap.putMeta(key: String, value: String?) {
         if (value != null) {
@@ -45,7 +52,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
         }
         val bitrate = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
             ?.toLongOrNull() ?: 0L
-        val size = if (isContentUri(Uri.parse(filePath))) 0L else runCatching { File(filePath).length() }.getOrDefault(0L)
+        val size = if (isContentUri(Uri.parse(filePath))) 0L else runCatching { File(fsPath(filePath)).length() }.getOrDefault(0L)
         if (bitrate > 0L && size > 0L) {
             return (size * 8L * 1000L / bitrate).toString()
         }
@@ -74,7 +81,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
             if (isContentUri(uri)) {
                 mmr.setDataSource(reactApplicationContext, uri)
             } else {
-                mmr.setDataSource(filePath)
+                mmr.setDataSource(fsPath(filePath))
             }
 
             val properties = metaMap(filePath, mmr)
@@ -96,7 +103,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
                 if (isContentUri(uri)) {
                     mmr.setDataSource(reactApplicationContext, uri)
                 } else {
-                    mmr.setDataSource(filePath)
+                    mmr.setDataSource(fsPath(filePath))
                 }
 
                 metas.pushMap(metaMap(filePath, mmr))
@@ -116,7 +123,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
     fun getMimeType(filePath: String, promise: Promise) {
         try {
             val mmr = MediaMetadataRetriever()
-            mmr.setDataSource(filePath)
+            mmr.setDataSource(fsPath(filePath))
             val mime = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
             mmr.release()
             promise.resolve(mime)
@@ -128,7 +135,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
     @ReactMethod
     fun getMediaCoverImg(filePath: String, promise: Promise) {
         try {
-            val file = File(filePath)
+            val file = File(fsPath(filePath))
             if (!file.exists()) {
                 promise.reject("File not exist", "File not exist")
                 return
@@ -148,7 +155,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
             }
 
             val mmr = MediaMetadataRetriever()
-            mmr.setDataSource(filePath)
+            mmr.setDataSource(fsPath(filePath))
             val coverImg = mmr.embeddedPicture
             if (coverImg != null) {
                 val bitmap = BitmapFactory.decodeByteArray(coverImg, 0, coverImg.size)
@@ -169,7 +176,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
     @ReactMethod
     fun getLyric(filePath: String, promise: Promise) {
         try {
-            val file = File(filePath)
+            val file = File(fsPath(filePath))
             if (file.exists()) {
                 val audioFile = AudioFileIO.read(file)
                 val tag = audioFile.tag
@@ -186,7 +193,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
     @ReactMethod
     fun setMediaTag(filePath: String, meta: ReadableMap, promise: Promise) {
         try {
-            val file = File(filePath)
+            val file = File(fsPath(filePath))
             if (file.exists()) {
                 val audioFile = AudioFileIO.read(file)
                 val tag = audioFile.tag
@@ -198,9 +205,11 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
                 audioFile.commit()
                 promise.resolve(true)
             } else {
+                Log.w("Mp3Util", "setMediaTag failed: File Not Exist, path=$filePath")
                 promise.reject("Error", "File Not Exist")
             }
         } catch (e: Exception) {
+            Log.w("Mp3Util", "setMediaTag failed: ${e.message}, path=$filePath")
             promise.reject("Error", e.message)
         }
     }
@@ -208,7 +217,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
     @ReactMethod
     fun getMediaTag(filePath: String, promise: Promise) {
         try {
-            val file = File(filePath)
+            val file = File(fsPath(filePath))
             if (file.exists()) {
                 val audioFile = AudioFileIO.read(file)
                 val tag = audioFile.tag
@@ -239,8 +248,9 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
     @ReactMethod
     fun setMediaCover(filePath: String, coverUri: String, promise: Promise) {
         try {
-            val file = File(filePath)
+            val file = File(fsPath(filePath))
             if (!file.exists()) {
+                Log.w("Mp3Util", "setMediaCover failed: File Not Exist, path=$filePath")
                 promise.reject("Error", "File Not Exist")
                 return
             }
@@ -253,6 +263,7 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
                     File(p)
                 }
             if (coverFile == null || !coverFile.exists()) {
+                Log.w("Mp3Util", "setMediaCover failed: Cover File Not Found, coverUri=$coverUri")
                 promise.reject("Error", "Cover File Not Found")
                 return
             }
@@ -266,10 +277,11 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
                 audioFile.commit()
                 promise.resolve(true)
             } else {
+                Log.w("Mp3Util", "setMediaCover failed: Cover artwork null, coverUri=$coverUri")
                 promise.reject("Error", "Cover artwork null")
             }
         } catch (e: Exception) {
-            Log.w("Mp3Util", "setMediaCover failed: ${e.message}")
+            Log.w("Mp3Util", "setMediaCover failed: ${e.message}, coverUri=$coverUri")
             promise.reject("Error", e.message)
         }
     }

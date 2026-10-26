@@ -534,11 +534,16 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                 await unlink(targetDownloadPath).catch(() => {});
                 this.cleanupCancelledTask(musicItem);
             } else {
+                // 内嵌/探测统一用纯文件系统路径：RNFS 路径体系带 file:// 前缀，
+                // 但原生 Mp3Util 的 File()/MediaMetadataRetriever 只认绝对路径，
+                // 传 file:// 会恒判"文件不存在"导致封面/歌词内嵌静默失败（2026-10-26 根因修复）。
+                // localPath 入库仍保持 file://（极悦界内部统一形式），仅 Mp3Util 调用去前缀。
+                let fsTargetPath = targetDownloadPath.replace(/^file:\/\//, "");
                 // P2 修复（扩展名错配）：MMR 探测真实 MIME，与当前扩展名不符且受支持时改名再内嵌。
                 // 背景：CDN 直链常无后缀，getExtensionName 默认 mp3，实际可能是 flac/aac/m4a，
                 // jaudiotagger 按错误扩展名解析会导致封面/歌词内嵌静默失败。
                 try {
-                    const realMime = await Mp3Util.getMimeType(targetDownloadPath);
+                    const realMime = await Mp3Util.getMimeType(fsTargetPath);
                     const realExt = realMime ? mimeToExt[realMime.toLowerCase()] : null;
                     if (
                         realExt &&
@@ -550,6 +555,7 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                         );
                         await moveFile(targetDownloadPath, newPath);
                         targetDownloadPath = newPath;
+                        fsTargetPath = newPath.replace(/^file:\/\//, "");
                         devLog(
                             "info",
                             "下载扩展名校正",
@@ -566,18 +572,16 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                         e?.message ?? e,
                     );
                 }
-                // 内嵌专辑图：有 artwork 时写入音频文件（失败不影响入库，留痕便于排查）
+                // 内嵌专辑图：有 artwork 时写入音频文件（失败不影响入库，errorLog 留痕便于排查）
                 if (musicItem.artwork) {
                     Mp3Util.setMediaCover(
-                        targetDownloadPath,
+                        fsTargetPath,
                         musicItem.artwork,
                     ).catch((e: any) => {
-                        devLog(
-                            "warn",
-                            "内嵌封面写入失败",
-                            musicItem.title,
-                            e?.message ?? e,
-                        );
+                        errorLog("内嵌封面写入失败", {
+                            title: musicItem.title,
+                            msg: e?.message ?? e,
+                        });
                     });
                 }
                 // 内嵌歌词：音源支持 getLyric 时尝试写入（失败不影响入库，
@@ -595,12 +599,17 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                             }
                             if (lrc) {
                                 await Mp3Util.setMediaTag(
-                                    targetDownloadPath,
+                                    fsTargetPath,
                                     { lyric: lrc },
                                 );
                             }
                         })
-                        .catch(() => {});
+                        .catch((e: any) => {
+                            errorLog("内嵌歌词写入失败", {
+                                title: musicItem.title,
+                                msg: e?.message ?? e,
+                            });
+                        });
                 }
                 LocalMusicSheet.addMusic({
                     ...musicItem,
