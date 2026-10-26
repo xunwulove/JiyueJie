@@ -4,6 +4,13 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.26（歌词内嵌修复装机验证，非发版）`
+1. 【修复】**下载内嵌歌词失败根因修复**（commit `79952c6`，装机验证通过）：MusicFree 插件 `getLyric` 约定返回 `{rawLrc, translation?}` 对象（碳酸Meting/碳酸酷我/GD音乐台实测均如此），`downloader.ts:591-604` 直接把返回对象当字符串传给 `Mp3Util.setMediaTag({lyric})`，原生 `getString("lyric")` 遇 Map 抛异常 → 内嵌歌词静默失败；封面走 artwork（URL 字符串）正常、播放链路 `lyricManager.ts` 取 `rawLrc` 正常——仅下载内嵌链路漏归一化。
+   - `downloader.ts`：取词结果归一化为字符串（`typeof lrc === "string" ? lrc : (lrc?.rawLrc ?? lrc?.lrc ?? "")`），空歌词跳过写入；errorLog msg 改 `String(e?.message ?? e)` 保证留痕可读
+   - `Mp3UtilModule.kt`：`setMediaTag` 歌词字段类型防御（`meta.getType("lyric") == ReadableType.String` 才写入，否则跳过而非抛异常）+ 补 `import ReadableType`
+   - 验证：tsc --noEmit exit 0；**2026-10-26 装机实测下载歌曲歌词+封面均可内嵌** ✓
+   - 文档同步：PROJECT_HANDOVER「待办/未决」首条改已修复、撤销声明解除、changelog 本条目。
+
 `2026.10.26（音源订阅同步清理，非发版）`
 1. 【功能】**音源订阅同步清理机制**（源码 `src/core/pluginManager/`）：增量更新只增不删会让清单移除的旧源长期滞留、无用源越积越多。本次新增：
    - **来源标记 sourceTag**：`Plugin.sourceTag` = `{type:"subscription", url}`（订阅清单安装）/ `{type:"manual"}`（手动导入/深链/备份恢复），持久化进 `plugin.cache`（MMKV），懒加载与 setup 非懒加载分支均恢复；
@@ -20,7 +27,7 @@
 
 `2026.10.25 0.6.2.22（正式发版，versionName 0.6.2.21→0.6.2.22，versionCode 400033）`
 1. 【发版】正式发布 0.6.2.22：含以下三条非发版期累积变更（下载扩展名校正 / 切歌预取方案 B / 探测功能补全与报告 v2），并同步更新 gitee `updates/version.json`（version=0.6.2.22，download 指向 v0.6.2.22 release 双 APK），latest 与 v0.6.2.22 双 release 重建。
-   - ⚠️ **【已知问题·用户实测标记 2026-10-25】歌词/歌曲封面内嵌功能不能用**：本条以下第 2 项（扩展名校正）与内嵌代码路径虽已实现，但发版后实测内嵌功能不生效，**不得视为已修复**，排查方向见 PROJECT_HANDOVER「待办/未决」首条。
+   - ✅ **【已修复·装机验证 2026-10-26】歌词/歌曲封面内嵌功能不能用**（原 2026-10-25 用户实测标记，已闭环）：根因=MusicFree 插件 `getLyric` 约定返回 `{rawLrc, translation?}` 对象（碳酸Meting/碳酸酷我/GD音乐台实测均如此），`downloader.ts` 直接把对象当字符串传给 `Mp3Util.setMediaTag({lyric})`，原生 `getString("lyric")` 遇 Map 抛异常 → 内嵌歌词静默失败（封面走 artwork URL 字符串所以正常；播放链路 lyricManager 取 rawLrc 所以显示正常）。修复（commit `79952c6`，tsc 通过）：`downloader.ts` 取词结果归一化为字符串（裸字符串或 rawLrc/lrc 字段）、空串跳过；`Mp3UtilModule.kt` setMediaTag 歌词字段类型防御（非 String 跳过而非抛异常）；errorLog msg `String()` 化。装机验证：下载歌曲歌词+封面均可内嵌 ✓
 2. 【修复】**下载后 MMR 探测真实格式并校正扩展名**（封面/歌词内嵌的 P2 根因）：CDN 直链常无后缀，`getExtensionName` 按 URL 后缀判定、无后缀默认 `.mp3`，但实际文件可能是 flac/aac/m4a——jaudiotagger 按错误扩展名解析导致内嵌封面/歌词静默失败（走查报告 P2）。
    - 原生 `Mp3UtilModule.kt` 新增 `getMimeType`（`MediaMetadataRetriever` 取 `METADATA_KEY_MIMETYPE`）；JS 接口 `native/mp3Util` 同步暴露
    - `downloader.ts` copyFile 成品后、内嵌前：探测 MIME → 按 `mimeToExt` 映射（含 m4a 报成 `video/mp4` 的兼容）→ 与当前扩展名不符且受 `supportLocalMediaType` 支持 → `moveFile` 改名 → 后续封面/歌词内嵌与入库 `localPath` 均用校正后路径
