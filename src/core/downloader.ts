@@ -597,17 +597,24 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                                     !!lrc,
                                 );
                             }
-                            if (lrc) {
-                                await Mp3Util.setMediaTag(
-                                    fsTargetPath,
-                                    { lyric: lrc },
-                                );
+                            // 归一化歌词为字符串：MusicFree 插件 getLyric 约定返回
+                            // { rawLrc, translation? }（少数返回裸字符串），直接塞对象
+                            // 给原生 setMediaTag 会因 getString("lyric") 遇 Map 抛异常
+                            // 导致内嵌静默失败（2026-10-26 装机实测根因）。
+                            const lrcText =
+                                typeof lrc === "string"
+                                    ? lrc
+                                    : (lrc?.rawLrc ?? lrc?.lrc ?? "");
+                            if (lrcText) {
+                                await Mp3Util.setMediaTag(fsTargetPath, {
+                                    lyric: lrcText,
+                                });
                             }
                         })
                         .catch((e: any) => {
                             errorLog("内嵌歌词写入失败", {
                                 title: musicItem.title,
-                                msg: e?.message ?? e,
+                                msg: String(e?.message ?? e),
                             });
                         });
                 }

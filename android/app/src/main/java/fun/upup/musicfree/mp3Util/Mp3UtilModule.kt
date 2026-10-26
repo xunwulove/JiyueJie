@@ -6,6 +6,7 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.util.Log
 import com.facebook.react.bridge.*
+import com.facebook.react.bridge.ReadableType
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.images.ArtworkFactory
@@ -200,7 +201,14 @@ class Mp3UtilModule(private val reactContext: ReactApplicationContext) : ReactCo
                 meta.getString("title")?.let { tag.setField(FieldKey.TITLE, it) }
                 meta.getString("artist")?.let { tag.setField(FieldKey.ARTIST, it) }
                 meta.getString("album")?.let { tag.setField(FieldKey.ALBUM, it) }
-                meta.getString("lyric")?.let { tag.setField(FieldKey.LYRICS, it) }
+                // 歌词防御：仅接受字符串（MusicFree 插件返回 {rawLrc} 对象时若 JS 侧
+                // 未归一化，getString 遇 Map 会抛异常导致整次内嵌失败——类型不符则跳过
+                if (
+                    meta.hasKey("lyric") &&
+                    meta.getType("lyric") == ReadableType.String
+                ) {
+                    tag.setField(FieldKey.LYRICS, meta.getString("lyric"))
+                }
                 meta.getString("comment")?.let { tag.setField(FieldKey.COMMENT, it) }
                 audioFile.commit()
                 promise.resolve(true)
