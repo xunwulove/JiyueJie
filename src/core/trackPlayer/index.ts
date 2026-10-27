@@ -742,7 +742,7 @@ class TrackPlayer extends EventEmitter<{
             // 5.2 获取音质排序
             const qualityOrder = getQualityOrder(
                 this.configService.getConfig("basic.defaultPlayQuality") ?? "standard",
-                this.configService.getConfig("basic.playQualityOrder") ?? "asc",
+                this.configService.getConfig("basic.playQualityOrder") ?? "desc",
             );
             // 5.3 插件返回音源
             let source: IPlugin.IMediaSourceResult | null = null;
@@ -753,8 +753,9 @@ class TrackPlayer extends EventEmitter<{
                             musicItem,
                             quality,
                         )) ?? null;
-                    // 5.3.1 获取到真实源
-                    if (source) {
+                    // 5.3.1 获取到真实源（校验 url 非空：插件返回空壳对象不算成功，
+                    // 继续按 order 降级，避免"音质缺失"时误判成功导致无声/自动停止）
+                    if (source?.url) {
                         this.setQuality(quality);
                         // 记录音源可用率：解析成功
                         pluginReliability.recordResult(
@@ -1247,7 +1248,7 @@ class TrackPlayer extends EventEmitter<{
             // 2. 与 play() 同口径：按音质顺序解析真实源
             const qualityOrder = getQualityOrder(
                 this.configService.getConfig("basic.defaultPlayQuality") ?? "standard",
-                this.configService.getConfig("basic.playQualityOrder") ?? "asc",
+                this.configService.getConfig("basic.playQualityOrder") ?? "desc",
             );
             const plugin = this.pluginManagerService.getByMedia(playItem);
             let source: IPlugin.IMediaSourceResult | null = null;
@@ -1524,7 +1525,7 @@ class TrackPlayer extends EventEmitter<{
 
         const qualityOrder = getQualityOrder(
             this.configService.getConfig("basic.defaultPlayQuality") ?? "standard",
-            this.configService.getConfig("basic.playQualityOrder") ?? "asc",
+            this.configService.getConfig("basic.playQualityOrder") ?? "desc",
         );
 
         // 非精确候选池（按匹配距离升序逐个验证）；精确候选走即时验证快速路径

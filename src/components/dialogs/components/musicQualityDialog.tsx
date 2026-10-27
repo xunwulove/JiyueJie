@@ -43,6 +43,19 @@ export default function MusicQualityDialog(
             : (Config.getConfig("basic.defaultDownloadQuality") ??
                 "standard");
 
+    // 2026-10-27 源能力约束：搜索结果携带 qualities 时（源声明各音质 url/大小），
+    // 未声明的档位禁用（避免"选高品质→源没有→静默下标准档"的困惑）；
+    // 接口歌曲/未知音质信息（qualities 缺失）不禁用，靠下载侧 qualityOrder 兜底降级。
+    const declaredQualities: IMusic.IQualityKey[] | null =
+        musicItem.qualities &&
+        Object.keys(musicItem.qualities).length > 0
+            ? qualityKeys.filter(
+                key =>
+                    musicItem.qualities?.[key]?.url ||
+                    musicItem.qualities?.[key]?.size,
+            )
+            : null;
+
     return (
         <Dialog onDismiss={hideDialog}>
             <Dialog.Title
@@ -60,20 +73,32 @@ export default function MusicQualityDialog(
                 style={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 12 }}>
                 {qualityKeys.map((key, i) => {
                     const isCurrent = key === currentQuality;
+                    // 源声明了音质表但该档无 url/大小 → 禁用（灰色 + 不可点）
+                    const disabled =
+                        declaredQualities !== null &&
+                        !declaredQualities.includes(key);
                     return (
                         <View key={key}>
                             <ListItem
                                 withHorizontalPadding
                                 heightType="small"
-                                onPress={() => {
-                                    onQualityPress(key, musicItem);
-                                    hideDialog();
-                                }}>
+                                onPress={
+                                    disabled
+                                        ? undefined
+                                        : () => {
+                                            onQualityPress(key, musicItem);
+                                            hideDialog();
+                                        }
+                                }>
                                 <ListItem.Content
                                     title={
                                         <ThemeText
                                             fontColor={
-                                                isCurrent ? "primary" : "text"
+                                                isCurrent
+                                                    ? "primary"
+                                                    : disabled
+                                                        ? "textSecondary"
+                                                        : "text"
                                             }
                                             fontWeight={
                                                 isCurrent ? "bold" : "regular"

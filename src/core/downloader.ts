@@ -365,22 +365,52 @@ class Downloader extends EventEmitter<IEvents> implements IInjectable {
                     this.configService.getConfig("basic.downloadQualityOrder") ?? "asc",
                 );
                 let data: IPlugin.IMediaSourceResult | null = null;
+                // 实际解析到的音质（break 时定格；循环外引用，故提升声明）
+                let resolvedQuality: IMusic.IQualityKey | undefined;
+                // 2026-10-27 与播放链路（trackPlayer play 5.3）对称：源自带多音质直链
+                // （musicItem.source[quality]）时优先直接用——插件 getMediaSource 对 quality
+                // 响应弱的源，不直链会"点高品质仍拿到标准档 url"。直链缺失再走插件解析。
                 for (let quality of qualityOrder) {
-                    try {
-                        data = await plugin.methods.getMediaSource(
-                            musicItem,
-                            quality,
-                            1,
-                            true,
-                        );
-                        if (!data?.url) {
-                            continue;
-                        }
+                    const direct = musicItem.source?.[quality]?.url;
+                    if (direct) {
+                        data = {
+                            url: direct,
+                            headers: musicItem.source?.[quality]?.headers,
+                        };
+                        resolvedQuality = quality;
                         break;
-                    } catch { }
+                    }
+                }
+                if (!data?.url) {
+                    for (let quality of qualityOrder) {
+                        try {
+                            data = await plugin.methods.getMediaSource(
+                                musicItem,
+                                quality,
+                                1,
+                                true,
+                            );
+                            if (!data?.url) {
+                                continue;
+                            }
+                            resolvedQuality = quality;
+                            break;
+                        } catch { }
+                    }
                 }
                 url = data?.url ?? url;
                 headers = data?.headers;
+                // 2026-10-27 下载音质如实回显：源不支持所选档时会静默降级，
+                // 把任务音质更新为实际解析到的档（列表/完成提示展示真实音质，避免"点高品质下到标准"困惑）
+                if (
+                    data?.url &&
+                    resolvedQuality &&
+                    resolvedQuality !== nextTask.quality
+                ) {
+                    this.updateDownloadTask(musicItem, {
+                        quality: resolvedQuality,
+                    });
+                }
             }
             if (!url) {
                 throw new Error(DownloadFailReason.FailToFetchSource);

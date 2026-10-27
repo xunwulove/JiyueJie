@@ -260,7 +260,7 @@ async function probeSingle(
     };
     const qualityOrder = getQualityOrder(
         Config.getConfig("basic.defaultPlayQuality") ?? "standard",
-        Config.getConfig("basic.playQualityOrder") ?? "asc",
+        Config.getConfig("basic.playQualityOrder") ?? "desc",
     );
     let song: any = null;
     let url: string | null = null;
