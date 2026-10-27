@@ -14,13 +14,14 @@ export default function NavBar({ onSearchPress }: { onSearchPress?: () => void }
 
     const isDark = (colors as any).dark === true;
 
+    // 2026-10-27 换色主题前提：去掉品牌蓝 fallback，直接取主题 appBar 色（theme.ts 中必有定义）
+    const appBarColor = colors.appBar as string;
+
     return (
         <LinearGradient
             colors={[
-                colors.appBar ?? "#2F6FED",
-                Color(colors.appBar ?? "#2F6FED")
-                    .darken(0.18)
-                    .toString(),
+                appBarColor,
+                Color(appBarColor).darken(0.18).toString(),
             ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}

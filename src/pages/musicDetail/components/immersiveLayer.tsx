@@ -105,7 +105,7 @@ export default function ImmersiveLayer() {
     const [now, setNow] = useState(() => new Date());
 
     const isTablet = orientation === "horizontal";
-    /* 光效配色跟随主题主色（白天品牌蓝 #2F6FED / 深色 #5A8FFF）；封面主色可用时优先（贴合歌曲氛围） */
+    /* 光效配色跟随主题主色（白天品牌蓝 / 深色 #5A8FFF，取色源见 core/theme.ts）；封面主色可用时优先（贴合歌曲氛围） */
     const colors = useColors();
 
     /* 封面主色提取：自选封面（coverBase）优先，其次歌曲原始封面；

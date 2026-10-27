@@ -18,6 +18,8 @@ import LinearGradient from "react-native-linear-gradient";
 export default function StatsRow() {
     const navigate = useNavigate();
     const isTablet = useIsTablet();
+    // 2026-10-27 换色主题前提：主题主色单点引用（原 3 处硬编码 #2F6FED 改为 primary，随主题切换）
+    const primary = useColors().primary;
 
     const playEvents = usePlayEvents();
 
@@ -88,14 +90,14 @@ export default function StatsRow() {
             icon: "clock-outline",
             label: "今日听歌",
             value: formatDuration(stats.todayMinutes),
-            color: "#2F6FED",
+            color: primary,
             initialPeriod: "DAY",
         },
         {
             icon: "play-circle-outline",
             label: "今日播放",
             value: `${stats.todayPlays} 次`,
-            color: "#2F6FED",
+            color: primary,
             initialPeriod: "DAY",
         },
         {
@@ -105,12 +107,10 @@ export default function StatsRow() {
                     ? `最常听 · ${stats.mostPlayedCount} 次`
                     : "最常听",
             value: stats.mostPlayed,
-            color: "#2F6FED",
+            color: primary,
             initialPeriod: "ALL",
         },
     ];
-
-    const primary = useColors().primary;
 
     return (
         <View style={styles.row}>
