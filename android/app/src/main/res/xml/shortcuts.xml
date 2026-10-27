@@ -10,9 +10,9 @@
         android:shortcutShortLabel="@string/shortcut_play"
         android:shortcutLongLabel="@string/shortcut_play">
         <intent
-            android:action="fun.upup.musicfree.SHORTCUT"
-            android:targetPackage="fun.upup.musicfree"
-            android:targetClass="fun.upup.musicfree.MainActivity">
+            android:action="com.jiyuejie.music.SHORTCUT"
+            android:targetPackage="com.jiyuejie.music"
+            android:targetClass="com.jiyuejie.music.MainActivity">
             <extra
                 android:name="shortcut_action"
                 android:value="play" />
@@ -25,9 +25,9 @@
         android:shortcutShortLabel="@string/shortcut_local"
         android:shortcutLongLabel="@string/shortcut_local">
         <intent
-            android:action="fun.upup.musicfree.SHORTCUT"
-            android:targetPackage="fun.upup.musicfree"
-            android:targetClass="fun.upup.musicfree.MainActivity">
+            android:action="com.jiyuejie.music.SHORTCUT"
+            android:targetPackage="com.jiyuejie.music"
+            android:targetClass="com.jiyuejie.music.MainActivity">
             <extra
                 android:name="shortcut_action"
                 android:value="local" />
@@ -40,9 +40,9 @@
         android:shortcutShortLabel="@string/shortcut_search"
         android:shortcutLongLabel="@string/shortcut_search">
         <intent
-            android:action="fun.upup.musicfree.SHORTCUT"
-            android:targetPackage="fun.upup.musicfree"
-            android:targetClass="fun.upup.musicfree.MainActivity">
+            android:action="com.jiyuejie.music.SHORTCUT"
+            android:targetPackage="com.jiyuejie.music"
+            android:targetClass="com.jiyuejie.music.MainActivity">
             <extra
                 android:name="shortcut_action"
                 android:value="search" />
@@ -55,9 +55,9 @@
         android:shortcutShortLabel="@string/shortcut_update"
         android:shortcutLongLabel="@string/shortcut_update">
         <intent
-            android:action="fun.upup.musicfree.SHORTCUT"
-            android:targetPackage="fun.upup.musicfree"
-            android:targetClass="fun.upup.musicfree.MainActivity">
+            android:action="com.jiyuejie.music.SHORTCUT"
+            android:targetPackage="com.jiyuejie.music"
+            android:targetClass="com.jiyuejie.music.MainActivity">
             <extra
                 android:name="shortcut_action"
                 android:value="update" />

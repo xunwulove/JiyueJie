@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree.lyricUtil
+package com.jiyuejie.music.lyricUtil
 
 import android.view.View
 import com.facebook.react.ReactPackage

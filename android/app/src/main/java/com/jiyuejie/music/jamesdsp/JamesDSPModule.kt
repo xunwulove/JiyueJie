@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree.jamesdsp
+package com.jiyuejie.music.jamesdsp
 
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise

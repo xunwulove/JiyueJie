@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree
+package com.jiyuejie.music
 import expo.modules.ReactActivityDelegateWrapper
 import expo.modules.splashscreen.SplashScreenManager
 

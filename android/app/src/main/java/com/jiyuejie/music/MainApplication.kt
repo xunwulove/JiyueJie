@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree
+package com.jiyuejie.music
 import android.content.res.Configuration
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
@@ -14,11 +14,11 @@ import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
-import `fun`.upup.musicfree.lyricUtil.LyricUtilPackage
-import `fun`.upup.musicfree.mp3Util.Mp3UtilPackage
-import `fun`.upup.musicfree.probePlayer.ProbePlayerPackage
-import `fun`.upup.musicfree.soundEffect.SoundEffectPackage
-import `fun`.upup.musicfree.utils.UtilsPackage
+import com.jiyuejie.music.lyricUtil.LyricUtilPackage
+import com.jiyuejie.music.mp3Util.Mp3UtilPackage
+import com.jiyuejie.music.probePlayer.ProbePlayerPackage
+import com.jiyuejie.music.soundEffect.SoundEffectPackage
+import com.jiyuejie.music.utils.UtilsPackage
 
 class MainApplication : Application(), ReactApplication {
 

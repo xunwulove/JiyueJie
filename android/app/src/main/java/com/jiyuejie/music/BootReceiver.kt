@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree
+package com.jiyuejie.music
 
 import android.content.BroadcastReceiver
 import android.content.Context

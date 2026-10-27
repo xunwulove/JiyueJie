@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree.soundEffect
+package com.jiyuejie.music.soundEffect
 
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableArray

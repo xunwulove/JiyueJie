@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree.probePlayer
+package com.jiyuejie.music.probePlayer
 
 import android.view.View
 import com.facebook.react.ReactPackage

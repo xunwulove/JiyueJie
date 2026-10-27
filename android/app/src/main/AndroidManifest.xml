@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="fun.upup.musicfree">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.jiyuejie.music">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -29,7 +29,7 @@
       <!-- FileProvider：软件内下载更新后拉起安装 APK（Android 7+ 需 content:// URI） -->
       <provider
         android:name="androidx.core.content.FileProvider"
-        android:authorities="fun.upup.musicfree.fileprovider"
+        android:authorities="com.jiyuejie.music.fileprovider"
         android:exported="false"
         android:grantUriPermissions="true">
         <meta-data

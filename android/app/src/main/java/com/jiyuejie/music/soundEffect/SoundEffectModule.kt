@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree.soundEffect
+package com.jiyuejie.music.soundEffect
 
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo

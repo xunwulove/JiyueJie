@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree.utils; // replace your-apps-package-name with your app’s package name
+package com.jiyuejie.music.utils; // replace your-apps-package-name with your app’s package name
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -30,7 +30,7 @@ class UtilsModule(context: ReactApplicationContext) : ReactContextBaseJavaModule
     /** 桌面快捷方式冷启动兜底：读取并清空 pending action（无则返回 null） */
     @ReactMethod(isBlockingSynchronousMethod = true)
     fun consumePendingShortcutAction(): String? {
-        return `fun`.upup.musicfree.ShortcutBridge.consumePendingAction()
+        return com.jiyuejie.music.ShortcutBridge.consumePendingAction()
     }
 
     /** 开机自启开关：写入 SharedPreferences（BootReceiver 开机时读取同文件同键） */

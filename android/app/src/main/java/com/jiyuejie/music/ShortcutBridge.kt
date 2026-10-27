@@ -1,4 +1,4 @@
-package `fun`.upup.musicfree
+package com.jiyuejie.music
 
 /**
  * 桌面快捷方式桥（进程内单例）。
@@ -7,7 +7,7 @@ package `fun`.upup.musicfree
  * 防止 JS 未加载时事件丢失）；热启动由 DeviceEventEmitter 事件直接送达。
  */
 object ShortcutBridge {
-    const val ACTION_SHORTCUT = "fun.upup.musicfree.SHORTCUT"
+    const val ACTION_SHORTCUT = "com.jiyuejie.music.SHORTCUT"
     const val EXTRA_SHORTCUT_ACTION = "shortcut_action"
     const val EVENT_NAME = "AppShortcut"
 
