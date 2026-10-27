@@ -114,7 +114,8 @@ static def getVersion() {
 // }
 
 def appVersion = getVersion()
-def appVersionCode = 400033
+// 正式发版 versionCode：每次发版 +1（0.6.3 → 400034）。versionName 与 package.json 一致。
+def appVersionCode = 400034
 
 
 android {
