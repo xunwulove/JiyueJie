@@ -89,8 +89,8 @@ web-build/
 build_log.txt
 music1.json
 MusicFree-upstream/
-# tools/ 下的独立工具工程（各自独立 git/体积大，主仓库不跟踪）
-tools/source-probe/
+# tools/source-probe 已并入主仓库（源码入库，node_modules/build 由自身 .gitignore 排除）
+# tools/source-probe/
 # 发版 APK 不入库（安装包只走 gitee release）
 /极悦界*.apk
 *.apk

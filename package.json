@@ -10,7 +10,7 @@
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx src --fix",
+    "lint": "eslint ./src --ext .js,.jsx,.ts,.tsx --fix",
     "start": "react-native start",
     "clean": "cd ./android && ./gradlew clean",
     "test": "jest",
@@ -124,7 +124,7 @@
     "node": ">=18"
   },
   "lint-staged": {
-    "src/**/*.{ts,tsx}": [
+    "./src/**/*.{ts,tsx}": [
       "npm run lint"
     ]
   },
