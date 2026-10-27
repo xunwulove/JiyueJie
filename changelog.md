@@ -4,6 +4,9 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.27（手机版首页恢复搜索条，非发版）`
+1. 【调整】**手机版首页加回顶部搜索条**：0.6.3 UI 精简曾去除首页搜索条（入口改在底部 Tab「搜索」）；用户要求恢复——手机版 HOME 分支重新渲染 `NavBar`（点击跳转搜索 tab，`src/pages/home/index.tsx`），平板分支维持不渲染（搜索入口在顶栏 tab 栏搜索 tab，规范 11.7）。验证：tsc --noEmit exit 0。
+
 `2026.10.26（歌词内嵌修复装机验证，非发版）`
 1. 【修复】**下载内嵌歌词失败根因修复**（commit `79952c6`，装机验证通过）：MusicFree 插件 `getLyric` 约定返回 `{rawLrc, translation?}` 对象（碳酸Meting/碳酸酷我/GD音乐台实测均如此），`downloader.ts:591-604` 直接把返回对象当字符串传给 `Mp3Util.setMediaTag({lyric})`，原生 `getString("lyric")` 遇 Map 抛异常 → 内嵌歌词静默失败；封面走 artwork（URL 字符串）正常、播放链路 `lyricManager.ts` 取 `rawLrc` 正常——仅下载内嵌链路漏归一化。
    - `downloader.ts`：取词结果归一化为字符串（`typeof lrc === "string" ? lrc : (lrc?.rawLrc ?? lrc?.lrc ?? "")`），空歌词跳过写入；errorLog msg 改 `String(e?.message ?? e)` 保证留痕可读

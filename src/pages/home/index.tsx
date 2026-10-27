@@ -9,6 +9,7 @@ import HorizontalSafeAreaView from "@/components/base/horizontalSafeAreaView.tsx
 import globalStyle from "@/constants/globalStyle";
 import Theme from "@/core/theme";
 import HomeBody from "./components/homeBody";
+import NavBar from "./components/navBar";
 import TabBar, { SaltTab } from "./components/tabBar";
 import MineTab from "./components/mineTab";
 import LibraryTab from "./components/libraryTab";
@@ -40,9 +41,18 @@ function renderTab(
     case SaltTab.HOME:
         return (
             <HorizontalSafeAreaView style={globalStyle.flex1}>
-                {/* 2026-10-27 手机版 UI 精简：首页顶部搜索条去除（搜索入口在底部 Tab 栏"搜索" tab，
-                    平板本来就不渲染页内搜索框，规范 11.7）；平板分支保持不变 */}
-                <HomeBody />
+                <>
+                    {/* 2026-10-27 手机版首页加回搜索条（用户要求恢复，点击跳转搜索 tab）；
+                        平板保持不渲染页内搜索框（搜索入口在顶栏 tab 栏搜索 tab，规范 11.7） */}
+                    {isTablet ? null : (
+                        <NavBar
+                            onSearchPress={() =>
+                                setTab(SaltTab.SEARCH)
+                            }
+                        />
+                    )}
+                    <HomeBody />
+                </>
             </HorizontalSafeAreaView>
         );
     case SaltTab.SEARCH:
