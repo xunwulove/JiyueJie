@@ -344,7 +344,9 @@ export default function LibraryTab() {
                                         </View>
                                     </View>
                                 ) : (
-                                    <>
+                                    /* 手机布局规则（2026-10-27 固化）：每行 2 卡片 → 左右布局（左图标块+右标题/副标题）；
+                                       若未来出现每行 3 卡片场景，改回上下布局（图标上+文字下，原 iconBox/titlePhone 竖排样式可复刻） */
+                                    <View style={styles.rowPhone}>
                                         <LinearGradient
                                             colors={[
                                                 primary,
@@ -354,27 +356,32 @@ export default function LibraryTab() {
                                             ]}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 1 }}
-                                            style={styles.iconBox}>
+                                            style={styles.iconBoxPhone}>
                                             <Icon
                                                 name={entry.icon}
-                                                size={17}
+                                                size={24}
                                                 color="#FFFFFF"
                                             />
                                         </LinearGradient>
-                                        <ThemeText
-                                            fontSize="title"
-                                            fontWeight="bold"
-                                            numberOfLines={1}
-                                            style={styles.titlePhone}>
-                                            {entry.title}
-                                        </ThemeText>
-                                        <ThemeText
-                                            fontSize="caption"
-                                            fontColor="textSecondary"
-                                            numberOfLines={1}>
-                                            {entry.subtitle}
-                                        </ThemeText>
-                                    </>
+                                        <View
+                                            style={
+                                                styles.textBlockPhone
+                                            }>
+                                            <ThemeText
+                                                fontSize="title"
+                                                fontWeight="bold"
+                                                numberOfLines={1}
+                                                style={styles.titlePhone}>
+                                                {entry.title}
+                                            </ThemeText>
+                                            <ThemeText
+                                                fontSize="caption"
+                                                fontColor="textSecondary"
+                                                numberOfLines={1}>
+                                                {entry.subtitle}
+                                            </ThemeText>
+                                        </View>
+                                    </View>
                                 )}
                             </LinearGradient>
                         </Pressable>
@@ -674,9 +681,9 @@ const styles = StyleSheet.create({
     },
     cardBg: {
         borderRadius: 16,
-        paddingVertical: 13,
-        paddingHorizontal: 10,
-        minHeight: 96, // 4 卡手机竖排布局保持 96（上图标+两行文字所需）
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        minHeight: 84, // 手机每行 2 卡左右布局，对齐首页金刚区（横长条 ≈2:1）
         justifyContent: "center",
         borderWidth: 0.5, // 椒盐细边框（outline α0.35，颜色动态随主题）
     },
@@ -705,13 +712,20 @@ const styles = StyleSheet.create({
     titleTablet: {
         marginBottom: 4,
     },
-    iconBox: {
-        width: 32,
-        height: 32,
-        borderRadius: 10,
+    rowPhone: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    iconBoxPhone: {
+        width: 42,
+        height: 42,
+        borderRadius: 14,
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: 6,
+        marginRight: 14,
+    },
+    textBlockPhone: {
+        flex: 1,
     },
     titlePhone: {
         marginBottom: 2,

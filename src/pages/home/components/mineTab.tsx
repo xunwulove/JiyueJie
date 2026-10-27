@@ -10,7 +10,6 @@ import useIsTablet from "@/hooks/useIsTablet";
 import Icon, { IIconName } from "@/components/base/icon.tsx";
 import ThemeText from "@/components/base/themeText";
 import { ROUTE_PATH, useNavigate } from "@/core/router";
-import { showPanel } from "@/components/panels/usePanel";
 import { showDialog } from "@/components/dialogs/useDialog";
 import LinearGradient from "react-native-linear-gradient";
 import Color from "color";
@@ -155,18 +154,9 @@ export default function MineTab({
         },
     ];
 
-    /* 手机竖排入口列表（对齐 APlayer 手机"我的音乐"卡：播放队列/我的喜欢/导入歌单/备份管理/下载管理/音源管理） */
+    /* 手机竖排入口列表（2026-10-27 精简：去除"播放队列""我的喜欢"，保留导入/备份/下载/音源管理；
+       顶部三格统计卡 statCards 中的"我的喜欢"保留） */
     const entryItems: IEntry[] = [
-        {
-            icon: "playlist",
-            title: "播放队列",
-            action: () => showPanel("PlayList"),
-        },
-        {
-            icon: "heart",
-            title: "我的喜欢",
-            action: favoriteAction,
-        },
         {
             icon: "inbox-arrow-down",
             title: "导入歌单/单曲",
@@ -199,11 +189,31 @@ export default function MineTab({
     );
     /* 用户卡信息区：平板显示标题+副标题；手机副标题统一放底部行（避免与右上齿轮/底部重复叠字） */
     /* 字号规范（对齐三卡 MineEntryCard）：大卡标题统一 large(22)/bold，副标题统一 normal(16) */
+    /* 2026-10-27 手机版重规划：顶部标题由"系统信息(Android xx)"改为软件版本 vX.X.X.X，点击即检测更新
+       （原底部"检查更新"chip 去除，功能并入版本点击；系统信息下移底部行与设备名并排） */
     const userInfo = (withDesc: boolean) => (
         <View style={styles.userInfo}>
-            <ThemeText fontSize="large" fontWeight="bold" numberOfLines={1}>
-                {systemInfo}
-            </ThemeText>
+            {isTablet ? (
+                <ThemeText
+                    fontSize="large"
+                    fontWeight="bold"
+                    numberOfLines={1}>
+                    {systemInfo}
+                </ThemeText>
+            ) : (
+                <Pressable
+                    onPress={onCheckUpdate}
+                    hitSlop={8}
+                    accessible
+                    accessibilityLabel="软件版本，点击检测更新">
+                    <ThemeText
+                        fontSize="large"
+                        fontWeight="bold"
+                        numberOfLines={1}>
+                        v{DeviceInfo.getVersion()}
+                    </ThemeText>
+                </Pressable>
+            )}
             {withDesc ? (
                 <ThemeText
                     fontSize="normal"
@@ -214,7 +224,7 @@ export default function MineTab({
             ) : null}
         </View>
     );
-    /* 手机端设置齿轮（流内布局放行尾，避免 absolute 悬浮盖住标题文字） */
+    /* 手机端设置齿轮（流内布局放行尾，避免 absolute 悬浮盖住标题文字）；2026-10-27 加大 22→28 */
     const settingGear = !isTablet ? (
         <Pressable
             style={styles.settingGear}
@@ -222,7 +232,7 @@ export default function MineTab({
             hitSlop={8}>
             <Icon
                 name="cog-8-tooth"
-                size={22}
+                size={28}
                 color={colors.textSecondary}
             />
         </Pressable>
@@ -283,39 +293,20 @@ export default function MineTab({
             {!isTablet ? (
                 <>
                     {statsRow}
+                    {/* 手机底部信息行：设备名 + 系统信息（2026-10-27 版本号已上移顶部可点击，原"检查更新"chip 去除） */}
                     <View style={styles.userCardBottom}>
                         <ThemeText
                             fontSize="normal"
-                            fontColor="textSecondary"
-                            numberOfLines={1}
-                            style={styles.userCardBottomText}>
+                            fontWeight="medium"
+                            numberOfLines={1}>
                             {deviceTitle}
                         </ThemeText>
-                        <View style={styles.versionRow}>
-                            <ThemeText
-                                fontSize="large"
-                                fontWeight="bold"
-                                color={primary}>
-                                v{DeviceInfo.getVersion()}
-                            </ThemeText>
-                            <Pressable
-                                onPress={onCheckUpdate}
-                                style={[
-                                    styles.updateChip,
-                                    {
-                                        backgroundColor: Color(primary)
-                                            .alpha(0.1)
-                                            .toString(),
-                                    },
-                                ]}>
-                                <ThemeText
-                                    fontSize="normal"
-                                    fontWeight="medium"
-                                    color={primary}>
-                                    检查更新
-                                </ThemeText>
-                            </Pressable>
-                        </View>
+                        <ThemeText
+                            fontSize="caption"
+                            fontColor="textSecondary"
+                            numberOfLines={1}>
+                            {systemInfo}
+                        </ThemeText>
                     </View>
                 </>
             ) : (
@@ -640,18 +631,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     userCardBottom: {
-        flexDirection: "row",
-        alignItems: "center",
+        // 2026-10-27 手机底部信息行：设备名 + 系统信息 竖排
+        flexDirection: "column",
+        alignItems: "flex-start",
         marginTop: 12,
-    },
-    userCardBottomText: {
-        flex: 1,
-        marginRight: 12,
-    },
-    versionRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
+        gap: 4,
     },
     userStatsRow: {
         flexDirection: "row",
@@ -689,11 +673,6 @@ const styles = StyleSheet.create({
     },
     userInfo: {
         flex: 1,
-    },
-    updateChip: {
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 3,
     },
     versionIcon: {
         width: 56,

@@ -91,7 +91,7 @@ export default function Operations() {
         },
         {
             iconName: "trophy",
-            title: "排行榜",
+            title: "排行榜单",
             action() {
                 navigate(ROUTE_PATH.TOP_LIST);
             },
@@ -182,7 +182,6 @@ export default function Operations() {
                             <ThemeText
                                 fontSize="title"
                                 fontWeight="bold"
-                                numberOfLines={1}
                                 style={styles.cardText}>
                                 {action.title}
                             </ThemeText>
