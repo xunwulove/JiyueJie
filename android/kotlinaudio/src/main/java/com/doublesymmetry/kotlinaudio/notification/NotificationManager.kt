@@ -651,6 +651,12 @@ class NotificationManager internal constructor(
                     is NotificationButton.PLAY_PAUSE -> {
                         PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE
                     }
+                    is NotificationButton.NEXT -> {
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+                    }
+                    is NotificationButton.PREVIOUS -> {
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                    }
                     is NotificationButton.BACKWARD -> {
                         rewindIcon = button.icon ?: rewindIcon
                         PlaybackStateCompat.ACTION_REWIND
