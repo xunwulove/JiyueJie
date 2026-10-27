@@ -196,6 +196,11 @@ export interface ILanguageData {
     "pluginSetting.pluginItem.author": string; // 作者
     "pluginSetting.pluginItem.reliability": string; // 可用率
     "pluginSetting.pluginItem.noReliabilityData": string; // 暂无可用率数据
+    "pluginSetting.reliabilityDialog.title": string; // 可用率详情标题
+    "pluginSetting.reliabilityDialog.synthetic": string; // 合成可用率
+    "pluginSetting.reliabilityDialog.lyric": string; // 歌词可用率
+    "pluginSetting.reliabilityDialog.sheet": string; // 歌单可用率
+    "pluginSetting.reliabilityDialog.noData": string; // 暂无数据
     "pluginSetting.pluginSetting.title": string; // 插件设置
     "pluginSetting.pluginSetting.empty": string; // 插件无设置项提示
     "pluginSetting.menu.subscriptionSetting": string; // 订阅设置

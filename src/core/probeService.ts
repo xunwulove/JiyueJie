@@ -642,11 +642,35 @@ export function refreshPlayProbed(platform: string): void {
     }
 }
 
+/**
+ * 读取某音源各维度上次探测时间戳（毫秒）。
+ * 无记录/未探测返回 null（UI 用于"有数据才显示"）；有记录返回 Partial<Record<ProbeDim, number>>，
+ * 缺失的维度键 = 该维度从未探测。仅用于详情展示，不改写任何状态。
+ */
+export function getLastProbeRuns(
+    platform: string | undefined,
+): Partial<Record<ProbeDim, number>> | null {
+    if (!platform) {
+        return null;
+    }
+    try {
+        const lastRuns = readLastRuns();
+        const rec = lastRuns[platform];
+        if (!rec || Object.keys(rec).length <= 0) {
+            return null;
+        }
+        return rec;
+    } catch {
+        return null;
+    }
+}
+
 const probeService = {
     probeAllPlugins,
     probeAuto,
     isProbing,
     refreshPlayProbed,
+    getLastProbeRuns,
 };
 
 export default probeService;

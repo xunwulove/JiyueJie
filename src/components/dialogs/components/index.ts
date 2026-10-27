@@ -34,6 +34,7 @@ import MusicItemLyricOptionsDialog from "./musicItemLyricOptionsDialog";
 import MusicQualityDialog from "./musicQualityDialog";
 import PluginSettingDialog from "./pluginSettingDialog";
 import CoverBasePositionDialog from "./coverBasePositionDialog";
+import PluginReliabilityDialog from "./pluginReliabilityDialog";
 
 const dialogs = {
     SimpleDialog,
@@ -72,6 +73,7 @@ const dialogs = {
     MusicQualityDialog,
     PluginSettingDialog,
     CoverBasePositionDialog,
+    PluginReliabilityDialog,
 };
 
 export default dialogs;

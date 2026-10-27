@@ -223,18 +223,23 @@ function _PluginItem(props: IPluginItemProps) {
                             });
                         }} /> : null
                     }
-                    {/* 可用率/歌词标签：普通源显示可用率（无数据默认 50%）；歌词源显示"歌词" */}
-                    <View
-                        style={[
+                    {/* 可用率/歌词标签：普通源显示可用率（无数据默认 50%）；歌词源显示"歌词"。
+                        点击弹出可用率详情弹窗（合成可用率 + 分维度明细 + 推荐歌单 + 最后探测时间） */}
+                    <Pressable
+                        onPress={() =>
+                            showDialog("PluginReliabilityDialog", { plugin })
+                        }
+                        style={({ pressed }) => [
                             styles.reliabilityTag,
                             { backgroundColor: tagBg },
+                            pressed ? styles.reliabilityTagPressed : null,
                         ]}>
                         <Text
                             numberOfLines={1}
                             style={styles.reliabilityText}>
                             {tagText}
                         </Text>
-                    </View>
+                    </Pressable>
                 </View>
                 <ThemeSwitch
                     value={enabled}
@@ -371,6 +376,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 6,
         paddingVertical: 2,
         marginLeft: rpx(4),
+    },
+    reliabilityTagPressed: {
+        opacity: 0.7,
     },
     reliabilityText: {
         fontSize: fontSizeConst.description,

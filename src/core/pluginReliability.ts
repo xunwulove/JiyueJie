@@ -202,6 +202,19 @@ export function hasRecordSync(platform: string | undefined): boolean {
 }
 
 /**
+ * 同步取某音源原始分维度统计记录（无记录返回 null）。
+ * 仅供展示层读取明细（成功/失败计数）；不修改任何状态。
+ */
+export function getRecordSync(
+    platform: string | undefined,
+): IReliabilityRecord | null {
+    if (!platform) {
+        return null;
+    }
+    return reliabilityMap[platform] ?? null;
+}
+
+/**
  * 记录一次某维度结果（ok=是否成功）。
  * 竞态说明：ensureLoaded 之后的更新段内不含第二个 await（同一微任务原子段），
  * 并发调用不会交错读写内存；持久化 fire-and-forget，不阻塞调用方。
@@ -294,6 +307,20 @@ export function getRecommendReliabilitySync(
         return RECOMMEND_DEFAULT;
     }
     return calcRecommend(recommendMap[platform]);
+}
+
+/** 同步取推荐歌单原始统计记录（无记录返回 null；供详情展示 ok/fail 计数） */
+export function getRecommendRecordSync(
+    platform: string | undefined,
+): IRecommendReliabilityRecord | null {
+    if (!platform) {
+        return null;
+    }
+    const r = recommendMap[platform];
+    if (!r || r.ok + r.fail <= 0) {
+        return null;
+    }
+    return r;
 }
 
 /** 是否有推荐歌单统计记录（同步；无记录返回 false，用于"暂无数据排最后"） */
@@ -401,6 +428,7 @@ const pluginReliability = {
     getReliability,
     getReliabilityRecord,
     getReliabilitySync,
+    getRecordSync,
     getLyricReliabilitySync,
     hasLyricRecordSync,
     hasRecordSync,
@@ -411,6 +439,7 @@ const pluginReliability = {
     recordRecommendResult,
     getRecommendReliability,
     getRecommendReliabilitySync,
+    getRecommendRecordSync,
     getRecommendLatencySync,
     hasRecommendRecordSync,
     RECOMMEND_DEFAULT,
