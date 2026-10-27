@@ -12,13 +12,15 @@ import TrackPlayer from "@/core/trackPlayer";
 import useColors from "@/hooks/useColors";
 import Color from "color";
 import { FlashList } from "@shopify/flash-list";
+import SongCover from "@/components/base/songCover";
 
 /**
  * 最近播放 - 对齐 APlayer RecentPlayPage（标题按用户要求统一 18sp Bold）：
  * 顶栏 56dp：返回 + 标题 18sp Bold + 有记录时右侧清空按钮（直接按钮，非三点菜单）
  * 空态：64dp 图标 α0.3 + "暂无播放记录" 14sp
- * 列表：contentPadding 16/8、行距 2；自绘行 = 44dp 圆角8 surfaceVariant 字符块（首字符 18sp primary）
- *      + 歌名 15sp Medium + 歌手 12sp，点击整行播放（无序号/无封面图/无更多按钮）
+ * 列表：contentPadding 16/8、行距 2；自绘行 = 48dp 圆角8 歌曲封面（有封面→真实封面 / 无封面→自制合成封面，
+ *      2026-10-27 由"字符块首字母"改为统一 SongCover，与其他列表封面一致）
+ *      + 歌名 15sp Medium + 歌手 12sp，点击整行播放（无序号/无更多按钮）
  */
 export default function History() {
     const musicHistoryList = useMusicHistory();
@@ -76,21 +78,10 @@ export default function History() {
                                     musicHistoryList,
                                 )
                             }>
-                            <View
-                                style={[
-                                    styles.charBlock,
-                                    {
-                                        backgroundColor:
-                                            colors.surfaceVariant ??
-                                            colors.card,
-                                    },
-                                ]}>
-                                <ThemeText
-                                    fontSize="title"
-                                    fontColor="primary">
-                                    {(item.title ?? "♪").charAt(0)}
-                                </ThemeText>
-                            </View>
+                            <SongCover
+                                musicItem={item}
+                                style={styles.cover}
+                            />
                             <View style={styles.textWrap}>
                                 <ThemeText
                                     fontSize="body"
@@ -145,12 +136,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         borderRadius: 10,
     },
-    charBlock: {
+    cover: {
         width: 48,
         height: 48,
         borderRadius: 8,
-        alignItems: "center",
-        justifyContent: "center",
         marginRight: 12,
     },
     textWrap: {

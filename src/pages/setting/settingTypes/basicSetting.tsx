@@ -165,7 +165,7 @@ export default function BasicSetting() {
                 t("basicSettings.playQualityOrder"),
                 "basic.playQualityOrder",
                 ["asc", "desc"],
-                playQualityOrder ?? "asc",
+                playQualityOrder ?? "desc",
                 {
                     asc: t("basicSettings.playQualityOrder.asc"),
                     desc: t("basicSettings.playQualityOrder.desc"),

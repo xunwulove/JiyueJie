@@ -30,11 +30,14 @@ export default function ColorBlock(props: IColorBlockProps) {
 
 const styles = StyleSheet.create({
     showBar: {
-        width: rpx(76),
-        height: rpx(50),
+        // 2026-10-27 悬浮歌词颜色块缩小：76×50 → 44×28 + 圆角 6（原尺寸占行偏高，对齐设置项紧凑风格）
+        width: rpx(44),
+        height: rpx(28),
+        borderRadius: 6,
         borderWidth: 1,
         borderStyle: "solid",
         borderColor: "#ccc",
+        overflow: "hidden",
     },
     showBarContent: {
         width: "100%",
