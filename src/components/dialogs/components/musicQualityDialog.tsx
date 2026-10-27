@@ -44,8 +44,8 @@ export default function MusicQualityDialog(
                 "standard");
 
     // 2026-10-27 源能力约束：搜索结果携带 qualities 时（源声明各音质 url/大小），
-    // 未声明的档位禁用（避免"选高品质→源没有→静默下标准档"的困惑）；
-    // 接口歌曲/未知音质信息（qualities 缺失）不禁用，靠下载侧 qualityOrder 兜底降级。
+    // **只显示实际可下载的音质**（未声明的档位直接不渲染，避免"选高品质→源没有→静默下标准档"的困惑）；
+    // 接口歌曲/未知音质信息（qualities 缺失）显示全部档，靠下载侧 qualityOrder 兜底降级。
     const declaredQualities: IMusic.IQualityKey[] | null =
         musicItem.qualities &&
         Object.keys(musicItem.qualities).length > 0
@@ -55,6 +55,9 @@ export default function MusicQualityDialog(
                     musicItem.qualities?.[key]?.size,
             )
             : null;
+    // 实际展示的档位：源声明了音质表 → 只显示声明的档；否则全部档
+    const visibleQualities: IMusic.IQualityKey[] =
+        declaredQualities !== null ? declaredQualities : qualityKeys;
 
     return (
         <Dialog onDismiss={hideDialog}>
@@ -71,34 +74,24 @@ export default function MusicQualityDialog(
             <Dialog.Content
                 needScroll
                 style={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 12 }}>
-                {qualityKeys.map((key, i) => {
+                {visibleQualities.map((key, i) => {
                     const isCurrent = key === currentQuality;
-                    // 源声明了音质表但该档无 url/大小 → 禁用（灰色 + 不可点）
-                    const disabled =
-                        declaredQualities !== null &&
-                        !declaredQualities.includes(key);
                     return (
                         <View key={key}>
                             <ListItem
                                 withHorizontalPadding
                                 heightType="small"
-                                onPress={
-                                    disabled
-                                        ? undefined
-                                        : () => {
-                                            onQualityPress(key, musicItem);
-                                            hideDialog();
-                                        }
-                                }>
+                                onPress={() => {
+                                    onQualityPress(key, musicItem);
+                                    hideDialog();
+                                }}>
                                 <ListItem.Content
                                     title={
                                         <ThemeText
                                             fontColor={
                                                 isCurrent
                                                     ? "primary"
-                                                    : disabled
-                                                        ? "textSecondary"
-                                                        : "text"
+                                                    : "text"
                                             }
                                             fontWeight={
                                                 isCurrent ? "bold" : "regular"
@@ -122,7 +115,7 @@ export default function MusicQualityDialog(
                                 ) : null}
                             </ListItem>
                             {/* 2026-10-21 统一：列表项之间加 ListDivider */}
-                            {i < qualityKeys.length - 1 ? (
+                            {i < visibleQualities.length - 1 ? (
                                 <ListDivider marginLeft={16} />
                             ) : null}
                         </View>
