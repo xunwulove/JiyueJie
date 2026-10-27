@@ -4,6 +4,17 @@
 > 版本源：`package.json` version（versionName 读取它），versionCode 见 `android/app/build.gradle`。
 > 发版链路：gitee `xunwulove/jiyuejie` latest tag 固定附件（version.json + 两个 APK），见 PROJECT_HANDOVER.md §6。
 
+`2026.10.27（探测软件归属落地 + 文档清理，非发版）`
+1. 【调整】**探测软件归属最终落地（用户拍板）**：①源码并入主仓库 `tools/source-probe/`（commit `2e0f7f6`，Git Data API 推 GitHub 远端 main `5354bb25`，399 文件）；②软件更新分发在 gitee `sources/source-probe/`（version.json + release `source-probe-v0.1.6` 3 个 APK 附件，不占用主 App 更新链）；③主仓库 lint 限定 `./src`、移除 source-probe 自身 lint-staged（否则 pre-commit 误扫其 399 文件报错）；④探测软件 `.gitignore` 排除本地快照/构建残留（plugins.json/version.json/APK 等，权威在 gitee）。
+2. 【清理】**过时归档与临时文件删除**（commit `0dd951f`）：`docs/archive/` 全目录 15 文件（音源清单-20261022 全套、功能与代码核查记录、走查子报告 6 份等）+ `.tmp_embed/` + `download_embed_log.txt` + `tools/verify_sources/nairocy.html`；同步修正 `docs/UI与适配核查记录.md`、`docs/音源全流程.md` 引用。
+
+`2026.10.27（未来计划登记，非发版）`
+1. 【计划】**音源插件推荐字节**：`docs/音源全流程.md` 新增 §十 未来计划——插件按探测结果标注推荐用途（播放/歌词/歌单/复合），含载体、规则、展示位置等待定要点，未排期。
+2. 【计划】**第二套主题 UI**：§十 新增 10.2——与现有椒盐 SaltBlue 风格并存可切换，含已收敛的品牌蓝硬编码结论、待定要点（切换入口/覆盖范围/持久化），未排期。
+
+`2026.10.27（音源问题记录，非发版）`
+1. 【记录】**酷我（念心音源）作为歌单显示不出推荐歌单**：音源全流程文档新增"已知问题记录"小节（`docs/音源全流程.md` §五），标记该源歌单维度异常待复核，不影响已发版。
+
 `2026.10.27（手机版首页恢复搜索条，非发版）`
 1. 【调整】**手机版首页加回顶部搜索条**：0.6.3 UI 精简曾去除首页搜索条（入口改在底部 Tab「搜索」）；用户要求恢复——手机版 HOME 分支重新渲染 `NavBar`（点击跳转搜索 tab，`src/pages/home/index.tsx`），平板分支维持不渲染（搜索入口在顶栏 tab 栏搜索 tab，规范 11.7）。验证：tsc --noEmit exit 0。
 

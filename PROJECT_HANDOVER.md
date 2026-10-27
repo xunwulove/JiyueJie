@@ -70,21 +70,21 @@
 | 工具 | 定位 | 用途 |
 |---|---|---|
 | `tools/verify_sources/` | 开发期 Node 脚本 | 电脑批量验证音源可用性（搜索→取链→可播→下载）：`verify_mf.cjs`（MusicFree 五维）/ `verify_downloads.cjs`（下载+语法），音源脚本存 `dl2/`，结果 probe-report.json 输出（2026-10-25 已删除洛雪 LX 体系，App 只支持 MusicFree 格式） |
-| `tools/source-probe/` | 装机实测 App（独立 RN 工程，自带 git） | 打包「音源探测」APK 装机实测各音源能否真实搜索/播放；主仓库 `.gitignore` 已排除，仅文件归置在 tools/ |
+| `tools/source-probe/` | 装机实测 App（独立 RN 工程） | 打包「音源探测」APK 装机实测各音源能否真实搜索/播放；**源码已并入主仓库 git 并推 GitHub**（2026-10-27，commit `2e0f7f6`，远端 sha `5354bb25`），独立历史备份 `E:\Temp\Deepseek\source-probe-git-backup\` |
 
 > 关系：verify_sources = 电脑脚本快速判「可搜 + 可取链 + 可下载」；source-probe = 真机跑引擎判「可播」。
 >
-> **source-probe 当前版本 0.1.6**（2026-10-25 发版，versionCode 7）：报告升级 v2（五档分类 🟢全通/🟠可解析不可播/🟡半可用/🟣歌单型/🔴死源 + 19 列全字段明细 + classifyPlayError 归一聚合）+ 播放验证静音（`setVolume(0)`，不抢焦点）；构建修复（webview 变体失败=缓存脏，清缓存后三 ABI 全量构建 37m11s）。发版记录/打包避坑/已知问题（checkUpdate 误用主仓库 version.json）见 `tools/source-probe/PROJECT_HANDOVER.md` §9。
+> **source-probe 当前版本 0.1.6**（2026-10-25 发版，versionCode 7）：报告升级 v2（五档分类 🟢全通/🟠可解析不可播/🟡半可用/🟣歌单型/🔴死源 + 19 列全字段明细 + classifyPlayError 归一聚合）+ 播放验证静音（`setVolume(0)`，不抢焦点）；构建修复（webview 变体失败=缓存脏，清缓存后三 ABI 全量构建 37m11s）。**归属（2026-10-27 最终落地）**：源码并入主仓库 `tools/source-probe/` 已推 GitHub（用户拍板方案 A）；软件更新文件在 gitee `sources/source-probe/`（version.json + release `source-probe-v0.1.6` 3 个 APK 附件直链）；探测软件自身 `.gitignore` 排除本地快照/构建残留（plugins.json/version.json/APK 等，权威在 gitee）。发版记录/打包避坑/已知问题（checkUpdate 误用主仓库 version.json）见 `tools/source-probe/PROJECT_HANDOVER.md` §9。
 
 ### docs/ 文档导航（原 23 份已整合为主文档，原文档归档于 `E:\Temp\Deepseek\docs-archive-20261015\`）
 
 | 文档 | 查什么 |
 |---|---|
 | `docs/开发知识库.md` | 二次开发指南、PROJECT_DECISIONS、音源插件、onboarding 设计、UI 规范（字体/层级） |
-| `docs/UI与适配核查记录.md` | **UI 现行规范（精简版，2026-10-25）**：字号/图标档位、全局组件规范、列表行规格、弹窗/面板视觉、布局与尺寸原则（短边法/rpx保留层）、音源进度弹窗与卡片标识、浮窗层级编码规范（**第8章**）；历史核查流水已归档至 `docs/archive/功能与代码核查记录.md` |
+| `docs/UI与适配核查记录.md` | **UI 现行规范（精简版，2026-10-25）**：字号/图标档位、全局组件规范、列表行规格、弹窗/面板视觉、布局与尺寸原则（短边法/rpx保留层）、音源进度弹窗与卡片标识、浮窗层级编码规范（**第8章**）；历史核查流水已清理删除（2026-10-27，commit `0dd951f`） |
 | `docs/问题排查与避坑记录.md` | **卡顿、均衡器全套避坑、启动页白屏/系统 splash、开源启动图调研、gitee 发版避坑** |
 | `docs/音源全流程.md` | **音源全流程**（来源参考库全集→验证链路→档位处理→产出→发布→App生效；含 `tools/verify_sources`/`tools/source-probe` 用法与 probe_plugin.js 增强工具）；**§8 测试执行 SOP**（2026-10-25 固化：范围决策→电脑初筛→建测试音源依托 gitee→用户探测软件实测→报告回流→A档入库；测试结果不落档） |
-| `docs/archive/` | 历史归档（不随主文档导航，需时自取）：功能与代码核查记录、多用户画像测试走查报告 + 走查子报告（6 份）、research 启动图调研汇总、音源清单-20261022 |
+| `docs/archive/` | **已清理删除（2026-10-27，commit `0dd951f`）**：原历史归档（功能与代码核查记录、走查报告、音源清单-20261022 等 15 文件）经用户确认后移除，不再存在 |
 | `readme.md` / `changelog.md` | 用户使用说明 / 版本历史（保留未动） |
 
 ---
@@ -148,7 +148,7 @@
 
 **待办/未决**：
 - ✅ **【已修复·装机验证 2026-10-26】歌词/歌曲封面内嵌功能不能用**（原 2026-10-25 用户实测标记，已闭环）：根因=**MusicFree 插件 `getLyric` 约定返回 `{rawLrc, translation?}` 对象**（碳酸Meting/碳酸酷我/GD音乐台实测均如此），`downloader.ts:591-604` 直接把返回对象当字符串传给 `Mp3Util.setMediaTag({lyric})`，原生 `meta.getString("lyric")` 遇 Map 值抛异常 → 内嵌歌词静默失败；封面走 artwork（URL 字符串）所以一直正常；播放链路 `lyricManager.ts` 正确取 `lrcSource.rawLrc` 所以播放显示正常——**仅下载内嵌链路漏归一化**。修复（commit `79952c6`，tsc 通过）：①`downloader.ts` 取词结果归一化为字符串（`typeof lrc==="string" ? lrc : lrc?.rawLrc ?? lrc?.lrc ?? ""`），空串跳过；②`Mp3UtilModule.kt` `setMediaTag` 歌词字段类型防御（`meta.getType("lyric")==ReadableType.String` 才写，否则跳过而非抛异常）；③errorLog msg 改 `String()` 保证留痕。**装机验证（2026-10-26，0.6.2.22 本地打包）**：用户实测下载歌曲歌词+封面均可内嵌 ✓
-- git 仓库已由接手 AI 整理：游离头恢复为本地 `main` 分支；根 `plugins.json`（97 源）与 `plugins_verify.json` 已于整理时删除，`docs/archive/音源清单-20261022/`（50 源精选，已归档）保留为历史探测产物；过时根 `version.json` 已移除（权威在 `updates/version.json`）；开源参考源码统一移至 `E:\xunwu\deepseek\reference\`（`musicfree-upstream` 不随本仓库上传，已入 .gitignore）；本地 `main` 与远端 `origin/main` 提交历史分叉，**不 merge 远端，推送固定走 Git Data API**。**0.6.2.22 发版（2026-10-25）**：本地 HEAD `3453afc`（filter-branch 已从历史移除误跟踪 APK blob 的干净链 8 commit）；gitee 发版已完成（latest/v0.6.2.22 双 release + version.json 更新 + 3 直链 200）；**GitHub 源码推送已按用户指示暂停**，续推时用 `E:\Temp\Deepseek\gh_push.py`（含磁盘缓存）以 `10a3c48` 为父起点、范围 `2b0241b..3453afc` 重跑即可
+- git 仓库已由接手 AI 整理：游离头恢复为本地 `main` 分支；根 `plugins.json`（97 源）与 `plugins_verify.json` 已于整理时删除；过时根 `version.json` 已移除（权威在 `updates/version.json`）；开源参考源码统一移至 `E:\xunwu\deepseek\reference\`（`musicfree-upstream` 不随本仓库上传，已入 .gitignore）；本地 `main` 与远端 `origin/main` 提交历史分叉，**不 merge 远端，推送固定走 Git Data API**。**0.6.2.22 发版（2026-10-25）**：本地 HEAD `3453afc`（filter-branch 已从历史移除误跟踪 APK blob 的干净链 8 commit）；gitee 发版已完成（latest/v0.6.2.22 双 release + version.json 更新 + 3 直链 200）。**0.6.3 发版（2026-10-27）**：gitee 更新完成，GitHub 推送已恢复并完成至远端 main `5354bb25`（3 commit：`154f653` 手机版搜索条 / `0dd951f` 文档清理 / `2e0f7f6` source-probe 并入）；续推一律用 `E:\Temp\Deepseek\gh_push.py`（含磁盘缓存），起点=远端真实 HEAD（Git Data API 重建 sha，本地不含，需先查 `commits/main`）
 
 **已闭环（原待办，经代码核对确认）**：
 - **订阅同步清理机制**（2026-10-26）：插件来源标记 + 连续 2 轮自动卸载（详见 `docs/音源全流程.md` §7.1）——`Plugin.sourceTag`（`{type:"subscription",url}` / `{type:"manual"}`）+ `missingRounds` 持久化（plugin.cache MMKV，lazyProps **与 setup 非 lazy 分支均恢复**，懒加载关闭不失效）；安装入口打标（订阅=subscription+订阅地址、手动导入/深链/备份恢复=manual）；`installFromCode`/`installPluginFromLocalFile` 替换同名旧插件时**继承 sourceTag 且 manual 永不被覆盖**（覆盖"维护者更新后软件内更新插件把标记弄丢"场景）；清理逻辑抽成公共方法 `cleanupSubscriptionPlugins`，**自动更新 `updatePluginsFromSubscription` 与手动「更新订阅」`onSubscribeClick` 共用**——来源=对应订阅地址且连续 2 轮不在清单 → 复用 `uninstallPlugin` 自动卸载，手动/其他订阅源不受影响；**跨订阅误删防护**：同名插件仍在本轮其他订阅清单中 → 只累计不卸载；README/音源全流程/PROJECT_HANDOVER 已同步

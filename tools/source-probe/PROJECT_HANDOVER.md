@@ -156,7 +156,7 @@
 - 独立 RN App「音源探测」（app.json name=SourceProbe / displayName=音源探测，RN 0.76.5），把极悦界 App 的插件管理/音源探测单独拎出来做成的独立应用；与极悦界共用同一套 RN 内核与插件体系。
 - 入口 `src/entry/index.tsx`（无引导流程，探测页为首路由）；路由仅 2 条：探测页 `src/pages/probe/index.tsx`、音源管理 `src/pages/pluginSources/index.tsx`（复用 `pluginSetting/views/pluginList.tsx`）。
 - 探测核心 `src/core/probe/index.ts`：STEP_TIMEOUT=15000ms、PROBE_CONCURRENCY=5、SEARCH_TYPES 5 类、声明矩阵 13 项、结果持久化 MMKV key "probe.result"。
-- **git 仓库未配置 remote**（`git remote` 为空），代码暂不上传 GitHub；本轮改动未提交。
+- **源码已并入主仓库并推 GitHub（2026-10-27）**：`tools/source-probe/` 整体随主仓库 commit `2e0f7f6` 入库，Git Data API 推至远端 main（sha `5354bb25`）；独立 git 历史备份于 `E:\Temp\Deepseek\source-probe-git-backup\`（HEAD `2c79018`）。探测软件自身 `.gitignore` 排除本地快照/构建残留（`plugins.json`/`plugins_verify.json`/`version.json`/`gitee_plugins.json`/`.github_push_marker`/`android/probe_build.log.err`），权威数据在 gitee。**软件更新分发在 gitee `sources/source-probe/`**（version.json + release `source-probe-v0.1.6` 3 个 APK 附件），不再误用主仓库 updates/（待办见 9.6）。
 
 ### 9.2 打包形态与版本机制
 
