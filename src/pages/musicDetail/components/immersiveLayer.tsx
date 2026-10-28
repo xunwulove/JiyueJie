@@ -45,6 +45,7 @@ import useOrientation from "@/hooks/useOrientation";
 import useColors from "@/hooks/useColors";
 import KaraokeText from "@/components/base/karaokeText";
 import SyntheticCover from "@/components/base/syntheticCover";
+import { ImgAsset } from "@/constants/assetsConst";
 import { fontWeightConst } from "@/constants/uiConst";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -553,8 +554,10 @@ export default function ImmersiveLayer() {
         </Animated.View>
     );
 
-    /* 右下封面（仅平板/横屏左右分栏时展示）；无真实封面时复用全屏页同一套
-       SyntheticCover（自选封面 → 无则默认封面完整显示），不再单独 fallback albumDefault + cover 放大 */
+    /* 右下封面（仅平板/横屏左右分栏时展示）：真实封面 → 原生 Image；
+       无真实封面但有自选底图 → SyntheticCover（FastImage 走 file:// 正常）；
+       无真实封面且无自选底图 → 原生 Image 显示默认封面（本地 require 不走
+       RNFastImage，避免 Fresco 加载本地资源失败导致空白） */
     const coverBlock = isTablet ? (
         <View style={styles.coverPane}>
             {typeof musicItem?.artwork === "string" &&
@@ -564,8 +567,14 @@ export default function ImmersiveLayer() {
                         style={styles.cover}
                         resizeMode="cover"
                     />
-                ) : (
+                ) : coverBasePath ? (
                     <SyntheticCover style={styles.cover} />
+                ) : (
+                    <Image
+                        source={ImgAsset.albumDefault}
+                        style={styles.cover}
+                        resizeMode="contain"
+                    />
                 )}
         </View>
     ) : null;
