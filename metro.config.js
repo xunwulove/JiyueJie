@@ -19,15 +19,22 @@ const config = {
     resolver: {
         assetExts: assetExts.filter(ext => ext !== 'svg'),
         sourceExts: [...sourceExts, 'svg'],
-    },
-    // 2026-10-14（打包临时）：Metro 在 Windows 上 file watcher/healthCheck 已知卡死
-    // （"Starting Metro Bundler" 后挂起、CPU 归零），禁用 watchman 与 healthCheck 规避。
-    // 2026-10-27 修正：Metro 0.81 的 schema 是 watcher.useWatchman（旧写法 watchman.enabled
-    // 报 "Unknown option" 且不生效，导致卡死复现）。用 useWatchman: false 走 node 版 watcher。
-    // 打包完成后如不再需要可还原（备份：E:\Temp\Deepseek\jiyuejie-metro-config-backup-20261014.js）
-    watcher: {
+        // 2026-10-28 修正：Metro 禁用 watchman 的正确键是 resolver.useWatchman
+        // （metro/src/node-haste/DependencyGraph/createFileMap.js: useWatchman:
+        // config.resolver.useWatchman）。旧写法 watcher.useWatchman /
+        // watcher.watchman.enabled 均报 "Unknown option" 且不生效，导致
+        // Windows 上 Metro 仍走 watchman、bundle 卡死在 97%。
         useWatchman: false,
-        watchman: { enabled: false },
+        // 2026-10-28 追加：tools/ 已并入主仓库（source-probe 是独立 RN 工程，
+        // 自带 node_modules 约 12.6 万文件 + verify_sources 脚本），Metro 构建
+        // 文件地图会全量扫描导致 bundle 极慢/停滞。排除 tools/ 下两个子目录，
+        // 主项目 src 不引用它们。
+        blockList: [
+            /^.*[\\/]tools[\\/]source-probe[\\/].*/,
+            /^.*[\\/]tools[\\/]verify_sources[\\/].*/,
+        ],
+    },
+    watcher: {
         healthCheck: { enabled: false },
     },
 };
