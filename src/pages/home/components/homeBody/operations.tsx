@@ -34,7 +34,7 @@ export default function Operations() {
     }> = [
         {
             iconName: "calendar-days",
-            title: "每日推荐",
+            title: "每日\n推荐",
             action() {
                 // 对齐官方两级结构：getRecommendSheetTags 返回的是"标签"（无封面、不可直接解析歌单），
                 // 真实歌单需调 getRecommendSheetsByTag 获取（带封面 artwork、可解析播放）。

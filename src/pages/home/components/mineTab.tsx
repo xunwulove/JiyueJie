@@ -293,21 +293,6 @@ export default function MineTab({
             {!isTablet ? (
                 <>
                     {statsRow}
-                    {/* 手机底部信息行：设备名 + 系统信息（2026-10-27 版本号已上移顶部可点击，原"检查更新"chip 去除） */}
-                    <View style={styles.userCardBottom}>
-                        <ThemeText
-                            fontSize="normal"
-                            fontWeight="medium"
-                            numberOfLines={1}>
-                            {deviceTitle}
-                        </ThemeText>
-                        <ThemeText
-                            fontSize="caption"
-                            fontColor="textSecondary"
-                            numberOfLines={1}>
-                            {systemInfo}
-                        </ThemeText>
-                    </View>
                 </>
             ) : (
                 statsRow
@@ -629,13 +614,6 @@ const styles = StyleSheet.create({
     userCardTop: {
         flexDirection: "row",
         alignItems: "center",
-    },
-    userCardBottom: {
-        // 2026-10-27 手机底部信息行：设备名 + 系统信息 竖排
-        flexDirection: "column",
-        alignItems: "flex-start",
-        marginTop: 12,
-        gap: 4,
     },
     userStatsRow: {
         flexDirection: "row",
