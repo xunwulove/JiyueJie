@@ -129,10 +129,6 @@ export default function PluginReliabilityDialog(
         !plugin.supportedMethods.has("search") &&
         !plugin.supportedMethods.has("getMediaSource");
 
-    /** 合成可用率（普通源） */
-    const synthetic = record
-        ? pluginReliability.getReliabilitySync(platform)
-        : null;
     const syntheticColor = (rate: number | null) =>
         rate === null
             ? colors.textSecondary
@@ -149,29 +145,17 @@ export default function PluginReliabilityDialog(
     };
 
     /**
-     * 顶部大字：普通源 = 合成可用率；歌词源 = 歌词维度率；纯歌单源 = 推荐歌单可用率。
-     * 无数据 → "暂无数据"
+     * 顶部大字：能力强弱决定口径（合成/歌词/歌单可用率取最高，样本保护见
+     * getBestDimensionSync）；无数据 → "暂无数据"。
      */
-    let headlineRate: number | null = null;
-    if (isLyricSource) {
-        const lyricCount = dim("lyric");
-        headlineRate =
-            lyricCount !== null
-                ? lyricCount.success / (lyricCount.success + lyricCount.fail)
-                : null;
-    } else if (isPureSheetSource) {
-        headlineRate =
-            sheetRecord !== null
-                ? sheetRecord.ok / (sheetRecord.ok + sheetRecord.fail)
-                : null;
-    } else {
-        headlineRate = synthetic;
-    }
-    const headlineLabel = isLyricSource
-        ? t("pluginSetting.reliabilityDialog.lyric")
-        : isPureSheetSource
-            ? t("pluginSetting.reliabilityDialog.sheet")
-            : t("pluginSetting.reliabilityDialog.synthetic");
+    const best = pluginReliability.getBestDimensionSync(platform);
+    const headlineRate: number | null = best.rate;
+    const headlineLabel =
+        best.type === "lyric"
+            ? t("pluginSetting.reliabilityDialog.lyric")
+            : best.type === "sheet"
+                ? t("pluginSetting.reliabilityDialog.sheet")
+                : t("pluginSetting.reliabilityDialog.synthetic");
 
     /** 展示的维度行：普通源 搜索/解析/播放（有歌词数据再加歌词）；歌词源 歌词；歌单源 歌单 */
     const visibleDims: Array<{ key: ProbeDim; count: { success: number; fail: number } | null }> =

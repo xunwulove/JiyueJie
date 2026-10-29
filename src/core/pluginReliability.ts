@@ -208,6 +208,89 @@ export function getReliabilitySync(platform: string | undefined): number {
     return calcReliability(reliabilityMap[platform]);
 }
 
+/* ============ 展示口径：能力强弱决定（合成/歌词/歌单取最高） ============ */
+
+/** 展示口径类型：synthetic=合成可用率，lyric=歌词可用率，sheet=歌单可用率 */
+export type BestDimensionType = "synthetic" | "lyric" | "sheet";
+
+/** 展示口径结果 */
+export interface IBestDimension {
+    type: BestDimensionType;
+    rate: number | null;
+}
+
+/** 参与比较的样本下限：成功率基于 ≥3 次样本才可信，样本过少不参与比较（防 1/1=100% 噪声） */
+const BEST_DIM_MIN_SAMPLES = 3;
+
+/**
+ * 按"能力强弱"取展示口径：各口径（合成/歌词/歌单）有数据即参与比较，
+ * 成功率最高者胜出；样本保护见 BEST_DIM_MIN_SAMPLES。
+ * 仅单一口径有数据时不受样本下限限制。无任何数据 → 合成口径、rate null。
+ */
+export function getBestDimensionSync(
+    platform: string | undefined,
+): IBestDimension {
+    if (!platform) {
+        return { type: "synthetic", rate: null };
+    }
+    const rec = reliabilityMap[platform];
+    const sheet = recommendMap[platform];
+    const cands: Array<{ type: BestDimensionType; rate: number; samples: number }> =
+        [];
+    // 合成口径：play/parse/search 任一维度有计数即参与
+    const hasSynthetic =
+        !!rec &&
+        (["play", "parse", "search"] as const).some(dim => {
+            const c = rec[dim];
+            return !!c && c.success + c.fail > 0;
+        });
+    if (hasSynthetic) {
+        let samples = 0;
+        for (const dim of ["play", "parse", "search"] as const) {
+            const c = rec![dim];
+            if (c) {
+                samples += c.success + c.fail;
+            }
+        }
+        cands.push({
+            type: "synthetic",
+            rate: calcReliability(rec),
+            samples,
+        });
+    }
+    // 歌词口径
+    const lyric = rec?.lyric;
+    if (lyric && lyric.success + lyric.fail > 0) {
+        cands.push({
+            type: "lyric",
+            rate: lyric.success / (lyric.success + lyric.fail),
+            samples: lyric.success + lyric.fail,
+        });
+    }
+    // 歌单口径
+    if (sheet && sheet.ok + sheet.fail > 0) {
+        cands.push({
+            type: "sheet",
+            rate: sheet.ok / (sheet.ok + sheet.fail),
+            samples: sheet.ok + sheet.fail,
+        });
+    }
+    if (cands.length === 0) {
+        return { type: "synthetic", rate: null };
+    }
+    // 样本保护：多口径并存时，样本 <3 的口径不参与比较；
+    // 全部不满足时回退全参与（避免歌词/歌单只有少数样本时无法展示）
+    let pool = cands;
+    if (cands.length > 1) {
+        const qualified = cands.filter(c => c.samples >= BEST_DIM_MIN_SAMPLES);
+        if (qualified.length > 0) {
+            pool = qualified;
+        }
+    }
+    pool.sort((a, b) => b.rate - a.rate);
+    return { type: pool[0].type, rate: pool[0].rate };
+}
+
 /** 是否有通用统计记录（同步；任意维度有计数即 true） */
 export function hasRecordSync(platform: string | undefined): boolean {
     if (!platform) {
@@ -453,6 +536,8 @@ const pluginReliability = {
     getReliabilityRecord,
     getReliabilitySync,
     getRecordSync,
+    // 展示口径：能力强弱决定（合成/歌词/歌单取最高）
+    getBestDimensionSync,
     getLyricReliabilitySync,
     hasLyricRecordSync,
     hasRecordSync,
