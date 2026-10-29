@@ -75,6 +75,8 @@ export interface IProbeItem {
     lyricOk: boolean;
     /** 歌单可用（歌单能显示 + 歌单内第一首能解析；深度模式再要求静默真实可播） */
     sheetOk: boolean;
+    /** 每维度探测耗时均值（ms，仅本轮实际执行过的维度有值） */
+    dimMs?: Partial<Record<ProbeDim, number>>;
     error?: string;
 }
 
@@ -95,8 +97,14 @@ export interface IProbeReport {
 /** 探测维度（与 IProbeItem 各字段对应） */
 export type ProbeDim = "search" | "parse" | "play" | "lyric" | "sheet";
 
-/** 每源维度时间戳（缺失维度 = 从未探测，下次探测补上） */
-type LastRunEntry = Partial<Record<ProbeDim, number>>;
+/** 每源维度时间戳（缺失维度 = 从未探测，下次探测补上）；
+ *  dimMs：每维度探测耗时均值（ms），与维度时间戳同轮写入 */
+type LastRunEntry = Partial<Record<ProbeDim, number>> & {
+    dimMs?: Partial<Record<ProbeDim, number>>;
+};
+
+/** 导出给 UI：每源维度时间戳 + 探测耗时 */
+export type ProbeLastRuns = LastRunEntry;
 
 /** 旧数据兼容：历史值是整源单时间戳（number），归一化为全维度同值 */
 function normalizeLastRun(v: number | LastRunEntry | undefined): LastRunEntry {
@@ -265,11 +273,14 @@ async function probeSingle(
     let song: any = null;
     let url: string | null = null;
     let headers: Record<string, string> | undefined;
+    /** 每维度探测耗时均值（ms） */
+    const dimMs: Partial<Record<ProbeDim, number>> = {};
     // 搜索是样本来源：search 本身、或 parse/lyric/play 任一命中都需要执行
     const needSearch =
         want("search") || want("parse") || want("lyric") || want("play");
     let data: any[] = [];
     if (needSearch) {
+        const t0 = Date.now();
         try {
             dims.push("search");
             const result = await plugin.methods?.search?.(
@@ -293,6 +304,7 @@ async function probeSingle(
                 "search",
             );
         }
+        dimMs.search = Date.now() - t0;
     }
     if (
         needSearch &&
@@ -300,6 +312,7 @@ async function probeSingle(
         plugin.methods?.getMediaSource &&
         (want("parse") || want("play"))
     ) {
+        const t0 = Date.now();
         dims.push("parse");
         for (const quality of qualityOrder) {
             try {
@@ -323,10 +336,12 @@ async function probeSingle(
             out.parseOk,
             "parse",
         );
+        dimMs.parse = Date.now() - t0;
     }
 
     // —— 歌词探测（有 getLyric 能力 + 有搜索样本）——
     if (want("lyric") && song && plugin.methods?.getLyric) {
+        const t0 = Date.now();
         dims.push("lyric");
         try {
             const lrc = await withTimeout(
@@ -341,6 +356,7 @@ async function probeSingle(
         } catch {
             void pluginReliability.recordLyricResult(platform, false);
         }
+        dimMs.lyric = Date.now() - t0;
     }
 
     // —— 歌单探测（独立 recommend 统计；链路与 App 推荐歌单一致）——
@@ -465,10 +481,12 @@ async function probeSingle(
             sheetOk,
             Date.now() - sheetT0,
         );
+        dimMs.sheet = Date.now() - sheetT0;
     }
 
     // —— 深度播放验证（主链路，静音 ExoPlayer ≥2s）——
     if (want("play") && deep && url) {
+        const t0 = Date.now();
         dims.push("play");
         out.playable = await probePlayable(url, headers);
         // 深度探测是真播放验证（独立 ExoPlayer ≥2s），与用户真实播放判定口径一致，
@@ -477,7 +495,9 @@ async function probeSingle(
             platform,
             out.playable,
         );
+        dimMs.play = Date.now() - t0;
     }
+    out.dimMs = dimMs;
     return { item: out, dims };
 }
 
@@ -538,6 +558,12 @@ async function probePlugins(
                 const rec = lastRuns[platform] ?? {};
                 for (const dim of dims) {
                     rec[dim] = now;
+                }
+                if (item.dimMs && Object.keys(item.dimMs).length > 0) {
+                    rec.dimMs = {
+                        ...(rec.dimMs ?? {}),
+                        ...item.dimMs,
+                    };
                 }
                 lastRuns[platform] = rec;
             } catch (e: any) {
@@ -649,7 +675,7 @@ export function refreshPlayProbed(platform: string): void {
  */
 export function getLastProbeRuns(
     platform: string | undefined,
-): Partial<Record<ProbeDim, number>> | null {
+): ProbeLastRuns | null {
     if (!platform) {
         return null;
     }

@@ -3,7 +3,10 @@ import React, { useEffect, useState } from "react";
 import useColors from "@/hooks/useColors";
 import { Plugin } from "@/core/pluginManager";
 import pluginReliability from "@/core/pluginReliability";
-import probeService, { ProbeDim } from "@/core/probeService";
+import probeService, {
+    ProbeDim,
+    ProbeLastRuns,
+} from "@/core/probeService";
 
 import { useI18N } from "@/core/i18n";
 import { hideDialog } from "../useDialog";
@@ -26,9 +29,12 @@ const DIM_LABELS: Record<ProbeDim, string> = {
     sheet: "歌单",
 };
 
-/** 合成权重说明（对齐 pluginReliability 合成口径） */
-const WEIGHT_NOTE =
-    "合成可用率 = 播放60% + 解析30% + 搜索10%，缺失维度按比例归一化；歌词源显示歌词行、纯歌单源显示歌单行";
+/** 合成权重说明（对齐 pluginReliability 合成口径），逐点分段展示 */
+const WEIGHT_NOTE_LINES = [
+    "合成可用率 = 播放60% + 解析30% + 搜索10%，缺失维度按比例归一化",
+    "歌词源显示歌词行、纯歌单源显示歌单行",
+    "平均耗时 = 各维度探测单次耗时均值",
+];
 
 /** 时间戳格式化：今天 → HH:mm；今年 → M月d日；更早 → yyyy/M/d */
 function formatProbeTime(ts: number): string {
@@ -77,10 +83,8 @@ export default function PluginReliabilityDialog(
         fail: number;
         latency: number | null;
     } | null>(null);
-    /** 各维度最后探测时间戳 */
-    const [lastRuns, setLastRuns] = useState<
-        Partial<Record<ProbeDim, number>> | null
-    >(null);
+    /** 各维度最后探测时间戳 + 探测耗时 */
+    const [lastRuns, setLastRuns] = useState<ProbeLastRuns | null>(null);
 
     useEffect(() => {
         let alive = true;
@@ -168,11 +172,6 @@ export default function PluginReliabilityDialog(
         : isPureSheetSource
             ? t("pluginSetting.reliabilityDialog.sheet")
             : t("pluginSetting.reliabilityDialog.synthetic");
-    const headlineWeight = isLyricSource
-        ? "歌词可用率（独立统计）"
-        : isPureSheetSource
-            ? "歌单可用率（推荐歌单）"
-            : "播放60·解析30·搜索10";
 
     /** 展示的维度行：普通源 搜索/解析/播放（有歌词数据再加歌词）；歌词源 歌词；歌单源 歌单 */
     const visibleDims: Array<{ key: ProbeDim; count: { success: number; fail: number } | null }> =
@@ -210,10 +209,32 @@ export default function PluginReliabilityDialog(
                         : []),
                 ];
 
-    const lastTimeOf = (key: ProbeDim) =>
-        lastRuns && typeof lastRuns[key] === "number"
-            ? formatProbeTime(lastRuns[key]!)
-            : null;
+    /** 最近探测时间：探测时间全维度同轮一致，取任一有值的维度展示（统一一行） */
+    const probeTime = (() => {
+        if (!lastRuns) {
+            return null;
+        }
+        const order: ProbeDim[] = ["search", "parse", "play", "lyric", "sheet"];
+        for (const k of order) {
+            const ts = lastRuns[k];
+            if (typeof ts === "number") {
+                return formatProbeTime(ts);
+            }
+        }
+        return null;
+    })();
+
+    /** 维度平均耗时（s 字符串）：优先本轮探测耗时 dimMs；歌单兜底推荐歌单累计均值 */
+    const dimLatency = (key: ProbeDim): string | null => {
+        const ms = lastRuns?.dimMs?.[key];
+        if (typeof ms === "number") {
+            return `${(ms / 1000).toFixed(1)}s`;
+        }
+        if (key === "sheet" && sheetRecord?.latency != null) {
+            return `${sheetRecord.latency}s`;
+        }
+        return null;
+    };
 
     return (
         <Dialog onDismiss={hideDialog}>
@@ -241,13 +262,18 @@ export default function PluginReliabilityDialog(
                         style={styles.syntheticLabel}>
                         {headlineLabel}
                     </ThemeText>
-                    <ThemeText
-                        fontSize="description"
-                        fontColor="textSecondary"
-                        style={styles.syntheticWeight}>
-                        {headlineWeight}
-                    </ThemeText>
                 </View>
+                {/* 最近探测：探测时间全维度同轮一致，统一一行展示，不再逐行重复 */}
+                {probeTime ? (
+                    <View style={styles.probeTimeRow}>
+                        <ThemeText
+                            fontSize="description"
+                            fontColor="textSecondary"
+                            style={styles.probeTimeText}>
+                            最近探测：{probeTime}
+                        </ThemeText>
+                    </View>
+                ) : null}
                 <ListDivider marginLeft={0} />
 
                 {/* 维度明细行 */}
@@ -270,9 +296,10 @@ export default function PluginReliabilityDialog(
                             : rate >= 0.8
                                 ? "#4CAF50"
                                 : colors.primary;
-                    const last = lastTimeOf(d.key);
+                    const latency = dimLatency(d.key);
                     return (
                         <View key={d.key}>
+                            {/* 第一行：名称 + 进度条 + 百分比 */}
                             <View style={styles.dimRow}>
                                 <ThemeText
                                     fontSize="content"
@@ -297,24 +324,6 @@ export default function PluginReliabilityDialog(
                                         ]}
                                     />
                                 </View>
-                                {count ? (
-                                    <ThemeText
-                                        fontSize="description"
-                                        fontColor="textSecondary"
-                                        numberOfLines={1}
-                                        style={styles.dimCount}>
-                                        成功{count.success} · 失败{count.fail}
-                                    </ThemeText>
-                                ) : (
-                                    <ThemeText
-                                        fontSize="description"
-                                        fontColor="textSecondary"
-                                        style={styles.dimCount}>
-                                        {t(
-                                            "pluginSetting.reliabilityDialog.noData",
-                                        )}
-                                    </ThemeText>
-                                )}
                                 <ThemeText
                                     fontSize="content"
                                     fontWeight="bold"
@@ -327,15 +336,24 @@ export default function PluginReliabilityDialog(
                                         : `${Math.round(rate * 100)}%`}
                                 </ThemeText>
                             </View>
-                            {last ? (
-                                <View style={styles.dimLastRow}>
-                                    <ThemeText
-                                        fontSize="description"
-                                        fontColor="textSecondary">
-                                        最后探测：{last}
-                                    </ThemeText>
-                                </View>
-                            ) : null}
+                            {/* 第二行：12/15 · 平均耗时，靠右显示、文本左对齐 */}
+                            <View style={styles.dimMetaRow}>
+                                <ThemeText
+                                    fontSize="description"
+                                    fontColor="textSecondary"
+                                    numberOfLines={1}
+                                    style={styles.dimMetaText}>
+                                    {count ? (
+                                        `${count.success}/${count.success +
+                                            count.fail}`
+                                    ) : (
+                                        t(
+                                            "pluginSetting.reliabilityDialog.noData",
+                                        )
+                                    )}
+                                    {latency ? ` · 平均 ${latency}` : ""}
+                                </ThemeText>
+                            </View>
                             {i < visibleDims.length - 1 ? (
                                 <ListDivider marginLeft={0} />
                             ) : null}
@@ -343,11 +361,17 @@ export default function PluginReliabilityDialog(
                     );
                 })}
 
-                {/* 权重注释 */}
+                {/* 权重说明：合成口径 + 各类型源展示口径，逐点分段 */}
                 <View style={styles.noteBox}>
-                    <ThemeText fontSize="description" fontColor="textSecondary">
-                        {WEIGHT_NOTE}
-                    </ThemeText>
+                    {WEIGHT_NOTE_LINES.map(line => (
+                        <ThemeText
+                            key={line}
+                            fontSize="description"
+                            fontColor="textSecondary"
+                            style={styles.noteLine}>
+                            · {line}
+                        </ThemeText>
+                    ))}
                 </View>
             </Dialog.Content>
             <Dialog.Actions
@@ -377,10 +401,6 @@ const styles = StyleSheet.create({
     syntheticLabel: {
         marginLeft: 10,
     },
-    syntheticWeight: {
-        marginLeft: "auto",
-        fontSize: fontSizeConst.description,
-    },
     dimRow: {
         flexDirection: "row",
         alignItems: "center",
@@ -402,22 +422,36 @@ const styles = StyleSheet.create({
         height: "100%",
         borderRadius: 3,
     },
-    dimCount: {
-        marginLeft: 10,
-        maxWidth: "36%",
-    },
     dimRate: {
         width: 42,
         textAlign: "right",
         marginLeft: 8,
         flexShrink: 0,
     },
-    dimLastRow: {
+    /** 第二行元信息：12/15 · 平均耗时，靠右显示、文本左对齐 */
+    dimMetaRow: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
         paddingHorizontal: 24,
-        paddingBottom: 6,
+        paddingBottom: 8,
+        paddingTop: 2,
+    },
+    dimMetaText: {
+        textAlign: "left",
+    },
+    probeTimeRow: {
+        paddingHorizontal: 24,
+        paddingTop: 2,
+        paddingBottom: 10,
+    },
+    probeTimeText: {
+        fontSize: fontSizeConst.description,
     },
     noteBox: {
         marginTop: 10,
         marginHorizontal: 24,
+    },
+    noteLine: {
+        lineHeight: 18,
     },
 });
