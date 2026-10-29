@@ -33,7 +33,8 @@ const DIM_LABELS: Record<ProbeDim, string> = {
 const WEIGHT_NOTE_LINES = [
     "合成可用率 = 播放60% + 解析30% + 搜索10%，缺失维度按比例归一化",
     "歌词源显示歌词行、纯歌单源显示歌单行",
-    "平均耗时 = 各维度探测单次耗时均值",
+    "最近耗时 = 各维度最近一次探测耗时（自动探测按维度补探，各维度时间可能不同）",
+    "样本 <3 时排序按中性值（防单次探测虚高）",
 ];
 
 /** 时间戳格式化：今天 → HH:mm；今年 → M月d日；更早 → yyyy/M/d */
@@ -107,11 +108,18 @@ export default function PluginReliabilityDialog(
             );
             setLastRuns(probeService.getLastProbeRuns(platform));
         };
-        pluginReliability.getReliabilityRecord(platform).then(() => {
+        pluginReliability
+            .getReliabilityRecord(platform)
+            .then(() => {
+                refresh();
+            });
+        // 同时等推荐歌单统计加载：歌单维度数据未就绪时，首绘会显示错口径且不自纠
+        pluginReliability.getRecommendReliability(platform).then(() => {
             refresh();
         });
-        // 统计变更实时刷新：弹窗打开期间播放/探测写入统计，大字与明细同步更新
-        const unsub = pluginReliability.subscribeReliability(refresh);
+        // 统计变更实时刷新：弹窗打开期间播放/探测写入统计，大字与明细同步更新；
+        // 按 platform 定向订阅，避免无关源的广播触发弹窗重渲染
+        const unsub = pluginReliability.subscribeReliability(refresh, platform);
         return () => {
             alive = false;
             unsub();
@@ -128,15 +136,21 @@ export default function PluginReliabilityDialog(
         plugin.supportedMethods.has("getRecommendSheetTags") &&
         !plugin.supportedMethods.has("search") &&
         !plugin.supportedMethods.has("getMediaSource");
+    // 展示口径：源能力决定（与卡片徽章一致——纯歌词→歌词、纯歌单→歌单、完整→合成）
+    const displayKind: "lyric" | "sheet" | "synthetic" = isLyricSource
+        ? "lyric"
+        : isPureSheetSource
+            ? "sheet"
+            : "synthetic";
 
     const syntheticColor = (rate: number | null) =>
         rate === null
             ? colors.textSecondary
             : rate >= 0.8
-                ? "#4CAF50"
+                ? colors.success
                 : rate >= 0.5
                     ? colors.primary
-                    : "#E53935";
+                    : colors.danger;
 
     /** 单维度计数（无数据显示 null） */
     const dim = (key: ProbeDim) => {
@@ -145,10 +159,12 @@ export default function PluginReliabilityDialog(
     };
 
     /**
-     * 顶部大字：能力强弱决定口径（合成/歌词/歌单可用率取最高，样本保护见
-     * getBestDimensionSync）；无数据 → "暂无数据"。
+     * 顶部大字：源能力决定口径（与卡片徽章一致）；无数据 → "暂无数据"。
      */
-    const best = pluginReliability.getBestDimensionSync(platform);
+    const best = pluginReliability.getDisplayByAbilitySync(
+        platform,
+        displayKind,
+    );
     const headlineRate: number | null = best.rate;
     const headlineLabel =
         best.type === "lyric"
@@ -193,19 +209,20 @@ export default function PluginReliabilityDialog(
                         : []),
                 ];
 
-    /** 最近探测时间：探测时间全维度同轮一致，取任一有值的维度展示（统一一行） */
+    /** 最近探测时间：自动补探模式下各维度时间戳来自不同轮次，取所有维度中的最大值 */
     const probeTime = (() => {
         if (!lastRuns) {
             return null;
         }
         const order: ProbeDim[] = ["search", "parse", "play", "lyric", "sheet"];
+        let maxTs = -1;
         for (const k of order) {
             const ts = lastRuns[k];
-            if (typeof ts === "number") {
-                return formatProbeTime(ts);
+            if (typeof ts === "number" && ts > maxTs) {
+                maxTs = ts;
             }
         }
-        return null;
+        return maxTs >= 0 ? formatProbeTime(maxTs) : null;
     })();
 
     /** 维度平均耗时（s 字符串）：优先本轮探测耗时 dimMs；歌单兜底推荐歌单累计均值 */
@@ -271,15 +288,15 @@ export default function PluginReliabilityDialog(
                         rate === null
                             ? colors.textSecondary
                             : rate >= 0.8
-                                ? "#4CAF50"
+                                ? colors.success
                                 : rate >= 0.5
                                     ? colors.primary
-                                    : "#E53935";
+                                    : colors.danger;
                     const barColor =
                         rate === null
-                            ? colors.divider ?? "#EEF1F4"
+                            ? colors.divider ?? colors.surfaceVariant ?? "#EEF1F4"
                             : rate >= 0.8
-                                ? "#4CAF50"
+                                ? colors.success
                                 : colors.primary;
                     const latency = dimLatency(d.key);
                     return (
@@ -292,7 +309,15 @@ export default function PluginReliabilityDialog(
                                     {DIM_LABELS[d.key]}
                                 </ThemeText>
                                 {/* 成功率进度条 */}
-                                <View style={styles.dimBarTrack}>
+                                <View
+                                    style={[
+                                        styles.dimBarTrack,
+                                        {
+                                            backgroundColor:
+                                                colors.surfaceVariant ??
+                                                "#EEF1F4",
+                                        },
+                                    ]}>
                                     <View
                                         style={[
                                             styles.dimBarFill,
@@ -322,12 +347,12 @@ export default function PluginReliabilityDialog(
                                         : `${Math.round(rate * 100)}%`}
                                 </ThemeText>
                             </View>
-                            {/* 第二行：成功/失败计数 · 平均耗时，靠右显示、文本左对齐 */}
+                            {/* 第二行：成功/失败计数 · 最近耗时，靠右显示、文本左对齐；
+                                允许换行，窄屏（车机）下不截断尾部耗时 */}
                             <View style={styles.dimMetaRow}>
                                 <ThemeText
                                     fontSize="description"
                                     fontColor="textSecondary"
-                                    numberOfLines={1}
                                     style={styles.dimMetaText}>
                                     {count ? (
                                         `成功 ${count.success} · 失败 ${count.fail}`
@@ -336,7 +361,7 @@ export default function PluginReliabilityDialog(
                                             "pluginSetting.reliabilityDialog.noData",
                                         )
                                     )}
-                                    {latency ? ` · 平均 ${latency}` : ""}
+                                    {latency ? ` · 最近 ${latency}` : ""}
                                 </ThemeText>
                             </View>
                             {i < visibleDims.length - 1 ? (
@@ -380,7 +405,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
     },
     syntheticValue: {
-        fontSize: 34,
+        fontSize: fontSizeConst.xlarge,
         includeFontPadding: false,
     },
     syntheticLabel: {
@@ -400,7 +425,6 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 6,
         borderRadius: 3,
-        backgroundColor: "#EEF1F4",
         overflow: "hidden",
     },
     dimBarFill: {

@@ -1140,26 +1140,32 @@ class PluginManager implements IPluginManager, IInjectable {
         const relSort =
             this.appConfigService.getConfig("basic.sortPluginByReliability") ??
             true;
+        // 预计算排序键（可用率 5% 分桶 + 耗时 + 手动顺序），用单一稳定比较器，
+        // 保证全序（消除"带宽边界处不同对走不同维度比较"导致的非传递性抖动）
+        const keyOf = (p: Plugin) => {
+            const s = pluginReliability.getSortScoreSync(
+                p.instance.platform,
+                ability,
+            );
+            return {
+                bucket: Math.floor(s.rate / 0.05),
+                latency: s.latencyMs ?? Number.MAX_SAFE_INTEGER,
+                order: order[p.name] ?? Infinity,
+            };
+        };
         return [...this.getPluginsWithAbility(ability)].sort((a, b) => {
             if (relSort) {
-                const sa = pluginReliability.getSortScoreSync(
-                    a.instance.platform,
-                    ability,
-                );
-                const sb = pluginReliability.getSortScoreSync(
-                    b.instance.platform,
-                    ability,
-                );
-                if (sa.rate !== sb.rate) {
-                    // 可用率差 >5% 时按可用率排序；否则视为同档，比耗时
-                    if (Math.abs(sa.rate - sb.rate) > 0.05) {
-                        return sb.rate - sa.rate;
-                    }
-                    const la = sa.latencyMs ?? Number.MAX_SAFE_INTEGER;
-                    const lb = sb.latencyMs ?? Number.MAX_SAFE_INTEGER;
-                    if (la !== lb) {
-                        return la - lb;
-                    }
+                const ka = keyOf(a);
+                const kb = keyOf(b);
+                // 可用率桶降序 → 同桶比耗时（快者优先）→ 再回退手动 order
+                if (ka.bucket !== kb.bucket) {
+                    return kb.bucket - ka.bucket;
+                }
+                if (ka.latency !== kb.latency) {
+                    return ka.latency - kb.latency;
+                }
+                if (ka.order !== kb.order) {
+                    return ka.order - kb.order;
                 }
             }
             return Math.sign(

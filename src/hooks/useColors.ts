@@ -39,6 +39,10 @@ export interface CustomizedColors extends IColors {
     surfaceVariant?: string;
     /** paneltabbar 背景色 */
     tabBar?: string;
+    /** 成功/可用率高（绿）：主题已定义，UI 一律走 token */
+    success: string;
+    /** 失败/可用率低（红）：主题已定义，UI 一律走 token */
+    danger: string;
 }
 
 export default function useColors() {
@@ -53,6 +57,9 @@ export default function useColors() {
                 Color(colors.text).alpha(0.7).toString(),
             // @ts-ignore
             background: colors.pageBackground ?? colors.background,
+            // success/danger 由主题定义（lightTheme/darkTheme 均含），此处仅兜底缺省主题
+            success: (colors as any).success ?? "#08A34C",
+            danger: (colors as any).danger ?? "#EF4444",
         };
     }, [colors]);
 

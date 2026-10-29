@@ -75,21 +75,46 @@ let recommendLoaded = false;
 /* ============ 统计变更订阅（UI 实时刷新用） ============ */
 
 type ReliabilityListener = () => void;
-const listeners = new Set<ReliabilityListener>();
 
-/** 订阅统计变更（写入成功后触发），返回取消订阅函数 */
-export function subscribeReliability(listener: ReliabilityListener): () => void {
-    listeners.add(listener);
+/** 订阅条目：platform 为空表示全局订阅（收到所有变更）；指定 platform 只收该源的变更 */
+interface IReliabilitySubscription {
+    platform?: string;
+    fn: ReliabilityListener;
+}
+
+const subscriptions: IReliabilitySubscription[] = [];
+
+/**
+ * 订阅统计变更（写入成功后触发），返回取消订阅函数。
+ * @param listener 回调
+ * @param platform 可选：只接收该音源平台的统计变更；不传则接收全部
+ */
+export function subscribeReliability(
+    listener: ReliabilityListener,
+    platform?: string,
+): () => void {
+    const sub: IReliabilitySubscription = { platform, fn: listener };
+    subscriptions.push(sub);
     return () => {
-        listeners.delete(listener);
+        const idx = subscriptions.indexOf(sub);
+        if (idx !== -1) {
+            subscriptions.splice(idx, 1);
+        }
     };
 }
 
-/** 通知所有订阅者（统计被写入后调用；try/catch 隔离单个监听器异常） */
-function notifyReliability() {
-    for (const l of listeners) {
+/**
+ * 通知订阅者（统计被写入后调用；try/catch 隔离单个监听器异常）。
+ * @param platform 写入的源平台：只通知该平台的定向订阅者 + 全局订阅者；
+ *                 不传则通知全部订阅者
+ */
+function notifyReliability(platform?: string) {
+    for (const sub of subscriptions) {
+        if (platform && sub.platform && sub.platform !== platform) {
+            continue;
+        }
         try {
-            l();
+            sub.fn();
         } catch {}
     }
 }
@@ -293,6 +318,44 @@ export function getBestDimensionSync(
     return { type: pool[0].type, rate: pool[0].rate };
 }
 
+/**
+ * 按源能力取展示口径（与 getBestDimensionSync 的"最强维度"不同：
+ * 口径由源能力决定——纯歌词源取歌词、纯歌单源取歌单、完整源取合成）。
+ * 徽章与弹窗大字共用此口径，保证同一源两处展示一致；
+ * 无对应口径数据返回 rate:null（大字显示"暂无数据"）。
+ */
+export function getDisplayByAbilitySync(
+    platform: string | undefined,
+    kind: "lyric" | "sheet" | "synthetic",
+): IBestDimension {
+    if (!platform) {
+        return { type: "synthetic", rate: null };
+    }
+    if (kind === "lyric") {
+        const d = reliabilityMap[platform]?.lyric;
+        return d && d.success + d.fail > 0
+            ? { type: "lyric", rate: dimensionRate(d) }
+            : { type: "lyric", rate: null };
+    }
+    if (kind === "sheet") {
+        const s = recommendMap[platform];
+        return s && s.ok + s.fail > 0
+            ? { type: "sheet", rate: s.ok / (s.ok + s.fail) }
+            : { type: "sheet", rate: null };
+    }
+    const rec = reliabilityMap[platform];
+    const hasSyn =
+        !!rec &&
+        (["play", "parse", "search"] as const).some(dim => {
+            const c = rec[dim];
+            return !!c && c.success + c.fail > 0;
+        });
+    if (!hasSyn) {
+        return { type: "synthetic", rate: null };
+    }
+    return { type: "synthetic", rate: calcReliability(rec!) };
+}
+
 /** 是否有通用统计记录（同步；任意维度有计数即 true） */
 export function hasRecordSync(platform: string | undefined): boolean {
     if (!platform) {
@@ -345,7 +408,7 @@ export async function recordResult(
     r[dimension] = d;
     reliabilityMap[platform] = r;
     void setStorage(StorageKeys.PluginReliability, reliabilityMap).catch(() => {});
-    notifyReliability();
+    notifyReliability(platform);
 }
 
 /** 记录真实播放结果（实际出声 ≥2s 无报错） */
@@ -617,7 +680,7 @@ export async function recordRecommendResult(
         StorageKeys.PluginRecommendReliability,
         recommendMap,
     ).catch(() => {});
-    notifyReliability();
+    notifyReliability(platform);
 }
 
 /** 预加载推荐歌单专用统计（启动时调用） */
@@ -643,6 +706,8 @@ export async function setup(): Promise<void> {
 export async function resetReliability(): Promise<void> {
     reliabilityMap = {};
     loaded = true;
+    // 探测耗时镜像一并清空，避免残留旧维度耗时影响排序 tie-breaker
+    dimMsMap = {};
     try {
         await setStorage(StorageKeys.PluginReliability, {});
     } catch {}
@@ -659,6 +724,8 @@ const pluginReliability = {
     getRecordSync,
     // 展示口径：能力强弱决定（合成/歌词/歌单取最高）
     getBestDimensionSync,
+    // 展示口径：源能力决定（纯歌词→歌词、纯歌单→歌单、完整→合成）
+    getDisplayByAbilitySync,
     getLyricReliabilitySync,
     hasLyricRecordSync,
     hasRecordSync,

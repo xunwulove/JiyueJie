@@ -46,7 +46,22 @@ function _PluginItem(props: IPluginItemProps) {
     const enabled = usePluginEnabled(plugin);
     const { t } = useI18N();
 
-    // 展示口径：能力强弱决定（合成/歌词/歌单可用率取最高，样本保护见 getBestDimensionSync）
+    // 展示口径：源能力决定（纯歌词源→歌词、纯歌单源→歌单、完整源→合成）。
+    // 徽章与详情弹窗大字共用此口径，避免"最强维度"口径把完整源误标成纯功能源
+    const isLyricSource =
+        plugin.supportedMethods.has("getLyric") &&
+        !plugin.supportedMethods.has("search") &&
+        !plugin.supportedMethods.has("getMediaSource");
+    const isPureSheetSource =
+        plugin.supportedMethods.has("getRecommendSheetTags") &&
+        !plugin.supportedMethods.has("search") &&
+        !plugin.supportedMethods.has("getMediaSource");
+    const displayKind: "lyric" | "sheet" | "synthetic" = isLyricSource
+        ? "lyric"
+        : isPureSheetSource
+            ? "sheet"
+            : "synthetic";
+
     const [best, setBest] = useState<IBestDimension | null>(null);
     useEffect(() => {
         let alive = true;
@@ -54,16 +69,39 @@ function _PluginItem(props: IPluginItemProps) {
             if (!alive) {
                 return;
             }
-            setBest(pluginReliability.getBestDimensionSync(plugin.instance.platform));
+            // 浅比较：type+rate 均未变则不 setState，避免探测期每次广播都触发本卡片重渲染
+            setBest(prev => {
+                const next = pluginReliability.getDisplayByAbilitySync(
+                    plugin.instance.platform,
+                    displayKind,
+                );
+                if (
+                    prev &&
+                    prev.type === next.type &&
+                    prev.rate === next.rate
+                ) {
+                    return prev;
+                }
+                return next;
+            });
         };
         pluginReliability
             .getReliabilityRecord(plugin.instance.platform)
             .then(() => {
                 refresh();
             });
+        // 同时等推荐歌单统计加载：避免歌单维度首帧显示错口径且不自纠
+        pluginReliability
+            .getRecommendReliability(plugin.instance.platform)
+            .then(() => {
+                refresh();
+            });
         // 统计变更实时刷新：播放/搜索/探测写入统计后，卡片可用率标签立即更新，
-        // 与详情弹窗（打开时重新拉取）保持一致
-        const unsub = pluginReliability.subscribeReliability(refresh);
+        // 与详情弹窗（打开时重新拉取）保持一致；按 platform 定向订阅，避免全局广播
+        const unsub = pluginReliability.subscribeReliability(
+            refresh,
+            plugin.instance.platform,
+        );
         return () => {
             alive = false;
             unsub();
@@ -77,10 +115,10 @@ function _PluginItem(props: IPluginItemProps) {
         bestRate === null
             ? colors.textSecondary
             : bestRate >= 0.8
-                ? "#4CAF50"
+                ? colors.success
                 : bestRate >= 0.5
                     ? colors.primary
-                    : "#E53935";
+                    : colors.danger;
 
     // 标签内容：口径为歌词显示"歌词"、歌单显示"歌单"、合成为可用率百分比（无数据默认 50%）
     const tagText =
@@ -225,7 +263,10 @@ function _PluginItem(props: IPluginItemProps) {
                         ]}>
                         <Text
                             numberOfLines={1}
-                            style={styles.reliabilityText}>
+                            style={[
+                                styles.reliabilityText,
+                                { color: colors.appBarText },
+                            ]}>
                             {tagText}
                         </Text>
                     </Pressable>
@@ -266,7 +307,7 @@ function _PluginItem(props: IPluginItemProps) {
                 <View style={styles.errorDescription}>
                     <ThemeText
                         fontSize="subTitle"
-                        color="#E53935"
+                        color={colors.danger}
                         style={styles.errorText}>
                         {errorText}
                     </ThemeText>
@@ -371,7 +412,6 @@ const styles = StyleSheet.create({
     },
     reliabilityText: {
         fontSize: fontSizeConst.description,
-        color: "#FFFFFF",
         includeFontPadding: false,
     },
     author: {
