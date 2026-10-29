@@ -221,6 +221,8 @@ export interface IBestDimension {
 
 /** 参与比较的样本下限：成功率基于 ≥3 次样本才可信，样本过少不参与比较（防 1/1=100% 噪声） */
 const BEST_DIM_MIN_SAMPLES = 3;
+/** 排序样本保护下限：与展示口径一致，样本 <3 时排序回退默认可用率（不偏向） */
+const SORT_MIN_SAMPLES = 3;
 
 /**
  * 按"能力强弱"取展示口径：各口径（合成/歌词/歌单）有数据即参与比较，
@@ -477,27 +479,52 @@ const SHEET_ABILITIES = new Set([
 ]);
 
 /**
+ * 合成可用率（带样本保护）：play/parse/search 总样本 ≥3 才按加权公式，
+ * 样本不足回退默认 0.5——排序场景防"一次探测成功即 100% 虚高"（展示口径
+ * getBestDimensionSync 已有同类保护）。
+ */
+function calcReliabilitySafe(r?: IReliabilityRecord): number {
+    if (!r) {
+        return RELIABILITY_DEFAULT;
+    }
+    let samples = 0;
+    for (const dim of ["play", "parse", "search"] as const) {
+        const c = r[dim];
+        if (c) {
+            samples += c.success + c.fail;
+        }
+    }
+    if (samples < SORT_MIN_SAMPLES) {
+        return RELIABILITY_DEFAULT;
+    }
+    return calcReliability(r);
+}
+
+/**
  * 排序主分：按能力切口径——歌单能力用歌单可用率、歌词能力用歌词可用率，
- * 其余（搜索/解析/播放）用合成可用率；目标口径无数据时兜底合成可用率。
+ * 其余（搜索/解析/播放）用合成可用率；目标口径无数据/样本不足时兜底合成可用率。
+ * 各口径同样带样本保护（<SORT_MIN_SAMPLES 回退默认，不偏向新源或单次探测结果）。
  */
 export function getSortRateSync(
     platform: string | undefined,
     ability: string,
 ): number {
+    if (!platform) {
+        return RELIABILITY_DEFAULT;
+    }
     const synthRate = () =>
-        calcReliability(
-            platform ? reliabilityMap[platform] : undefined,
-        );
+        calcReliabilitySafe(reliabilityMap[platform]);
     if (SHEET_ABILITIES.has(ability)) {
         const rec = getRecommendRecordSync(platform);
-        if (rec && rec.ok + rec.fail > 0) {
+        if (rec && rec.ok + rec.fail >= SORT_MIN_SAMPLES) {
             return calcRecommend(rec);
         }
         return synthRate();
     }
     if (ability === "getLyric") {
-        if (hasLyricRecordSync(platform)) {
-            return getLyricReliabilitySync(platform);
+        const d = reliabilityMap[platform]?.lyric;
+        if (d && d.success + d.fail >= SORT_MIN_SAMPLES) {
+            return dimensionRate(d) ?? RELIABILITY_DEFAULT;
         }
         return synthRate();
     }

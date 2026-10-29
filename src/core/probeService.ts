@@ -8,12 +8,12 @@
  * 静默播放样本 ≥2s（方案 B）——音量 0、不抢音频焦点、不打断当前播放，
  * 判定口径与用户真实播放一致，结果直接写入 play 维度。
  *
- * 探测维度（2026-10-25 补全，对齐探测软件）：
- * - 搜索：search(music) 是否有结果 → search 维度
- * - 解析：getMediaSource 能否取到播放地址 → parse 维度
- * - 播放：深度模式静默真实播放 ≥2s → play 维度
- * - 歌词：getLyric 是否返回歌词（仅具备该能力的源）→ lyric 维度
- * - 歌单：getRecommendSheetTags → 歌单列表非空 → 歌单第一首能解析
+ * 探测维度（2026-10-29 多样本改造，对齐探测软件）：
+ * - 搜索：多关键词 fallback（海阔天空/晴天/夜曲，任一命中即可用）→ search 维度
+ * - 解析：搜索结果前 3 样本依次尝试 getMediaSource（任一成功即可用）→ parse 维度
+ * - 播放：深度模式对最终解析地址静默真实播放 ≥2s → play 维度
+ * - 歌词：搜索结果前 3 样本依次尝试 getLyric（任一返回歌词即可用）→ lyric 维度
+ * - 歌单：getRecommendSheetTags → 歌单列表非空 → 歌单前 3 首任一首能解析
  *   （深度模式再静默播放验证），结果记入**独立歌单统计**（recommend），
  *   不写入 search/parse/play——歌单显示有问题但播放路径正常的源
  *   不会被歌单维度拖累合成可用率。
@@ -49,8 +49,10 @@ const PROBE_INTERVAL_MS = 1500;
 const PROBE_BUDGET_MS = 120 * 1000;
 /** 数据过期判定：上次探测超过该时长视为过期 */
 const PROBE_STALE_MS = 24 * 60 * 60 * 1000;
-/** 探测样本关键词（中文歌在各源命中率高） */
-const PROBE_KEYWORD = "海阔天空";
+/** 探测样本关键词（多关键词 fallback：任一命中即搜索可用；中文歌在各源命中率高） */
+const PROBE_KEYWORDS = ["海阔天空", "晴天", "夜曲"];
+/** 解析/歌词/歌单首曲顺延的样本上限（data[0] 失败时依次尝试，避免单样本误判） */
+const PROBE_SAMPLE_LIMIT = 3;
 
 /**
  * 运行互斥：自动（probeAuto）与手动（probeAllPlugins）共用同一执行体，
@@ -270,7 +272,6 @@ async function probeSingle(
         Config.getConfig("basic.defaultPlayQuality") ?? "standard",
         Config.getConfig("basic.playQualityOrder") ?? "desc",
     );
-    let song: any = null;
     let url: string | null = null;
     let headers: Record<string, string> | undefined;
     /** 每维度探测耗时均值（ms） */
@@ -283,19 +284,22 @@ async function probeSingle(
         const t0 = Date.now();
         try {
             dims.push("search");
-            const result = await plugin.methods?.search?.(
-                PROBE_KEYWORD,
-                1,
-                "music",
-            );
-            data = result?.data ?? [];
+            // 多关键词 fallback：依次尝试，取第一个非空结果集；全部为空才算搜索失败。
+            // 避免"单个关键词恰好是该源未收录的歌曲"误判整源搜索能力。
+            for (const kw of PROBE_KEYWORDS) {
+                const result = await plugin.methods?.search?.(kw, 1, "music");
+                const list = result?.data ?? [];
+                if (list.length > 0) {
+                    data = list;
+                    break;
+                }
+            }
             out.searchOk = data.length > 0;
             void pluginReliability.recordResult(
                 platform,
                 out.searchOk,
                 "search",
             );
-            song = data[0] ?? null;
         } catch (e: any) {
             out.error = e?.message ?? "探测异常";
             void pluginReliability.recordResult(
@@ -314,20 +318,27 @@ async function probeSingle(
     ) {
         const t0 = Date.now();
         dims.push("parse");
-        for (const quality of qualityOrder) {
-            try {
-                const source =
-                    (await plugin.methods.getMediaSource(
-                        data[0],
-                        quality,
-                    )) ?? null;
-                if (source?.url) {
-                    url = source.url;
-                    headers = source.headers;
-                    break;
+        // 多样本顺延：data[0] 解析失败依次尝试后续样本（上限 PROBE_SAMPLE_LIMIT），
+        // 任一成功即算可解析；避免"首个结果恰是 VIP/地域受限/失效"误判整源解析能力。
+        for (let k = 0; k < Math.min(data.length, PROBE_SAMPLE_LIMIT); k++) {
+            for (const quality of qualityOrder) {
+                try {
+                    const source =
+                        (await plugin.methods.getMediaSource(
+                            data[k],
+                            quality,
+                        )) ?? null;
+                    if (source?.url) {
+                        url = source.url;
+                        headers = source.headers;
+                        break;
+                    }
+                } catch {
+                    // 该质量解析失败，尝试下一档
                 }
-            } catch {
-                // 该质量解析失败，尝试下一档
+            }
+            if (url) {
+                break;
             }
         }
         out.parseOk = !!url;
@@ -339,23 +350,29 @@ async function probeSingle(
         dimMs.parse = Date.now() - t0;
     }
 
-    // —— 歌词探测（有 getLyric 能力 + 有搜索样本）——
-    if (want("lyric") && song && plugin.methods?.getLyric) {
+    // —— 歌词探测（有 getLyric 能力 + 有搜索样本；多样本顺延）——
+    if (want("lyric") && data.length && plugin.methods?.getLyric) {
         const t0 = Date.now();
         dims.push("lyric");
-        try {
-            const lrc = await withTimeout(
-                plugin.methods.getLyric(song),
-                5000,
-                null,
-            );
-            const hasLyric =
-                !!lrc && (!!lrc?.rawLrc || !!lrc?.translation);
-            out.lyricOk = hasLyric;
-            void pluginReliability.recordLyricResult(platform, hasLyric);
-        } catch {
-            void pluginReliability.recordLyricResult(platform, false);
+        let hasLyric = false;
+        // 依次取前 PROBE_SAMPLE_LIMIT 个样本尝试 getLyric，任一返回歌词即可用
+        for (let k = 0; k < Math.min(data.length, PROBE_SAMPLE_LIMIT); k++) {
+            try {
+                const lrc = await withTimeout(
+                    plugin.methods.getLyric(data[k]),
+                    5000,
+                    null,
+                );
+                if (!!lrc && (!!lrc?.rawLrc || !!lrc?.translation)) {
+                    hasLyric = true;
+                    break;
+                }
+            } catch {
+                // 该样本歌词失败，尝试下一个
+            }
         }
+        out.lyricOk = hasLyric;
+        void pluginReliability.recordLyricResult(platform, hasLyric);
         dimMs.lyric = Date.now() - t0;
     }
 
@@ -441,26 +458,36 @@ async function probeSingle(
                         musicList = info?.musicList ?? [];
                     }
                 }
-                // 内容可播判定：歌单第一首能解析出播放地址
+                // 内容可播判定：歌单前 PROBE_SAMPLE_LIMIT 首依次尝试解析，
+                // 任一成功即可用；避免"歌单第一首恰是失效/VIP"误判整源歌单能力
                 if (musicList.length && plugin.methods?.getMediaSource) {
-                    for (const quality of qualityOrder) {
-                        try {
-                            const src =
-                                (await plugin.methods.getMediaSource(
-                                    musicList[0],
-                                    quality,
-                                )) ?? null;
-                            if (src?.url) {
-                                sheetFirstUrl = src.url;
-                                sheetFirstHeaders = src.headers;
-                                break;
+                    for (
+                        let k = 0;
+                        k < Math.min(musicList.length, PROBE_SAMPLE_LIMIT);
+                        k++
+                    ) {
+                        for (const quality of qualityOrder) {
+                            try {
+                                const src =
+                                    (await plugin.methods.getMediaSource(
+                                        musicList[k],
+                                        quality,
+                                    )) ?? null;
+                                if (src?.url) {
+                                    sheetFirstUrl = src.url;
+                                    sheetFirstHeaders = src.headers;
+                                    break;
+                                }
+                            } catch {
+                                // 尝试下一档
                             }
-                        } catch {
-                            // 尝试下一档
+                        }
+                        if (sheetFirstUrl) {
+                            break;
                         }
                     }
                 }
-                // 显示可用 = 歌单歌曲列表非空 + 第一首可解析
+                // 显示可用 = 歌单歌曲列表非空 + 前几首中至少一首可解析
                 sheetOk = musicList.length > 0 && !!sheetFirstUrl;
             }
         } catch {
