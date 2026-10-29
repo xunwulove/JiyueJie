@@ -183,24 +183,21 @@ function dimensionRate(d?: IDimensionCount): number | null {
     return d.success / (d.success + d.fail);
 }
 
-/** 合成可用率：播放 60% + 解析 30% + 搜索 10%，缺失维度权重归一化 */
+/** 缺失维度中性填充值：未知维度按 50% 可信度计（防单维度独占虚高） */
+const NEUTRAL_RATE = 0.5;
+
+/** 合成可用率：播放 60% + 解析 30% + 搜索 10%，缺失维度按中性值 50% 填充（权重始终全参与） */
 function calcReliability(r?: IReliabilityRecord): number {
     if (!r) {
         return RELIABILITY_DEFAULT;
     }
     let weighted = 0;
-    let weightSum = 0;
     for (const [dim, w] of DIMENSION_WEIGHTS) {
         const rate = dimensionRate(r[dim]);
-        if (rate !== null) {
-            weighted += rate * w;
-            weightSum += w;
-        }
+        weighted += (rate ?? NEUTRAL_RATE) * w;
     }
-    if (weightSum <= 0) {
-        return RELIABILITY_DEFAULT;
-    }
-    return weighted / weightSum;
+    // 权重和恒为 1.0（缺失维度以中性值参与），无需再除
+    return weighted;
 }
 
 /** 某音源可用率（0~1；无数据返回默认 0.5） */
