@@ -340,6 +340,13 @@ export interface ILanguageData {
     "backupAndResume.resumeMode.append": string; // 附加
     "backupAndResume.resumeMode.overwrite-default": string; // 覆盖（默认）
     "backupAndResume.resumeMode.overwrite": string; // 覆盖
+    "backupAndResume.resumePreviewTitle": string; // 恢复预览
+    "backupAndResume.resumePreviewMeta": string; // 生成时间 {time} · App v{version}
+    "backupAndResume.resumePreviewSummary": string; // 歌单 {sheets} 个 · 插件 {plugins} 个（启用 {enabled}）
+    "backupAndResume.resumeChecksumOk": string; // 校验通过
+    "backupAndResume.resumeChecksumFail": string; // 校验失败：文件已损坏
+    "backupAndResume.resumeChecksumNone": string; // 旧备份（无校验信息）
+    "backupAndResume.resumeConfirm": string; // 确认恢复
 
     // 基本设置相关
     "basicSettings.common": string; // 通用

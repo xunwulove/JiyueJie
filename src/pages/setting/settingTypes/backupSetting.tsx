@@ -102,6 +102,89 @@ export default function BackupSetting() {
         });
     };
 
+    /** 执行恢复（LoadingDialog 包裹，含恢复方式） */
+    async function doResume(raw: string | Object) {
+        return new Promise<void>(resolve => {
+            showDialog("LoadingDialog", {
+                title: t("backupAndResume.resumeFromLocalFile"),
+                loadingText: t("backupAndResume.resuming"),
+                async task() {
+                    await delay(300, false);
+                    return Backup.resume(raw, resumeMode);
+                },
+                onResolve(_, hideDialog) {
+                    Toast.success(t("toast.resumeSuccess"));
+                    hideDialog();
+                    resolve();
+                },
+                onCancel(hideDialog) {
+                    hideDialog();
+                    resolve();
+                },
+                onReject(reason, hideDialog) {
+                    hideDialog();
+                    console.log(reason);
+                    Toast.warn(t("toast.resumeFail", { reason: reason?.message ?? reason }));
+                    resolve();
+                },
+            });
+        });
+    }
+
+    /** 恢复前预览校验：解析 + checksum + 概览 → 确认弹窗 → 执行恢复 */
+    function confirmAndResume(raw: string | Object) {
+        const p = Backup.preview(raw);
+        if (!p.valid) {
+            Toast.warn(
+                t("toast.resumeFail", { reason: p.error ?? "备份文件无效" }),
+            );
+            return;
+        }
+        showDialog("SimpleDialog", {
+            title: t("backupAndResume.resumePreviewTitle"),
+            content: (
+                <View style={style.previewBox}>
+                    {(p.createdAt || p.appVersion) && (
+                        <ThemeText
+                            fontSize="description"
+                            fontColor="textSecondary">
+                            {t("backupAndResume.resumePreviewMeta", {
+                                time: p.createdAt
+                                    ? new Date(p.createdAt).toLocaleString()
+                                    : "—",
+                                version: p.appVersion ?? "—",
+                            })}
+                        </ThemeText>
+                    )}
+                    <ThemeText fontSize="content" fontWeight="medium">
+                        {t("backupAndResume.resumePreviewSummary", {
+                            sheets: String(p.sheetsCount),
+                            plugins: String(p.pluginsCount),
+                            enabled: String(p.enabledCount),
+                        })}
+                    </ThemeText>
+                    <ThemeText
+                        fontSize="description"
+                        fontColor={
+                            p.checksumVerified === true
+                                ? "primary"
+                                : "textSecondary"
+                        }>
+                        {p.checksumVerified === true
+                            ? t("backupAndResume.resumeChecksumOk")
+                            : p.checksumVerified === false
+                                ? t("backupAndResume.resumeChecksumNone")
+                                : t("backupAndResume.resumeChecksumFail")}
+                    </ThemeText>
+                </View>
+            ),
+            okText: t("backupAndResume.resumeConfirm"),
+            onOk: () => {
+                doResume(raw).catch(() => undefined);
+            },
+        });
+    }
+
     async function onResumeFromLocal() {
         try {
             const pickResult = await getDocumentAsync({
@@ -112,31 +195,7 @@ export default function BackupSetting() {
                 return;
             }
             const result = await readAsStringAsync(pickResult.assets[0].uri);
-            return new Promise(resolve => {
-                showDialog("LoadingDialog", {
-                    title: t("backupAndResume.resumeFromLocalFile"),
-                    loadingText: t("backupAndResume.resuming"),
-                    async task() {
-                        await delay(300, false);
-                        return Backup.resume(result, resumeMode);
-                    },
-                    onResolve(_, hideDialog) {
-                        Toast.success(t("toast.resumeSuccess"));
-                        hideDialog();
-                        resolve(true);
-                    },
-                    onCancel(hideDialog) {
-                        hideDialog();
-                        resolve(false);
-                    },
-                    onReject(reason, hideDialog) {
-                        hideDialog();
-                        resolve(false);
-                        console.log(reason);
-                        Toast.warn(t("toast.resumeFail", { reason: reason?.message ?? reason }));
-                    },
-                });
-            });
+            confirmAndResume(result);
         } catch (e: any) {
             errorLog("恢复失败", e);
             Toast.warn(t("toast.resumeFail", { reason: e?.message ?? e }));
@@ -154,8 +213,7 @@ export default function BackupSetting() {
                     const url = text.trim();
                     if (url.endsWith(".json") || url.endsWith(".txt")) {
                         const raw = (await axios.get(text)).data;
-                        await Backup.resume(raw, resumeMode);
-                        Toast.success(t("toast.resumeSuccess"));
+                        confirmAndResume(raw);
                         close();
                     } else {
                         throw "无效的URL";
@@ -201,11 +259,7 @@ export default function BackupSetting() {
                     format: "text",
                 },
             );
-            await Backup.resume(
-                resumeData,
-                Config.getConfig("backup.resumeMode"),
-            );
-            Toast.success(t("toast.resumeSuccess"));
+            confirmAndResume(resumeData);
         } catch (e: any) {
             Toast.warn(t("toast.resumeFail", { reason: e?.message ?? e }));
         }
@@ -425,5 +479,10 @@ const style = StyleSheet.create({
         marginHorizontal: rpx(24),
         borderRadius: 14,
         overflow: "hidden",
+    },
+    /* 恢复预览弹窗内容：元信息 + 概览 + 校验状态 三行 */
+    previewBox: {
+        paddingVertical: rpx(4),
+        gap: rpx(6),
     },
 });
