@@ -452,6 +452,100 @@ export function getRecommendLatencySync(
     return (r.timeCost ?? 0) / r.timeCount;
 }
 
+/* ============ 排序评分：按能力切口径 + 耗时 tie-breaker ============ */
+
+/**
+ * 探测耗时镜像：probeService 每轮探测写入 lastRuns 时同步喂入本表，
+ * 供排序 tie-breaker 读取（避免 pluginManager → probeService 循环依赖）。
+ * 仅内存镜像（重启后由下次探测重新填充；镜像缺失时 tie-breaker 跳过）。
+ */
+let dimMsMap: Record<string, Partial<Record<string, number>>> = {};
+
+/** probeService 写入每维度探测耗时均值（ms） */
+export function setDimMs(
+    platform: string,
+    dimMs: Partial<Record<string, number>>,
+): void {
+    dimMsMap[platform] = { ...(dimMsMap[platform] ?? {}), ...dimMs };
+}
+
+/** 歌单相关能力：排序主分用歌单可用率 */
+const SHEET_ABILITIES = new Set([
+    "getRecommendSheetTags",
+    "getMusicSheetInfo",
+    "getRecommendSheetsByTag",
+]);
+
+/**
+ * 排序主分：按能力切口径——歌单能力用歌单可用率、歌词能力用歌词可用率，
+ * 其余（搜索/解析/播放）用合成可用率；目标口径无数据时兜底合成可用率。
+ */
+export function getSortRateSync(
+    platform: string | undefined,
+    ability: string,
+): number {
+    const synthRate = () =>
+        calcReliability(
+            platform ? reliabilityMap[platform] : undefined,
+        );
+    if (SHEET_ABILITIES.has(ability)) {
+        const rec = getRecommendRecordSync(platform);
+        if (rec && rec.ok + rec.fail > 0) {
+            return calcRecommend(rec);
+        }
+        return synthRate();
+    }
+    if (ability === "getLyric") {
+        if (hasLyricRecordSync(platform)) {
+            return getLyricReliabilitySync(platform);
+        }
+        return synthRate();
+    }
+    return synthRate();
+}
+
+/**
+ * 排序评分：{ 主分 rate, 耗时 latencyMs(ms) }。
+ * rate 同 getSortRateSync；latencyMs 取对应口径耗时：
+ * 歌单 → 推荐歌单累计均值（recommendMap）；歌词/合成 → 探测耗时镜像 dimMs
+ * （合成取 play/parse/search 均值，缺失则用任一有值维度）。
+ */
+export function getSortScoreSync(
+    platform: string | undefined,
+    ability: string,
+): { rate: number; latencyMs: number | null } {
+    const rate = getSortRateSync(platform, ability);
+    let latencyMs: number | null = null;
+    if (SHEET_ABILITIES.has(ability)) {
+        latencyMs = getRecommendLatencySync(platform);
+    } else if (ability === "getLyric") {
+        latencyMs = getDimMsValue(platform, "lyric");
+    } else {
+        const ms = getDimMsValue(platform, "play");
+        const parse = getDimMsValue(platform, "parse");
+        const search = getDimMsValue(platform, "search");
+        const vals = [ms, parse, search].filter(
+            (v): v is number => v !== null,
+        );
+        latencyMs =
+            vals.length > 0
+                ? vals.reduce((a, b) => a + b, 0) / vals.length
+                : null;
+    }
+    return { rate, latencyMs };
+}
+
+function getDimMsValue(
+    platform: string | undefined,
+    dim: string,
+): number | null {
+    if (!platform) {
+        return null;
+    }
+    const v = dimMsMap[platform]?.[dim];
+    return typeof v === "number" && v >= 0 ? v : null;
+}
+
 /** 异步取推荐歌单可用率 */
 export async function getRecommendReliability(
     platform: string | undefined,
@@ -555,6 +649,10 @@ const pluginReliability = {
     hasRecommendRecordSync,
     RECOMMEND_DEFAULT,
     resetRecommendReliability,
+    // 排序评分：按能力切口径 + 耗时 tie-breaker
+    getSortRateSync,
+    getSortScoreSync,
+    setDimMs,
 };
 
 export default pluginReliability;

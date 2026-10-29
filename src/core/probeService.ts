@@ -564,6 +564,9 @@ async function probePlugins(
                         ...(rec.dimMs ?? {}),
                         ...item.dimMs,
                     };
+                    // 同步镜像到 pluginReliability（排序 tie-breaker 用，
+                    // 避免 pluginManager → probeService 循环依赖）
+                    pluginReliability.setDimMs(platform, item.dimMs);
                 }
                 lastRuns[platform] = rec;
             } catch (e: any) {

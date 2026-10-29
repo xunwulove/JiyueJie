@@ -181,10 +181,13 @@ function getMatchCandidates(
     const sortByReliability = pluginReliability.isReliabilitySortEnabled();
     const scored = all.map(p => {
         const same = platformMatches(p.instance.platform, src);
-        const rel = sortByReliability
-            ? pluginReliability.getReliabilitySync(p.instance.platform)
+        const score = sortByReliability
+            ? pluginReliability.getSortScoreSync(
+                p.instance.platform,
+                "getMediaSource",
+            ).rate
             : pluginReliability.RELIABILITY_DEFAULT;
-        return { plugin: p, score: rel + (same ? 1 : 0) };
+        return { plugin: p, score: score + (same ? 1 : 0) };
     });
     scored.sort((a, b) => b.score - a.score);
     return scored

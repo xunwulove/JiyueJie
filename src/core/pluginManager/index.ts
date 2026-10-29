@@ -1134,21 +1134,32 @@ class PluginManager implements IPluginManager, IInjectable {
     getSortedPluginsWithAbility(ability: keyof IPlugin.IPluginInstanceMethods) {
         const order = pluginMeta.getPluginOrder();
         // 可用率自动排序（basic.sortPluginByReliability，默认开）：
-        // 实际使用（搜索/推荐歌单/详情解析）的插件顺序按可用率降序优先，
-        // 可用率相同（含无数据=默认 0.5）时回退到手动 order。
+        // 实际使用（搜索/推荐歌单/详情解析）的插件顺序按"对应能力口径可用率"降序优先，
+        // 可用率差 ≤5% 时探测耗时短者优先（tie-breaker）；
+        // 其余（无数据/同分同耗时）回退到手动 order。
         const relSort =
             this.appConfigService.getConfig("basic.sortPluginByReliability") ??
             true;
         return [...this.getPluginsWithAbility(ability)].sort((a, b) => {
             if (relSort) {
-                const relA = pluginReliability.getReliabilitySync(
+                const sa = pluginReliability.getSortScoreSync(
                     a.instance.platform,
+                    ability,
                 );
-                const relB = pluginReliability.getReliabilitySync(
+                const sb = pluginReliability.getSortScoreSync(
                     b.instance.platform,
+                    ability,
                 );
-                if (relA !== relB) {
-                    return relB - relA;
+                if (sa.rate !== sb.rate) {
+                    // 可用率差 >5% 时按可用率排序；否则视为同档，比耗时
+                    if (Math.abs(sa.rate - sb.rate) > 0.05) {
+                        return sb.rate - sa.rate;
+                    }
+                    const la = sa.latencyMs ?? Number.MAX_SAFE_INTEGER;
+                    const lb = sb.latencyMs ?? Number.MAX_SAFE_INTEGER;
+                    if (la !== lb) {
+                        return la - lb;
+                    }
                 }
             }
             return Math.sign(

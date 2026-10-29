@@ -215,7 +215,8 @@ export default function PluginReliabilityDialog(
             return `${(ms / 1000).toFixed(1)}s`;
         }
         if (key === "sheet" && sheetRecord?.latency != null) {
-            return `${sheetRecord.latency}s`;
+            // sheetRecord.latency 来自 getRecommendLatencySync，单位为毫秒
+            return `${(sheetRecord.latency / 1000).toFixed(1)}s`;
         }
         return null;
     };
