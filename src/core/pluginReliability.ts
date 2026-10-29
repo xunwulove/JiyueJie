@@ -72,6 +72,28 @@ let loaded = false;
 let recommendMap: Record<string, IRecommendReliabilityRecord> = {};
 let recommendLoaded = false;
 
+/* ============ 统计变更订阅（UI 实时刷新用） ============ */
+
+type ReliabilityListener = () => void;
+const listeners = new Set<ReliabilityListener>();
+
+/** 订阅统计变更（写入成功后触发），返回取消订阅函数 */
+export function subscribeReliability(listener: ReliabilityListener): () => void {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+}
+
+/** 通知所有订阅者（统计被写入后调用；try/catch 隔离单个监听器异常） */
+function notifyReliability() {
+    for (const l of listeners) {
+        try {
+            l();
+        } catch {}
+    }
+}
+
 /** 开关：音源可用率自动排序（默认开启） */
 export function isReliabilitySortEnabled(): boolean {
     return Config.getConfig("basic.sortPluginByReliability") ?? true;
@@ -238,6 +260,7 @@ export async function recordResult(
     r[dimension] = d;
     reliabilityMap[platform] = r;
     void setStorage(StorageKeys.PluginReliability, reliabilityMap).catch(() => {});
+    notifyReliability();
 }
 
 /** 记录真实播放结果（实际出声 ≥2s 无报错） */
@@ -390,6 +413,7 @@ export async function recordRecommendResult(
         StorageKeys.PluginRecommendReliability,
         recommendMap,
     ).catch(() => {});
+    notifyReliability();
 }
 
 /** 预加载推荐歌单专用统计（启动时调用） */
@@ -434,6 +458,8 @@ const pluginReliability = {
     hasRecordSync,
     isReliabilitySortEnabled,
     RELIABILITY_DEFAULT,
+    // 统计变更订阅（UI 实时刷新）
+    subscribeReliability,
     // 推荐歌单专用可用率
     setupRecommend,
     recordRecommendResult,

@@ -84,29 +84,33 @@ export default function PluginReliabilityDialog(
 
     useEffect(() => {
         let alive = true;
-        pluginReliability
-            .getReliabilityRecord(platform)
-            .then(() => {
-                if (!alive) {
-                    return;
-                }
-                setRecord(pluginReliability.getRecordSync(platform));
-                const sr = pluginReliability.getRecommendRecordSync(platform);
-                setSheetRecord(
-                    sr
-                        ? {
-                            ok: sr.ok,
-                            fail: sr.fail,
-                            latency: pluginReliability.getRecommendLatencySync(
-                                platform,
-                            ),
-                        }
-                        : null,
-                );
-            });
-        setLastRuns(probeService.getLastProbeRuns(platform));
+        const refresh = () => {
+            if (!alive) {
+                return;
+            }
+            setRecord(pluginReliability.getRecordSync(platform));
+            const sr = pluginReliability.getRecommendRecordSync(platform);
+            setSheetRecord(
+                sr
+                    ? {
+                        ok: sr.ok,
+                        fail: sr.fail,
+                        latency: pluginReliability.getRecommendLatencySync(
+                            platform,
+                        ),
+                    }
+                    : null,
+            );
+            setLastRuns(probeService.getLastProbeRuns(platform));
+        };
+        pluginReliability.getReliabilityRecord(platform).then(() => {
+            refresh();
+        });
+        // 统计变更实时刷新：弹窗打开期间播放/探测写入统计，大字与明细同步更新
+        const unsub = pluginReliability.subscribeReliability(refresh);
         return () => {
             alive = false;
+            unsub();
         };
     }, [platform]);
 

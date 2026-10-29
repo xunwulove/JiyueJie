@@ -49,23 +49,29 @@ function _PluginItem(props: IPluginItemProps) {
     const [reliability, setReliability] = useState<number | null>(null);
     useEffect(() => {
         let alive = true;
+        const refresh = () => {
+            if (!alive) {
+                return;
+            }
+            setReliability(
+                pluginReliability.hasRecordSync(plugin.instance.platform)
+                    ? pluginReliability.getReliabilitySync(
+                        plugin.instance.platform,
+                    )
+                    : null,
+            );
+        };
         pluginReliability
             .getReliabilityRecord(plugin.instance.platform)
             .then(() => {
-                if (alive) {
-                    setReliability(
-                        pluginReliability.hasRecordSync(
-                            plugin.instance.platform,
-                        )
-                            ? pluginReliability.getReliabilitySync(
-                                plugin.instance.platform,
-                            )
-                            : null,
-                    );
-                }
+                refresh();
             });
+        // 统计变更实时刷新：播放/搜索/探测写入统计后，卡片可用率标签立即更新，
+        // 与详情弹窗（打开时重新拉取）保持一致
+        const unsub = pluginReliability.subscribeReliability(refresh);
         return () => {
             alive = false;
+            unsub();
         };
     }, [plugin]);
 
