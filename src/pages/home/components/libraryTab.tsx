@@ -235,6 +235,14 @@ export default function LibraryTab() {
         });
     };
 
+    /** 点击当前类目标签：直接翻转升/降序（弹窗方向从配置实时读取，自动同步） */
+    const toggleDirection = () => {
+        setSort(
+            sort,
+            direction === "asc" ? "desc" : "asc",
+        );
+    };
+
     return (
         <View style={styles.page}>
             {/* 固定头部：卡片 + 排序行（歌曲列表表头，不随列表滚动） */}
@@ -396,16 +404,20 @@ export default function LibraryTab() {
                     </ThemeText>
                     <View style={styles.sortRight}>
                         {sort !== "default" ? (
-                            <ThemeText
-                                fontSize="normal"
-                                fontColor="textSecondary"
-                                numberOfLines={1}
+                            <Pressable
+                                onPress={toggleDirection}
+                                hitSlop={8}
                                 style={styles.sortCurrent}>
-                                {SORT_OPTIONS.find(
-                                    o => o.value === sort,
-                                )?.label ?? ""}
-                                {direction === "asc" ? " ↑" : " ↓"}
-                            </ThemeText>
+                                <ThemeText
+                                    fontSize="normal"
+                                    fontColor="textSecondary"
+                                    numberOfLines={1}>
+                                    {SORT_OPTIONS.find(
+                                        o => o.value === sort,
+                                    )?.label ?? ""}
+                                    {direction === "asc" ? " ↑" : " ↓"}
+                                </ThemeText>
+                            </Pressable>
                         ) : null}
                         <Icon
                             name="sort-outline"
