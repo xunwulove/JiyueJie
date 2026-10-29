@@ -9,6 +9,7 @@ import pluginReliability, {
     ensureRecommendLoaded,
 } from "@/core/pluginReliability";
 import Config from "@/core/appConfig";
+import { getQualityOrder } from "@/utils/qualities";
 
 const cacheStore = getOrCreateMMKV("Plugin.RecommendCache");
 
@@ -119,9 +120,52 @@ export async function fetchPluginRecommendSheets(
             );
             return null;
         }
+        // 2026-10-30 收紧口径：与探测一致——"能显示 + 歌单第一首可解析出播放地址"才算 ok，
+        // 避免"拉到列表但歌曲解析不出"的源虚高占用推荐位；只影响可用率统计，不影响返回数据。
+        // 整个验证块 8s 超时（对齐探测端单步超时），首曲解析不阻塞推荐页展示。
+        const verifyFirstSong = async (): Promise<boolean> => {
+            const firstWithCover = [
+                ...pinned,
+                ...groups.flatMap(g => g.data),
+            ].find(it => it?.artwork || it?.coverImg);
+            const firstItem =
+                firstWithCover ?? pinned[0] ?? groups[0]?.data?.[0] ?? null;
+            if (!firstItem) {
+                return false;
+            }
+            const info = await plugin.methods.getMusicSheetInfo?.(
+                firstItem as IMusic.IMusicSheetItem,
+                1,
+            );
+            const firstSong = (info?.musicList ?? [])[0];
+            if (!firstSong) {
+                return false;
+            }
+            const qualityOrder = getQualityOrder(
+                Config.getConfig("basic.defaultPlayQuality") ?? "standard",
+                Config.getConfig("basic.playQualityOrder") ?? "desc",
+            );
+            for (const quality of qualityOrder) {
+                const src =
+                    (await plugin.methods.getMediaSource?.(
+                        firstSong,
+                        quality,
+                    )) ?? null;
+                if (src?.url) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        const usable = await Promise.race([
+            verifyFirstSong(),
+            new Promise<false>(resolve =>
+                setTimeout(() => resolve(false), 8000),
+            ),
+        ]);
         pluginReliability.recordRecommendResult(
             plugin.instance.platform,
-            true,
+            usable,
             elapsed(),
         );
         return { pluginHash, pluginName: plugin.name, pinned, groups };
