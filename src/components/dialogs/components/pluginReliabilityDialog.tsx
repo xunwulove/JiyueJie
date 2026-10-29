@@ -312,6 +312,7 @@ export default function PluginReliabilityDialog(
                                 <ThemeText
                                     fontSize="content"
                                     fontWeight="bold"
+                                    numberOfLines={1}
                                     style={[
                                         styles.dimRate,
                                         { color: rateColor },
@@ -321,7 +322,7 @@ export default function PluginReliabilityDialog(
                                         : `${Math.round(rate * 100)}%`}
                                 </ThemeText>
                             </View>
-                            {/* 第二行：12/15 · 平均耗时，靠右显示、文本左对齐 */}
+                            {/* 第二行：成功/失败计数 · 平均耗时，靠右显示、文本左对齐 */}
                             <View style={styles.dimMetaRow}>
                                 <ThemeText
                                     fontSize="description"
@@ -329,8 +330,7 @@ export default function PluginReliabilityDialog(
                                     numberOfLines={1}
                                     style={styles.dimMetaText}>
                                     {count ? (
-                                        `${count.success}/${count.success +
-                                            count.fail}`
+                                        `成功 ${count.success} · 失败 ${count.fail}`
                                     ) : (
                                         t(
                                             "pluginSetting.reliabilityDialog.noData",
@@ -408,12 +408,12 @@ const styles = StyleSheet.create({
         borderRadius: 3,
     },
     dimRate: {
-        width: 42,
+        minWidth: 52,
         textAlign: "right",
         marginLeft: 8,
         flexShrink: 0,
     },
-    /** 第二行元信息：12/15 · 平均耗时，靠右显示、文本左对齐 */
+    /** 第二行元信息：成功/失败计数 · 平均耗时，靠右显示、文本左对齐 */
     dimMetaRow: {
         flexDirection: "row",
         justifyContent: "flex-end",
