@@ -197,6 +197,17 @@ export default function PluginReliabilityDialog(
                     ...(dim("lyric")
                         ? [{ key: "lyric" as ProbeDim, count: dim("lyric") }]
                         : []),
+                    ...(sheetRecord
+                        ? [
+                            {
+                                key: "sheet" as ProbeDim,
+                                count: {
+                                    success: sheetRecord.ok,
+                                    fail: sheetRecord.fail,
+                                },
+                            },
+                        ]
+                        : []),
                 ];
 
     const lastTimeOf = (key: ProbeDim) =>
@@ -332,35 +343,6 @@ export default function PluginReliabilityDialog(
                     );
                 })}
 
-                {/* 推荐歌单区：普通源有推荐歌单统计才显示；纯歌单源已在上方展示大字，此处不重复 */}
-                {!isPureSheetSource && sheetRecord ? (
-                    <View style={styles.recommendBox}>
-                        <ThemeText
-                            fontSize="description"
-                            fontColor="textSecondary">
-                            推荐歌单{" "}
-                            <ThemeText
-                                fontSize="description"
-                                color={colors.primary}
-                                fontWeight="bold">
-                                {Math.round(
-                                    (sheetRecord.ok /
-                                        (sheetRecord.ok + sheetRecord.fail)) *
-                                    100,
-                                )}
-                                %
-                            </ThemeText>
-                            {sheetRecord.latency !== null ? (
-                                <>
-                                    {" "}
-                                    · 平均{" "}
-                                    {(sheetRecord.latency / 1000).toFixed(1)}s
-                                </>
-                            ) : null}
-                        </ThemeText>
-                    </View>
-                ) : null}
-
                 {/* 权重注释 */}
                 <View style={styles.noteBox}>
                     <ThemeText fontSize="description" fontColor="textSecondary">
@@ -433,14 +415,6 @@ const styles = StyleSheet.create({
     dimLastRow: {
         paddingHorizontal: 24,
         paddingBottom: 6,
-    },
-    recommendBox: {
-        marginTop: 10,
-        marginHorizontal: 24,
-        padding: 8,
-        borderRadius: 10,
-        backgroundColor: "#F6F9FB",
-        flexDirection: "row",
     },
     noteBox: {
         marginTop: 10,
