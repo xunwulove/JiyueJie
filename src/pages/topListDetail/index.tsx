@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import AppBar from "@/components/base/appBar";
 import ThemeText from "@/components/base/themeText";
@@ -115,26 +115,11 @@ export default function TopListDetail() {
                                                 }
                                             />
                                         ) : (
-                                            <View
-                                                style={[
-                                                    styles.cover,
-                                                    styles.coverFallback,
-                                                    {
-                                                        backgroundColor:
-                                                            colors.surfaceVariant ??
-                                                            colors.card,
-                                                    },
-                                                ]}>
-                                                <Icon
-                                                    name="musical-note"
-                                                    size={18}
-                                                    color={Color(
-                                                        colors.textSecondary,
-                                                    )
-                                                        .alpha(0.4)
-                                                        .toString()}
-                                                />
-                                            </View>
+                                            <Image
+                                                source={ImgAsset.albumDefault}
+                                                style={styles.cover}
+                                                resizeMode="cover"
+                                            />
                                         )}
                                     </View>
                                     <View style={styles.info}>
@@ -205,10 +190,6 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 8,
-    },
-    coverFallback: {
-        alignItems: "center",
-        justifyContent: "center",
     },
     info: {
         flex: 1,

@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Image, StyleSheet, View, ViewStyle } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
-import Color from "color";
-import Icon from "@/components/base/icon";
-import useColors from "@/hooks/useColors";
+import { Image, View, ViewStyle } from "react-native";
 import Mp3Util from "@/native/mp3Util";
+import { ImgAsset } from "@/constants/assetsConst";
 import { getLocalPath } from "@/utils/mediaUtils";
 
 /**
@@ -68,7 +65,6 @@ interface ILocalSongCoverProps {
 
 export default function LocalSongCover(props: ILocalSongCoverProps) {
     const { musicItem, size = 48, borderRadius = 8, style } = props;
-    const colors = useColors();
 
     const localPath = normalizeLocalPath(getLocalPath(musicItem));
     // artwork（网络 URL 或下载保存的本地封面）作为内嵌封面缺失时的回退：
@@ -128,28 +124,14 @@ export default function LocalSongCover(props: ILocalSongCoverProps) {
         );
     }
 
-    // 占位：主题色渐变 + 音符图标（本地/网络歌曲无封面统一占位，行布局一致）
+    // 占位：显示默认封面图（与真实封面同样 cover 铺满展示，统一默认封面观感）
     return (
-        <LinearGradient
-            colors={[
-                colors.primary,
-                Color(colors.primary).alpha(0.75).toString(),
-            ]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[boxStyle, styles.placeholder, style]}>
-            <Icon
-                name="musical-note"
-                size={Math.round(size * 0.45)}
-                color="#FFFFFF"
+        <View style={[boxStyle, style]}>
+            <Image
+                style={{ width: size, height: size, borderRadius }}
+                source={ImgAsset.albumDefault}
+                resizeMode="cover"
             />
-        </LinearGradient>
+        </View>
     );
 }
-
-const styles = StyleSheet.create({
-    placeholder: {
-        alignItems: "center",
-        justifyContent: "center",
-    },
-});

@@ -573,7 +573,7 @@ export default function ImmersiveLayer() {
                     <Image
                         source={ImgAsset.albumDefault}
                         style={styles.cover}
-                        resizeMode="contain"
+                        resizeMode="cover"
                     />
                 )}
         </View>
