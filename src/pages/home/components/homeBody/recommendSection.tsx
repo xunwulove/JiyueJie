@@ -64,7 +64,8 @@ function buildTagListFromData(
         list.push({
             key: `tag-${item.id ?? index}-${item.title ?? index}`,
             label: item.title ?? t("common.unknownName"),
-            tag: { id: item.id, title: item.title },
+            // 展开原始标签项：保留 digest 等插件自定义字段（念心等源 getRecommendSheetsByTag 依赖 digest 分支）
+            tag: { ...item },
         });
     });
     return list;

@@ -193,7 +193,8 @@ function RecommendPanel({ hash, onAutoSwitch }: IRecommendPanelProps) {
             item => !isRealSheetItem(item),
         );
         if (firstTag) {
-            selectTag({ id: firstTag.id, title: firstTag.title });
+            // 展开原始标签项：保留 digest 等插件自定义字段（念心等源依赖 digest 判定歌单/歌曲分支）
+            selectTag({ ...firstTag });
         } else {
             selectTag(DEFAULT_TAG);
         }
