@@ -34,7 +34,8 @@ export default function Operations() {
     }> = [
         {
             iconName: "calendar-days",
-            title: "每日\n推荐",
+            // 手机两列窄卡 4 字放不下自动断成"每日推/荐"，手动断为每行两字；平板 4 卡等宽单行即可
+            title: isTablet ? "每日推荐" : "每日\n推荐",
             action() {
                 // 对齐官方两级结构：getRecommendSheetTags 返回的是"标签"（无封面、不可直接解析歌单），
                 // 真实歌单需调 getRecommendSheetsByTag 获取（带封面 artwork、可解析播放）。
@@ -91,14 +92,14 @@ export default function Operations() {
         },
         {
             iconName: "trophy",
-            title: "排行榜单",
+            title: isTablet ? "排行榜单" : "排行\n榜单",
             action() {
                 navigate(ROUTE_PATH.TOP_LIST);
             },
         },
         {
             iconName: "heart",
-            title: "我的喜欢",
+            title: isTablet ? "我的喜欢" : "我的\n喜欢",
             action() {
                 navigate(ROUTE_PATH.LOCAL_SHEET_DETAIL, {
                     id: MusicSheet.defaultSheet.id,
@@ -107,7 +108,7 @@ export default function Operations() {
         },
         {
             iconName: "clock-outline",
-            title: "最近播放",
+            title: isTablet ? "最近播放" : "最近\n播放",
             action() {
                 navigate(ROUTE_PATH.HISTORY);
             },
