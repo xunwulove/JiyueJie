@@ -202,9 +202,7 @@ export default function PluginReliabilityDialog(
 
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title
-                stringContent
-                containerStyle={{ paddingHorizontal: 0 }}>
+            <Dialog.Title stringContent>
                 {plugin.name} · {t("pluginSetting.reliabilityDialog.title")}
             </Dialog.Title>
             <Dialog.Content

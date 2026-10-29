@@ -61,9 +61,7 @@ export default function MusicQualityDialog(
 
     return (
         <Dialog onDismiss={hideDialog}>
-            <Dialog.Title
-                stringContent
-                containerStyle={{ paddingHorizontal: 0 }}>
+            <Dialog.Title stringContent>
                 {t("panel.musicQuality.title", {
                     type:
                         type === "play"
