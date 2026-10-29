@@ -557,25 +557,29 @@ export default function ImmersiveLayer() {
     /* 右下封面（仅平板/横屏左右分栏时展示）：真实封面 → 原生 Image；
        无真实封面但有自选底图 → SyntheticCover（FastImage 走 file:// 正常）；
        无真实封面且无自选底图 → 原生 Image 显示默认封面（本地 require 不走
-       RNFastImage，避免 Fresco 加载本地资源失败导致空白） */
+       RNFastImage，避免 Fresco 加载本地资源失败导致空白）。
+       尺寸由外层 View coverWrap 保证（aspectRatio 在 View 上可靠，正方形）；
+       内层 Image/SyntheticCover 100% 填满，杜绝 Image+aspectRatio 失效被拉大 */
     const coverBlock = isTablet ? (
         <View style={styles.coverPane}>
-            {typeof musicItem?.artwork === "string" &&
-            musicItem.artwork.length > 0 ? (
-                    <Image
-                        source={{ uri: musicItem.artwork }}
-                        style={styles.cover}
-                        resizeMode="cover"
-                    />
-                ) : coverBasePath ? (
-                    <SyntheticCover style={styles.cover} />
-                ) : (
-                    <Image
-                        source={ImgAsset.albumDefault}
-                        style={styles.cover}
-                        resizeMode="cover"
-                    />
-                )}
+            <View style={styles.coverWrap}>
+                {typeof musicItem?.artwork === "string" &&
+                musicItem.artwork.length > 0 ? (
+                        <Image
+                            source={{ uri: musicItem.artwork }}
+                            style={styles.coverImage}
+                            resizeMode="cover"
+                        />
+                    ) : coverBasePath ? (
+                        <SyntheticCover style={styles.coverImage} />
+                    ) : (
+                        <Image
+                            source={ImgAsset.albumDefault}
+                            style={styles.coverImage}
+                            resizeMode="cover"
+                        />
+                    )}
+            </View>
         </View>
     ) : null;
 
@@ -790,13 +794,22 @@ const styles = StyleSheet.create({
         paddingRight: 48,
         paddingBottom: 64,
     },
-    cover: {
+    /* 封面外层：View 保证正方形（width % + aspectRatio 在 View 上可靠），
+       maxWidth 限制极端大屏下封面过大 */
+    coverWrap: {
         width: "78%",
+        maxWidth: 420,
         aspectRatio: 1,
         borderRadius: 20,
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: "rgba(255,255,255,0.18)",
         backgroundColor: "rgba(255,255,255,0.06)",
+        overflow: "hidden",
+    },
+    /* 封面内层：100% 填满 coverWrap */
+    coverImage: {
+        width: "100%",
+        height: "100%",
     },
     coverPlaceholder: {
         alignItems: "center",
