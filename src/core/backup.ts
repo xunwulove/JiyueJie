@@ -1,6 +1,8 @@
 /** 备份与恢复 */
 /** 歌单、插件 */
 import { compare } from "compare-versions";
+import CryptoJs from "crypto-js";
+import DeviceInfo from "react-native-device-info";
 import PluginManager from "./pluginManager";
 import MusicSheet from "@/core/musicSheet";
 import { ResumeMode } from "@/constants/commonConst.ts";
@@ -8,14 +10,26 @@ import { ResumeMode } from "@/constants/commonConst.ts";
 /**
  * 结果：一份大的json文件
  * {
+ *     meta: { appVersion, createdAt, checksum },
  *     musicSheets: [],
  *     plugins: [],
  * }
+ *
+ * meta.checksum：对 { musicSheets, plugins } 负载做 SHA-256，
+ * 恢复前校验，防止传输/存储损坏导致半恢复；旧备份无 meta 时跳过校验（兼容）。
  */
 
 interface IBackJson {
     musicSheets: IMusic.IMusicSheetItem[];
     plugins: Array<{ srcUrl: string; version: string }>;
+}
+
+/** 备份负载（checksum 计算与恢复校验共用同一键序；srcUrl/version 可为 undefined，按实际值参与校验） */
+function buildPayload(
+    musicSheets: IMusic.IMusicSheetItem[],
+    plugins: Array<{ srcUrl?: string; version?: string }>,
+): { musicSheets: IMusic.IMusicSheetItem[]; plugins: Array<{ srcUrl?: string; version?: string }> } {
+    return { musicSheets, plugins };
 }
 
 function backup() {
@@ -25,10 +39,16 @@ function backup() {
         srcUrl: _.instance.srcUrl,
         version: _.instance.version,
     }));
+    const payload = buildPayload(musicSheets, normalizedPlugins);
+    const checksum = CryptoJs.SHA256(JSON.stringify(payload)).toString();
 
     return JSON.stringify({
-        musicSheets: musicSheets,
-        plugins: normalizedPlugins,
+        meta: {
+            appVersion: DeviceInfo.getVersion(),
+            createdAt: new Date().toISOString(),
+            checksum,
+        },
+        ...payload,
     });
 }
 
@@ -36,7 +56,7 @@ async function resume(
     raw: string | Object,
     resumeMode: ResumeMode = ResumeMode.Append,
 ) {
-    let obj: IBackJson;
+    let obj: IBackJson & { meta?: { checksum?: string } };
     if (typeof raw === "string") {
         try {
             obj = JSON.parse(raw);
@@ -44,7 +64,20 @@ async function resume(
             throw new Error("备份文件格式无效");
         }
     } else {
-        obj = raw as IBackJson;
+        obj = raw as IBackJson & { meta?: { checksum?: string } };
+    }
+
+    // 恢复前校验 checksum（新备份）：负载不一致 = 文件损坏/被篡改，拒绝恢复
+    const checksum = obj?.meta?.checksum;
+    if (checksum) {
+        const payload = buildPayload(
+            Array.isArray(obj?.musicSheets) ? obj.musicSheets : [],
+            Array.isArray(obj?.plugins) ? obj.plugins : [],
+        );
+        const actual = CryptoJs.SHA256(JSON.stringify(payload)).toString();
+        if (actual !== checksum) {
+            throw new Error("备份文件已损坏（checksum 校验失败），拒绝恢复");
+        }
     }
 
     const { plugins, musicSheets } = obj ?? {};

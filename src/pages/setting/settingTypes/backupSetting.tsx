@@ -21,6 +21,39 @@ import { AuthType, createClient } from "webdav";
 import useColors from "@/hooks/useColors";
 import rpx from "@/utils/rpx";
 
+/** WebDAV 备份目录（固定，App 专属，避免与 MusicFree 互占） */
+const WEBDAV_BACKUP_DIR = "/jiyuejie/";
+/** 备份文件前缀/后缀（用于识别与清理，只动自己格式的文件） */
+const BACKUP_PREFIX = "backup-";
+const BACKUP_SUFFIX = ".json";
+/** 保留最近 N 份备份，更旧的自动清理（防无限堆积） */
+const BACKUP_KEEP = 5;
+
+/** 备份时间戳（本地时区，文件名内嵌 → 字典序 = 时间序） */
+function backupTimestamp(d = new Date()): string {
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(
+        d.getHours(),
+    )}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+
+/** 列出 WebDAV 目录下全部备份文件名（时间倒序，最新的在前） */
+async function listWebdavBackups(
+    client: ReturnType<typeof createClient>,
+): Promise<string[]> {
+    const entries = (await client.getDirectoryContents(
+        WEBDAV_BACKUP_DIR,
+    )) as Array<{ basename?: string }>;
+    return (entries ?? [])
+        .map(e => e?.basename ?? "")
+        .filter(
+            name =>
+                name.startsWith(BACKUP_PREFIX) && name.endsWith(BACKUP_SUFFIX),
+        )
+        .sort()
+        .reverse();
+}
+
 export default function BackupSetting() {
     const { t } = useI18N();
     const colors = useColors();
@@ -149,14 +182,21 @@ export default function BackupSetting() {
             password: password,
         });
 
-        if (!(await client.exists("/MusicFree/MusicFreeBackup.json"))) {
+        if (!(await client.exists(WEBDAV_BACKUP_DIR))) {
             Toast.warn(t("toast.backupFileNotFound"));
             return;
         }
 
         try {
+            // 恢复最新一份备份（按文件名时间戳倒序取第一个）
+            const backups = await listWebdavBackups(client);
+            if (backups.length === 0) {
+                Toast.warn(t("toast.backupFileNotFound"));
+                return;
+            }
+            const latest = backups[0];
             const resumeData = await client.getFileContents(
-                "/MusicFree/MusicFreeBackup.json",
+                `${WEBDAV_BACKUP_DIR}${latest}`,
                 {
                     format: "text",
                 },
@@ -187,17 +227,34 @@ export default function BackupSetting() {
             });
 
             const raw = Backup.backup();
-            if (!(await client.exists("/MusicFree"))) {
-                await client.createDirectory("/MusicFree");
+            if (!(await client.exists(WEBDAV_BACKUP_DIR))) {
+                await client.createDirectory(WEBDAV_BACKUP_DIR);
             }
-            // 临时文件
+            // 时间戳命名：每次备份都是新文件，永不覆盖历史
+            const fileName = `${BACKUP_PREFIX}${backupTimestamp()}${BACKUP_SUFFIX}`;
             await client.putFileContents(
-                "/MusicFree/MusicFreeBackup.json",
+                `${WEBDAV_BACKUP_DIR}${fileName}`,
                 raw,
                 {
                     overwrite: true,
                 },
             );
+            // 清理：保留最近 BACKUP_KEEP 份，删除更旧（只删自己格式的文件）
+            try {
+                const backups = await listWebdavBackups(client);
+                const toDelete = backups.slice(BACKUP_KEEP);
+                for (const name of toDelete) {
+                    try {
+                        await client.deleteFile(
+                            `${WEBDAV_BACKUP_DIR}${name}`,
+                        );
+                    } catch {
+                        // 单文件删除失败不阻塞（下一轮再清）
+                    }
+                }
+            } catch {
+                // 清理失败不影响备份成功
+            }
             Toast.success(t("toast.backupSuccess"));
         } catch (e: any) {
             Toast.warn(t("toast.backupFail", { reason: e?.message ?? e }));
