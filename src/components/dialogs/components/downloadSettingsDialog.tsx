@@ -108,7 +108,7 @@ export default function DownloadSettingsDialog() {
     };
     const checked = (
         <Icon
-            name="check-circle"
+            name="circle-check"
             size={iconSizeConst.light}
             color={colors.primary}
         />
@@ -213,7 +213,7 @@ export default function DownloadSettingsDialog() {
                                 }
                             />
                             <Icon
-                                name="folder-outline"
+                                name="folder"
                                 size={iconSizeConst.light}
                                 color={colors.primary}
                             />

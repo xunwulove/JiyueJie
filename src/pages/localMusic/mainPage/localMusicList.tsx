@@ -65,7 +65,7 @@ export default function LocalMusicList() {
                                 .toString() },
                         ]}>
                         <Icon
-                            name="folder-music-outline"
+                            name="folder-heart"
                             size={44}
                             color={primary}
                         />

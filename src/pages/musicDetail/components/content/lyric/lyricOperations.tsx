@@ -13,34 +13,7 @@ import LocalMusicSheet from "@/core/localMusicSheet";
 import downloader from "@/core/downloader";
 import Toast from "@/utils/toast";
 import { useI18N } from "@/core/i18n";
-import PersistStatus from "@/utils/persistStatus";
-import ThemeText from "@/components/base/themeText";
-
-/** 倍速文字按钮：显示当前倍速（如 1.0x / 1.25x），点击弹倍速三级浮窗 */
-function RateButton() {
-    const colors = useColors();
-    const rate = PersistStatus.useValue("music.rate", 100);
-    const text =
-        (() => {
-            const n = (rate as number) / 100;
-            const s = n
-                .toFixed(n % 1 === 0 ? 1 : 2)
-                .replace(/0+$/, "")
-                .replace(/\.$/, "");
-            return s + "x";
-        })();
-    return (
-        <ThemeText
-            fontSize="content"
-            fontWeight={rate !== 100 ? "semibold" : "regular"}
-            color={rate !== 100 ? colors.primary : colors.textSecondary}
-            onPress={() => {
-                showDialog("PlayRateDialog");
-            }}>
-            {text}
-        </ThemeText>
-    );
-}
+import { useAppConfig } from "@/core/appConfig";
 
 interface ILyricOperationsProps {
     scrollToCurrentLrcItem: () => void;
@@ -58,14 +31,41 @@ export default function LyricOperations(_props: ILyricOperationsProps) {
     const currentMusic = useCurrentMusic();
     const isLocal = LocalMusicSheet.useIsLocal(currentMusic);
 
+    // 任一音效开启 → 入口图标高亮 primary（输出增益 0dB 直通不算开启）
+    const eqOn = useAppConfig("sound.eqEnabled");
+    const convolverOn = useAppConfig("jdsp.convolverEnabled");
+    const bassOn = useAppConfig("jdsp.bassEnabled");
+    const stereoOn = useAppConfig("jdsp.stereoEnabled");
+    const tubeOn = useAppConfig("jdsp.tubeEnabled");
+    const crossfeedOn = useAppConfig("jdsp.crossfeedEnabled");
+    const ddcOn = useAppConfig("jdsp.ddcEnabled");
+    const postGainOn = useAppConfig("jdsp.postGainEnabled") ?? true;
+    const postGain = useAppConfig("jdsp.postGain") ?? 0;
+    const effectOn =
+        eqOn ||
+        convolverOn ||
+        bassOn ||
+        stereoOn ||
+        tubeOn ||
+        crossfeedOn ||
+        ddcOn ||
+        (postGainOn && postGain !== 0);
+
     return (
         <View style={styles.container}>
             {orientation === "vertical" ? <HeartIcon /> : null}
-            {/* 倍速：显示当前倍速文字（点击弹三级浮窗；非 1.0x 时高亮 primary） */}
-            <RateButton />
+            {/* 音效快捷入口：audio-lines，任一音效开启高亮 primary（替代原倍速文字按钮，弹播放设置三级浮窗） */}
+            <Icon
+                name="audio-lines"
+                size={iconSizeConst.normal}
+                color={effectOn ? colors.primary : colors.textSecondary}
+                onPress={() => {
+                    showDialog("SoundEffectQuickDialog");
+                }}
+            />
             {/* 定时关闭（三级浮窗） */}
             <Icon
-                name="alarm-outline"
+                name="alarm-clock"
                 size={iconSizeConst.normal}
                 color={
                     countDown !== null
@@ -78,7 +78,7 @@ export default function LyricOperations(_props: ILyricOperationsProps) {
             />
             {/* 音量：弹音量调节三级浮窗（播放调节类，紧跟定时关闭） */}
             <Icon
-                name="speaker-wave"
+                name="volume-2"
                 size={iconSizeConst.normal}
                 color={colors.textSecondary}
                 onPress={() => {
@@ -91,7 +91,7 @@ export default function LyricOperations(_props: ILyricOperationsProps) {
                 点击提示"已是本地音乐"（原误用"设置成功"文案） */}
             {isLocal ? (
                 <Icon
-                    name="check-circle-outline"
+                    name="circle-check"
                     size={iconSizeConst.normal}
                     color={colors.textSecondary}
                     onPress={() => {
@@ -100,7 +100,7 @@ export default function LyricOperations(_props: ILyricOperationsProps) {
                 />
             ) : (
                 <Icon
-                    name="arrow-down-tray"
+                    name="download"
                     size={iconSizeConst.normal}
                     color={colors.textSecondary}
                     onPress={() => {

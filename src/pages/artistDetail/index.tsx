@@ -41,7 +41,7 @@ export default function ArtistDetail() {
                                 options: [
                                     {
                                         title: t("artistDetail.menu.batchEditMusic"),
-                                        icon: "pencil-square",
+                                        icon: "square-pen",
                                         onPress() {
                                             navigate(ROUTE_PATH.MUSIC_LIST_EDITOR, {
                                                 musicList: queryResult?.music?.data ?? [],

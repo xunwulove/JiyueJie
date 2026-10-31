@@ -175,7 +175,7 @@ export default function Statistics() {
             {/* RankHeader：BarChart 18 primary + 标题 15sp Bold */}
             <View style={styles.rankHeader}>
                 <Icon
-                    name="circle-stack"
+                    name="chart-column"
                     size={18}
                     color={colors.primary}
                 />
@@ -362,7 +362,7 @@ export default function Statistics() {
 
     /* 总览渐变卡（对齐 APlayer StatOverviewCard：min110 圆角18、图标块46圆角14图标26白、平板右下水印52） */
     const overviewCard = (
-        iconName: "clock-outline" | "musical-note",
+        iconName: "clock" | "music",
         value: string,
         label: string,
         subtitle: string,
@@ -467,13 +467,13 @@ export default function Statistics() {
                 {/* 总览 2 卡（对齐 APlayer spacedBy(10)） */}
                 <View style={styles.overviewRowWrap}>
                     {overviewCard(
-                        "clock-outline",
+                        "clock",
                         formatTotalTime(totalSec),
                         "累计听歌时长",
                         "实际收听时长",
                     )}
                     {overviewCard(
-                        "musical-note",
+                        "music",
                         `${eventCount}`,
                         "播放次数",
                         `${periodLabel}播放`,

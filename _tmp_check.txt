@@ -1,0 +1,12 @@
+﻿=== v0.6.4 assets ===
+ app-arm64-v8a-release.apk 
+ app-universal-release.apk 
+ version.json 
+ v0.6.4.zip 
+ v0.6.4.tar.gz 
+=== latest assets ===
+ version.json 
+ latest.zip 
+ latest.tar.gz 
+=== python ===
+requests OK

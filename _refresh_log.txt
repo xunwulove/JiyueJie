@@ -1,0 +1,14 @@
+DEL release v0.6.4 id=1254392 -> 204
+DEL tag v0.6.4 -> 404
+DEL release latest id=1254396 -> 204
+DEL tag latest -> 404
+CREATE v0.6.4 -> 201
+UPLOAD v0.6.4/version.json -> 201
+UPLOAD v0.6.4/app-arm64-v8a-release.apk -> 201
+UPLOAD v0.6.4/app-universal-release.apk -> 201
+CREATE latest -> 201
+UPLOAD latest/version.json -> 201
+VERIFY app-arm64-v8a-release.apk (v0.6.4/app-arm64-v8a-release.apk) -> 200
+VERIFY app-universal-release.apk (v0.6.4/app-universal-release.apk) -> 200
+VERIFY version.json (v0.6.4/version.json) -> 200
+VERIFY version.json (latest/version.json) -> 200

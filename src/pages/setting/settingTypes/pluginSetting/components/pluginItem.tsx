@@ -139,7 +139,7 @@ function _PluginItem(props: IPluginItemProps) {
     const options: IOption[] = [
         {
             title: t("pluginSetting.pluginItem.options.updatePlugin"),
-            icon: "arrow-path",
+            icon: "refresh-cw",
             async onPress() {
                 try {
                     await pluginManager.updatePlugin(plugin);
@@ -152,7 +152,7 @@ function _PluginItem(props: IPluginItemProps) {
         },
         {
             title: t("pluginSetting.pluginItem.options.sharePlugin"),
-            icon: "share",
+            icon: "share-2",
             async onPress() {
                 try {
                     Clipboard.setString(plugin.instance.srcUrl!);
@@ -165,7 +165,7 @@ function _PluginItem(props: IPluginItemProps) {
         },
         {
             title: t("pluginSetting.pluginItem.options.uninstallPlugin"),
-            icon: "trash-outline",
+            icon: "trash-2",
             show: true,
             onPress() {
                 showDialog("SimpleDialog", {
@@ -243,7 +243,7 @@ function _PluginItem(props: IPluginItemProps) {
                         </ThemeText>
                     </Pressable>
                     {
-                        plugin.instance.description?.length ? <IconButton name='question-mark-circle' sizeType='light' onPress={() => {
+                        plugin.instance.description?.length ? <IconButton name='circle-help' sizeType='light' onPress={() => {
                             showDialog("MarkdownDialog", {
                                 title: plugin.name,
                                 markdownContent: plugin.instance.description!,

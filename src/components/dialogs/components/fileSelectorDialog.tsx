@@ -370,8 +370,8 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
                                         <Icon
                                             name={
                                                 isFolder
-                                                    ? "folder-outline"
-                                                    : "document-outline"
+                                                    ? "folder"
+                                                    : "file-text"
                                             }
                                             size={iconSizeConst.light}
                                             color={
@@ -395,7 +395,7 @@ export default function FileSelectorDialog(props: IFileSelectorDialogProps) {
                                         </View>
                                         {checked ? (
                                             <Icon
-                                                name="check-circle"
+                                                name="circle-check"
                                                 size={iconSizeConst.light}
                                                 color={colors.primary}
                                             />

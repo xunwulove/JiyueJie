@@ -84,7 +84,7 @@ export default function MusicItem(props: IMusicItemProps) {
                             <Icon
                                 style={styles.icon}
                                 color="#11659a"
-                                name="check-circle"
+                                name="circle-check"
                                 size={20}
                             />
                         )}

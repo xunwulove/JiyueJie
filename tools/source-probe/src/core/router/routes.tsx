@@ -1,5 +1,7 @@
 import PluginSources from "@/pages/pluginSources";
 import Probe from "@/pages/probe";
+import ProbeDetail from "@/pages/probeDetail";
+import About from "@/pages/about";
 import { ROUTE_PATH } from "@/core/router/index.ts";
 
 type ValueOf<T> = T[keyof T];
@@ -17,7 +19,15 @@ export const routes: Array<IRoutes> = [
         component: Probe,
     },
     {
+        path: ROUTE_PATH.PROBE_DETAIL,
+        component: ProbeDetail,
+    },
+    {
         path: ROUTE_PATH.PLUGIN_SOURCES,
         component: PluginSources,
+    },
+    {
+        path: ROUTE_PATH.ABOUT,
+        component: About,
     },
 ];

@@ -68,7 +68,7 @@ export default function PlayControl() {
             />
             <Icon
                 color={colors.text}
-                name={"skip-left"}
+                name={"skip-back"}
                 size={sideSize}
                 hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                 onPress={() => {
@@ -100,7 +100,7 @@ export default function PlayControl() {
             </Pressable>
             <Icon
                 color={colors.text}
-                name={"skip-right"}
+                name={"skip-forward"}
                 size={sideSize}
                 hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                 onPress={() => {
@@ -109,7 +109,7 @@ export default function PlayControl() {
             />
             <Icon
                 color={colors.textSecondary}
-                name={"playlist"}
+                name={"list-music"}
                 size={queueSize}
                 hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}
                 onPress={() => {

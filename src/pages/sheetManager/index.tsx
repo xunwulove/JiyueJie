@@ -91,7 +91,7 @@ export default function SheetManager() {
             </View>
             {onDelete ? (
                 <Icon
-                    name="trash-outline"
+                    name="trash-2"
                     size={20}
                     color={colors.textSecondary ?? "rgba(0,0,0,0.6)"}
                     style={styles.rowDelete}
@@ -137,7 +137,7 @@ export default function SheetManager() {
                             showDialog("CreateMusicSheetDialog"),
                     },
                     {
-                        icon: "inbox-arrow-down",
+                        icon: "inbox",
                         onPress: () =>
                             showDialog("ImportMusicSheetDialog"),
                     },
@@ -148,7 +148,7 @@ export default function SheetManager() {
                 <ScrollView contentContainerStyle={styles.listContent}>
                     {/* 最近播放 */}
                     {renderRow(
-                        "clock-outline",
+                        "clock",
                         "最近播放",
                         "查看播放历史",
                         () => navigate(ROUTE_PATH.HISTORY),
@@ -170,7 +170,7 @@ export default function SheetManager() {
                     {customSheets.map(sheet => (
                         <View key={`local-${sheet.id}`}>
                             {renderRow(
-                                "playlist",
+                                "list-music",
                                 sheet.title ?? "未知歌单",
                                 `${sheet.worksNum ?? 0} 首歌曲`,
                                 () =>
@@ -186,7 +186,7 @@ export default function SheetManager() {
                     {starredSheets.map(sheet => (
                         <View key={`star-${sheet.id}`}>
                             {renderRow(
-                                "heart-outline",
+                                "star",
                                 sheet.title ?? "未知歌单",
                                 `${sheet.worksNum ?? 0} 首歌曲`,
                                 () =>

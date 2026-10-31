@@ -106,7 +106,7 @@ function MusicBar() {
                         <Icon
                             accessible
                             accessibilityLabel="播放列表"
-                            name="playlist"
+                            name="list-music"
                             size={40}
                             hitSlop={{ top: 8, bottom: 8 }}
                             onPress={() => {

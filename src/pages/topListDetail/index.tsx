@@ -60,7 +60,7 @@ export default function TopListDetail() {
             ) : musicList.length === 0 ? (
                 <View style={styles.empty}>
                     <Icon
-                        name="musical-note"
+                        name="music"
                         size={64}
                         color={Color(colors.textSecondary)
                             .alpha(0.3)

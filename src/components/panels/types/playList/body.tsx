@@ -94,7 +94,7 @@ function _PlayListItem(props: IPlayListProps) {
             />
             <IconButton
                 style={{ marginLeft: 8 }}
-                name="x-mark"
+                name="x"
                 sizeType="small"
                 onPress={() => {
                     TrackPlayer.remove(item);
@@ -174,7 +174,7 @@ export default function Body(props: IBodyProps) {
                     {t(("repeatMode." + repeatMode) as any)}
                 </IconTextButton>
                 <IconTextButton
-                    icon="trash-outline"
+                    icon="trash-2"
                     onPress={() => {
                         TrackPlayer.clearPlayList();
                     }}>

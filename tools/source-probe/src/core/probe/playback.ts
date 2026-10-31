@@ -1,5 +1,5 @@
 /**
- * 深度播放验证（独立 App「音源探测」）
+ * 深度播放验证（独立 App「源鉴」）
  *
  * 对解析出的真实播放地址做「真实播放」验证：初始化播放器 → 加载 URL →
  * 等待进入 Playing 状态 → 持续播放 2s 无错误 → 判定该音源可播放。
@@ -107,6 +107,54 @@ export function verifyPlayable(
         queue.push({ url, headers, resolve });
         void pump();
     });
+}
+
+/** 试听中标记（与探测静音验证互斥：试听时探测队列拒绝入队，避免抢占播放器） */
+let sampleActive = false;
+
+/** 是否正在试听 */
+export function isSampleActive(): boolean {
+    return sampleActive;
+}
+
+/**
+ * 简单播放（试听）：真实出声播放一段解析出的音频，不自动停止。
+ * 复用全局播放器实例；探测队列（verifyPlayable）期间不可试听。
+ * 播放中调用会先 reset 重播新 URL。
+ */
+export async function playSample(
+    url: string,
+    headers?: Record<string, string>,
+): Promise<void> {
+    if (pumping || queue.length > 0) {
+        throw new Error("正在探测播放，请稍后再试听");
+    }
+    const playerOk = await ensurePlayer();
+    if (!playerOk) {
+        throw new Error("播放器初始化失败");
+    }
+    sampleActive = true;
+    try {
+        await ReactNativeTrackPlayer.reset();
+        const track: Track = { url, title: "源鉴试听", artist: "源鉴" };
+        if (headers && Object.keys(headers).length > 0) {
+            track.headers = headers;
+        }
+        await ReactNativeTrackPlayer.setQueue([track]);
+        await ReactNativeTrackPlayer.setVolume(1);
+        await ReactNativeTrackPlayer.play();
+    } catch (e) {
+        sampleActive = false;
+        throw e;
+    }
+}
+
+/** 停止试听并复位播放器 */
+export async function stopSample(): Promise<void> {
+    sampleActive = false;
+    try {
+        await ReactNativeTrackPlayer.reset();
+    } catch {}
 }
 
 async function pump() {

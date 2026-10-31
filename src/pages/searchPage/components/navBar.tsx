@@ -67,7 +67,7 @@ export default function NavBar({ hideBack }: { hideBack?: boolean }) {
             )}
             <View style={style.searchBarContainer}>
                 <Icon
-                    name="magnifying-glass"
+                    name="search"
                     color={searchIconColor}
                     size={iconSizeConst.small}
                     style={style.magnify}
@@ -108,7 +108,7 @@ export default function NavBar({ hideBack }: { hideBack?: boolean }) {
                             setPageStatus(PageStatus.EDITING);
                         }}
                         color={searchIconColor}
-                        name="x-mark"
+                        name="x"
                     />
                 ) : null}
             </View>

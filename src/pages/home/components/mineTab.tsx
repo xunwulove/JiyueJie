@@ -92,7 +92,7 @@ export default function MineTab({
     /* 平板两组入口卡 - "我的音乐"组（对齐 APlayer MinePage 第 1 组：我的歌单/我的喜欢/下载管理） */
     const mineCards: IEntry[] = [
         {
-            icon: "playlist",
+            icon: "list-music",
             title: "我的歌单",
             value: `${sheetsBase.length} 个歌单`,
             action: () => navigate(ROUTE_PATH.SHEET_MANAGER),
@@ -104,7 +104,7 @@ export default function MineTab({
             action: favoriteAction,
         },
         {
-            icon: "arrow-down-tray",
+            icon: "download",
             title: "下载管理",
             value: "已下载",
             action: () => navigate(ROUTE_PATH.DOWNLOADING),
@@ -113,19 +113,19 @@ export default function MineTab({
     /* "数据与设置"组（对齐 APlayer MinePage 第 2 组：导入歌单/备份管理/音源管理，工具卡灰调 subtle） */
     const toolCards: IEntry[] = [
         {
-            icon: "inbox-arrow-down",
+            icon: "inbox",
             title: "导入歌单/单曲",
             value: "自动识别音源",
             action: () => showDialog("ImportMusicSheetDialog"),
         },
         {
-            icon: "arrow-up-tray",
+            icon: "upload",
             title: "备份管理",
             value: "WebDAV · 本地",
             action: () => navigate(ROUTE_PATH.BACKUP),
         },
         {
-            icon: "server-stack",
+            icon: "server",
             title: "音源管理",
             value: "插件 · 订阅",
             action: () => navigate(ROUTE_PATH.PLUGIN_SOURCES),
@@ -135,7 +135,7 @@ export default function MineTab({
     /* 手机统计 3 卡（MineStatCard compact） */
     const statCards: IEntry[] = [
         {
-            icon: "clock-outline",
+            icon: "clock",
             title: "最近播放",
             value: `${history.length} 首`,
             action: () => navigate(ROUTE_PATH.HISTORY),
@@ -147,7 +147,7 @@ export default function MineTab({
             action: favoriteAction,
         },
         {
-            icon: "musical-note",
+            icon: "music",
             title: "本地音乐",
             value: `${localMusicList?.length ?? 0} 首`,
             action: () => navigate(ROUTE_PATH.LOCAL),
@@ -158,22 +158,22 @@ export default function MineTab({
        顶部三格统计卡 statCards 中的"我的喜欢"保留） */
     const entryItems: IEntry[] = [
         {
-            icon: "inbox-arrow-down",
+            icon: "inbox",
             title: "导入歌单/单曲",
             action: () => showDialog("ImportMusicSheetDialog"),
         },
         {
-            icon: "arrow-up-tray",
+            icon: "upload",
             title: "备份管理",
             action: () => navigate(ROUTE_PATH.BACKUP),
         },
         {
-            icon: "arrow-down-tray",
+            icon: "download",
             title: "下载管理",
             action: () => navigate(ROUTE_PATH.DOWNLOADING),
         },
         {
-            icon: "server-stack",
+            icon: "server",
             title: "音源管理",
             action: () => navigate(ROUTE_PATH.PLUGIN_SOURCES),
         },
@@ -231,7 +231,7 @@ export default function MineTab({
             onPress={() => navigate(ROUTE_PATH.SETTING, { type: "basic" })}
             hitSlop={8}>
             <Icon
-                name="cog-8-tooth"
+                name="cog"
                 size={28}
                 color={colors.textSecondary}
             />
@@ -324,7 +324,7 @@ export default function MineTab({
                         { backgroundColor: primary },
                     ]}>
                     <Icon
-                        name="arrow-path"
+                        name="refresh-cw"
                         size={24}
                         color="#FFFFFF"
                     />

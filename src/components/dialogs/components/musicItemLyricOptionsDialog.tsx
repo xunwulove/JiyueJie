@@ -49,7 +49,7 @@ export default function MusicItemLyricOptionsDialog(
 
     const options: IOption[] = [
         {
-            icon: "identification",
+            icon: "id-card",
             title: `ID: ${getMediaUniqueKey(musicItem)}`,
             onPress: () => {
                 mediaCache.setMediaCache(musicItem);
@@ -81,7 +81,7 @@ export default function MusicItemLyricOptionsDialog(
             },
         },
         {
-            icon: "album-outline",
+            icon: "album",
             show: !!musicItem.album,
             title: t("panel.musicItemLyricOptions.album", { album: musicItem.album }),
             onPress: () => {
@@ -95,7 +95,7 @@ export default function MusicItemLyricOptionsDialog(
             },
         },
         {
-            icon: "motion-play",
+            icon: "list-plus",
             title: t("musicListEditor.addToNextPlay"),
             onPress: () => {
                 TrackPlayer.addNext(musicItem);
@@ -116,7 +116,7 @@ export default function MusicItemLyricOptionsDialog(
         // 歌词设置（三级浮窗）：歌词偏移 + 关联方式 + 自动搜索歌词 + 更换歌词 + 字体大小
         // （字体大小、歌词翻译已移入歌词设置，此处不再保留快捷入口，单一入口）
         {
-            icon: "lyric",
+            icon: "text-quote",
             title: t("panel.musicItemLyricOptions.lyricSettings"),
             onPress: () => {
                 hideDialog();
@@ -137,7 +137,7 @@ export default function MusicItemLyricOptionsDialog(
             },
         },
         {
-            icon: "trash-outline",
+            icon: "trash-2",
             title: t("panel.musicItemLyricOptions.permanentDelete"),
             show: !!LocalMusicSheet.isLocalMusic(musicItem),
             onPress: () => {

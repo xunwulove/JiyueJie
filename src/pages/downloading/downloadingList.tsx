@@ -50,13 +50,13 @@ function DownloadingListItem(props: { musicItem: IMusic.IMusicItem }) {
 
     const status = taskInfo?.status ?? DownloadStatus.Error;
 
-    let iconName: IIconName = "arrow-down-tray";
+    let iconName: IIconName = "download";
     let iconColor = colors.textSecondary;
     if (status === DownloadStatus.Error) {
-        iconName = "exclamation-circle";
+        iconName = "circle-alert";
         iconColor = (colors as any).error ?? "#E5484D";
     } else if (status === DownloadStatus.Completed) {
-        iconName = "check-circle";
+        iconName = "circle-check";
         iconColor = colors.primary;
     }
 
@@ -114,7 +114,7 @@ function DownloadingListItem(props: { musicItem: IMusic.IMusicItem }) {
                                 downloader.remove(musicItem)
                             }>
                             <Icon
-                                name="trash-outline"
+                                name="trash-2"
                                 size={24}
                                 color={colors.textSecondary}
                             />
@@ -183,7 +183,7 @@ function DownloadedListItem(props: { musicItem: IMusic.IMusicItem }) {
             ]}>
             <View style={styles.row}>
                 <Icon
-                    name="check-circle"
+                    name="circle-check"
                     size={24}
                     color={colors.primary}
                 />
@@ -209,7 +209,7 @@ function DownloadedListItem(props: { musicItem: IMusic.IMusicItem }) {
                             title: musicItem.title,
                             options: [
                                 {
-                                    icon: "document-outline",
+                                    icon: "file-text",
                                     title: "删除记录（保留文件）",
                                     async onPress() {
                                         await downloader.removeDownloadedRecord(
@@ -219,7 +219,7 @@ function DownloadedListItem(props: { musicItem: IMusic.IMusicItem }) {
                                     },
                                 },
                                 {
-                                    icon: "trash-outline",
+                                    icon: "trash-2",
                                     title: "删除记录及文件",
                                     async onPress() {
                                         await downloader.removeDownloaded(
@@ -232,7 +232,7 @@ function DownloadedListItem(props: { musicItem: IMusic.IMusicItem }) {
                         });
                     }}>
                     <Icon
-                        name="trash-outline"
+                        name="trash-2"
                         size={24}
                         color={colors.textSecondary}
                     />
@@ -263,7 +263,7 @@ export default function DownloadingList() {
         return (
             <View style={styles.empty}>
                 <Icon
-                    name="arrow-down-tray"
+                    name="download"
                     size={64}
                     color={Color(colors.textSecondary).alpha(0.3).toString()}
                 />

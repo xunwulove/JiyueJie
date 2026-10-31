@@ -287,11 +287,12 @@ function SheetCard({
                         toggleStar();
                     }}>
                     <Icon
-                        name={starred ? "heart" : "heart-outline"}
+                        name="star"
                         size={14}
                         color={
-                            starred ? "#e31639" : "rgba(255,255,255,0.95)"
+                            starred ? "#f5a623" : "rgba(255,255,255,0.95)"
                         }
+                        fill={starred ? "currentColor" : "none"}
                     />
                 </Pressable>
                 {type === "toplist" ? (

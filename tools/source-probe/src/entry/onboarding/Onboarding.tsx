@@ -271,7 +271,7 @@ export default function Onboarding() {
                                     {
                                         icon: "circle-stack" as IIconName,
                                         title: "导入音乐源",
-                                        desc: "支持 MusicFree 生态音源，一键订阅更新",
+                                        desc: "支持主流音源生态，一键订阅更新",
                                     },
                                     {
                                         icon: "magnifying-glass" as IIconName,

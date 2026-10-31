@@ -44,13 +44,13 @@ const SORT_OPTIONS: Array<{
     icon?: IIconName;
 }> = [
     { label: "默认顺序", value: "default" },
-    { label: "歌曲名", value: "title", icon: "musical-note" },
+    { label: "歌曲名", value: "title", icon: "music" },
     { label: "歌手", value: "artist", icon: "user" },
-    { label: "专辑", value: "album", icon: "album-outline" },
-    { label: "时长", value: "duration", icon: "clock-outline" },
-    { label: "文件大小", value: "size", icon: "server" },
+    { label: "专辑", value: "album", icon: "album" },
+    { label: "时长", value: "duration", icon: "clock" },
+    { label: "文件大小", value: "size", icon: "hard-drive" },
     { label: "添加时间", value: "addTime", icon: "calendar-days" },
-    { label: "听歌频率", value: "playCount", icon: "chart-bar" },
+    { label: "听歌频率", value: "playCount", icon: "chart-column" },
 ];
 
 // Bug: localeCompare is slow sometimes https://github.com/facebook/hermes/issues/867
@@ -177,7 +177,7 @@ export default function LibraryTab() {
         action: () => void;
     }> = [
         {
-            icon: "musical-note",
+            icon: "music",
             title: "歌曲",
             subtitle: `${stats.songs} 首`,
             // 对齐 APlayer：随机播放全部本地歌曲（仅播放，留在播放区；全屏只能由点击播放区进入）
@@ -196,7 +196,7 @@ export default function LibraryTab() {
             },
         },
         {
-            icon: "album-outline",
+            icon: "album",
             title: "专辑",
             subtitle: `${stats.albums} 张`,
             action: () =>
@@ -215,7 +215,7 @@ export default function LibraryTab() {
         },
         {
             // 对齐 APlayer 第 4 卡 = "扫描/媒体来源"（旧图标 Refresh 刷新箭头，fork 用 arrow-path 同语义）
-            icon: "arrow-path",
+            icon: "refresh-cw",
             title: "扫描",
             subtitle: "媒体来源",
             action: () => navigate(ROUTE_PATH.SCAN_SETTINGS),
@@ -420,7 +420,7 @@ export default function LibraryTab() {
                             </Pressable>
                         ) : null}
                         <Icon
-                            name="sort-outline"
+                            name="arrow-up-down"
                             size={20}
                             color={primary}
                             style={styles.sortIcon}
@@ -484,17 +484,17 @@ function LocalSongItem({
                 {
                     label: "加入歌单",
                     value: "playlist",
-                    icon: "playlist",
+                    icon: "list-music",
                 },
                 {
                     label: "歌曲信息",
                     value: "info",
-                    icon: "information-circle",
+                    icon: "info",
                 },
                 {
                     label: "永久删除",
                     value: "delete",
-                    icon: "trash-outline",
+                    icon: "trash-2",
                 },
             ],
             onOk: value => {

@@ -20,7 +20,7 @@ import i18n from "@/core/i18n";
 import bootstrapAtom from "./bootstrap.atom";
 import { getDefaultStore } from "jotai";
 
-// 依赖管理：独立 App「音源探测」只注入插件引擎所需依赖
+// 依赖管理：独立 App「源鉴」只注入插件引擎所需依赖
 PluginManager.injectDependencies(Config);
 
 async function bootstrapImpl() {

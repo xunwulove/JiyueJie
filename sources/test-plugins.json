@@ -1,0 +1,150 @@
+{
+  "desc": "极悦界测试音源（2026-10-25 初筛 29 源：22全通+4可解析不可播+网易音乐+酷狗Thomas+碳酸酷我，碳酸系已纳入，供探测软件实测）",
+  "plugins": [
+    {
+      "name": "5sing",
+      "version": "0.0.3",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/5sing.js"
+    },
+    {
+      "name": "GD音乐台",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/GD%E9%9F%B3%E4%B9%90%E5%8F%B0.js"
+    },
+    {
+      "name": "W音乐",
+      "version": "0.2.3",
+      "url": "https://raw.githubusercontent.com/ThomasBy2025/musicfree/refs/heads/main/plugins/wy.js"
+    },
+    {
+      "name": "bilibili",
+      "version": "0.2.3",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/bilibili/index.js"
+    },
+    {
+      "name": "maoerfm",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/maoerfm.js"
+    },
+    {
+      "name": "migu",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/migu.js"
+    },
+    {
+      "name": "one-QQ",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/qq.js"
+    },
+    {
+      "name": "one-咪咕",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/mg.js"
+    },
+    {
+      "name": "one-汽水",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/qs.js"
+    },
+    {
+      "name": "one-网易",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/wy.js"
+    },
+    {
+      "name": "one-酷我",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/kw.js"
+    },
+    {
+      "name": "one-酷狗",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/kg.js"
+    },
+    {
+      "name": "qianqian",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/qianqian.js"
+    },
+    {
+      "name": "tx",
+      "version": "1.0.0",
+      "url": "https://raw.githubusercontent.com/ThomasBy2025/musicfree/master/plugins/tx.js"
+    },
+    {
+      "name": "wy",
+      "version": "1.0.0",
+      "url": "https://raw.githubusercontent.com/ThomasBy2025/musicfree/master/plugins/wy.js"
+    },
+    {
+      "name": "喜马拉雅_C",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/nainoz_naa/music/raw/master/ximalaya.js"
+    },
+    {
+      "name": "喜马拉雅_竹侣",
+      "version": "1.0.0",
+      "url": "https://raw.gitcode.com/Crystim/mfp/raw/main/%E5%96%9C%E9%A9%AC%E6%8B%89%E9%9B%85_%E7%AB%B9%E4%BE%A3.js"
+    },
+    {
+      "name": "好听轻音乐",
+      "version": "0.1.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/htqyy.js"
+    },
+    {
+      "name": "开心汽水",
+      "version": "1.0.0",
+      "url": "https://gitee.com/hongmengv5/musicfree/raw/master/qishui.js"
+    },
+    {
+      "name": "弥音QQ",
+      "version": "1.0.0",
+      "url": "https://raw.gitcode.com/Crystim/mfp/raw/main/%E5%BC%A5%E9%9F%B3QQ.js"
+    },
+    {
+      "name": "猫耳FM",
+      "version": "0.1.4",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/maoerfm/index.js"
+    },
+    {
+      "name": "腾讯音乐",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/%E8%85%BE%E8%AE%AF%E9%9F%B3%E4%B9%90.js"
+    },
+    {
+      "name": "htqyy",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/htqyy.js"
+    },
+    {
+      "name": "ypm",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/ypm.js"
+    },
+    {
+      "name": "酷我_念心",
+      "version": "1.0.0",
+      "url": "https://raw.gitcode.com/Crystim/mfp/raw/main/%E9%85%B7%E6%88%91_%E5%BF%B5%E5%BF%83.js"
+    },
+    {
+      "name": "碳酸Meting",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/nainoz_naa/music/raw/master/%E7%A2%B3%E9%85%B8Meting.js"
+    },
+    {
+      "name": "网易音乐",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/%E7%BD%91%E6%98%93%E9%9F%B3%E4%B9%90.js"
+    },
+    {
+      "name": "酷狗Thomas",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/%E9%85%B7%E7%8B%97Thomas.js"
+    },
+    {
+      "name": "碳酸酷我",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/nainoz_naa/music/raw/master/%E7%A2%B3%E9%85%B8%E9%85%B7%E6%88%91.js"
+    }
+  ]
+}

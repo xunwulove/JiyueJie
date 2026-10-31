@@ -272,7 +272,7 @@ export default function RecommendSection() {
                     </View>
                 ) : (
                     <IconButton
-                        name="arrow-path"
+                        name="refresh-cw"
                         sizeType="small"
                         color={colors.textSecondary}
                         onPress={onRefresh}

@@ -29,7 +29,7 @@ const Stack = createNativeStackNavigator<any>();
 
 export default function Pages() {
     const theme = Theme.useTheme();
-    // 独立 App「音源探测」：无引导流程，直接进入主界面（探测页为首路由）
+    // 独立 App「源鉴」：无引导流程，直接进入主界面（探测页为首路由）
 
     return (
         <ErrorBoundary>

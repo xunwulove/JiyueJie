@@ -17,11 +17,12 @@ import DeviceInfo from "react-native-device-info";
 import { Plugin } from "@/core/pluginManager/plugin";
 import { IProbeResult, SEARCH_TYPES, SearchType } from "./index";
 import { classifyPlayError } from "./playback";
+import getOrCreateMMKV from "@/utils/getOrCreateMMKV";
 
 /** 源状态五档（按用户价值从高到低） */
-type SourceTier = "全通" | "可解析不可播" | "半可用" | "歌单型" | "死源";
+export type SourceTier = "全通" | "可解析不可播" | "半可用" | "歌单型" | "死源";
 
-function tierOf(r: IProbeResult | undefined): SourceTier {
+export function tierOf(r: IProbeResult | undefined): SourceTier {
     if (!r) {
         return "死源";
     }
@@ -131,9 +132,12 @@ function fullCells(r: IProbeResult | undefined) {
     return {
         tier: tierOf(r),
         search: r.searchOk ? "✓" : "✗",
+        searchFirst: r.searchFirstOk ? "✓" : "✗",
         media: r.mediaSourceOk ? "✓" : "✗",
         play: r.playableOk ? "✓" : "✗",
         sheets: r.sheetsOk ? "✓" : "✗",
+        sheetsFirst: r.sheetsFirstOk ? "✓" : "✗",
+        sheetTags: r.sheetTagsOk ? "✓" : "✗",
         lyric: r.lyricOk ? "✓" : "✗",
         lrcTr: r.lyricTranslationOk ? "✓" : "✗",
         artist: r.artistWorksOk ? "✓" : "✗",
@@ -164,8 +168,11 @@ export function buildProbeReport(
 
     const playable = n(r => r.playableOk);
     const search = n(r => r.searchOk);
+    const searchFirst = n(r => !!r.searchFirstOk);
     const media = n(r => r.mediaSourceOk);
     const sheets = n(r => r.sheetsOk);
+    const sheetsFirst = n(r => !!r.sheetsFirstOk);
+    const sheetTags = n(r => !!r.sheetTagsOk);
     const lyric = n(r => r.lyricOk);
     const lrcTr = n(r => r.lyricTranslationOk);
     const artist = n(r => r.artistWorksOk);
@@ -203,7 +210,7 @@ export function buildProbeReport(
         .map(([k, v]) => `${k} ${v}个`);
 
     const lines: string[] = [];
-    lines.push("# 音源探测报告");
+    lines.push("# 源鉴报告");
     lines.push("");
     lines.push(`- 生成时间：${probeAt.toLocaleString("zh-CN", { hour12: false })}`);
     lines.push(`- 探测音源：${total} 个（已出结果 ${withResult.length} 个）`);
@@ -218,9 +225,10 @@ export function buildProbeReport(
     lines.push(`| 🟣 歌单型源（搜索无结果，非失效） | ${tierCount["歌单型"]} |`);
     lines.push(`| 🔴 死源（全能力失败） | ${tierCount["死源"]} |`);
     lines.push("| --- | --- |");
-    lines.push(`| 可搜索 | ${search} |`);
+    lines.push(`| 可搜索 | ${search}（首位完整 ${searchFirst}） |`);
     lines.push(`| 可解析播放地址 | ${media} |`);
-    lines.push(`| 有歌单 | ${sheets} |`);
+    lines.push(`| 有歌单 | ${sheets}（歌单首曲可解析 ${sheetsFirst}） |`);
+    lines.push(`| 标签歌单可拉取 | ${sheetTags} |`);
     lines.push(`| 有歌词 | ${lyric}（含翻译 ${lrcTr}） |`);
     lines.push(`| 有歌手作品 | ${artist} |`);
     lines.push(`| 有专辑 | ${album} |`);
@@ -240,13 +248,14 @@ export function buildProbeReport(
         lines.push("（无——所有音源均未通过播放验证）");
         lines.push("");
     } else {
-        lines.push("| 音源 | 版本 | 搜索 | 解析 | 播放 | 歌单 | 歌词 | 音频时长(s) | 验证耗时(ms) |");
-        lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+        lines.push("| 音源 | 版本 | 搜索 | 解析 | 播放 | 歌单 | 歌单首曲 | 标签歌单 | 歌词 | 音频时长(s) | 验证耗时(ms) |");
+        lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
         recommend.forEach(({ p, r }) => {
             const meta = pluginMeta(p);
             lines.push(
                 `| ${p.name} | ${meta.version || "—"} | ${r.searchOk ? "✓" : "✗"} | ` +
                     `${r.mediaSourceOk ? "✓" : "✗"} | ✓ | ${r.sheetsOk ? "✓" : "✗"} | ` +
+                    `${r.sheetsFirstOk ? "✓" : "✗"} | ${r.sheetTagsOk ? "✓" : "✗"} | ` +
                     `${r.lyricOk ? "✓" : "✗"} | ${Math.round(r.playDurationSec ?? 0)} | ${r.playVerifyMs ?? "—"} |`,
             );
         });
@@ -285,14 +294,14 @@ export function buildProbeReport(
     if (semi.length > 0) {
         lines.push("## 四、半可用（部分能力可用，但不可播放）");
         lines.push("");
-        lines.push("| 音源 | 版本 | 搜索 | 解析 | 歌单 | 歌词 | 歌手作品 | 专辑 | 评论 | 说明 |");
-        lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+        lines.push("| 音源 | 版本 | 搜索 | 解析 | 歌单 | 歌单首曲 | 歌词 | 歌手作品 | 专辑 | 评论 | 说明 |");
+        lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
         semi.forEach(({ p, r }) => {
             const meta = pluginMeta(p);
             const c = fullCells(r);
             lines.push(
                 `| ${p.name} | ${meta.version || "—"} | ${c.search} | ${c.media} | ${c.sheets} | ` +
-                    `${c.lyric} | ${c.artist} | ${c.album} | ${c.comments} | ${c.reason || "—"} |`,
+                    `${c.sheetsFirst} | ${c.lyric} | ${c.artist} | ${c.album} | ${c.comments} | ${c.reason || "—"} |`,
             );
         });
         lines.push("");
@@ -305,12 +314,13 @@ export function buildProbeReport(
     if (sheetOnly.length > 0) {
         lines.push("## 五、歌单型源（搜索无结果属正常，非失效）");
         lines.push("");
-        lines.push("| 音源 | 版本 | 歌单 | 歌单标签 | 解析 | 播放 | 说明 |");
-        lines.push("| --- | --- | --- | --- | --- | --- | --- |");
+        lines.push("| 音源 | 版本 | 歌单 | 歌单首曲 | 歌单标签 | 标签歌单 | 解析 | 播放 | 说明 |");
+        lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
         sheetOnly.forEach(({ p, r }) => {
             const meta = pluginMeta(p);
             lines.push(
                 `| ${p.name} | ${meta.version || "—"} | ${r.sheetsOk ? "✓" : "✗"} | ` +
+                    `${r.sheetsFirstOk ? "✓" : "✗"} | ${r.abilities.recommendSheetTags ? "✓" : "✗"} | ` +
                     `${r.sheetTagsOk ? "✓" : "✗"} | ${r.mediaSourceOk ? "✓" : "✗"} | ` +
                     `${r.playableOk ? "✓" : "✗"} | ${r.sheetsError || ""} |`,
             );
@@ -340,10 +350,10 @@ export function buildProbeReport(
     lines.push("## 七、全部明细");
     lines.push("");
     lines.push(
-        "| 音源 | 版本 | 档位 | 搜-单曲 | 搜-专辑 | 搜-歌手 | 搜-歌单 | 搜-歌词 | 解析 | 播放 | 歌单 | 歌词 | 翻译 | 歌手作品 | 专辑 | 评论 | 样本 | 失败原因 | 耗时(ms) |",
+        "| 音源 | 版本 | 档位 | 搜-单曲 | 搜-专辑 | 搜-歌手 | 搜-歌单 | 搜-歌词 | 首位完整 | 解析 | 播放 | 歌单 | 歌单首曲 | 标签歌单 | 歌词 | 翻译 | 歌手作品 | 专辑 | 评论 | 样本 | 失败原因 | 耗时(ms) |",
     );
     lines.push(
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     );
     plugins.forEach(p => {
         const r = results[p.hash];
@@ -352,7 +362,7 @@ export function buildProbeReport(
         const searchRow = SEARCH_TYPES.map(t => searchCell(r, t)).join(" | ");
         lines.push(
             `| ${p.name} | ${meta.version || "—"} | ${c.tier} | ${searchRow} | ` +
-                `${c.media} | ${c.play} | ${c.sheets} | ${c.lyric} | ${c.lrcTr} | ${c.artist} | ` +
+                `${c.searchFirst} | ${c.media} | ${c.play} | ${c.sheets} | ${c.sheetsFirst} | ${c.sheetTags} | ${c.lyric} | ${c.lrcTr} | ${c.artist} | ` +
                 `${c.album} | ${c.comments} | ${c.sample} | ${c.reason || "—"} | ${r ? r.durationMs : "—"} |`,
         );
     });
@@ -360,7 +370,7 @@ export function buildProbeReport(
 
     lines.push("---");
     lines.push(
-        `> 说明：播放=深度播放验证（真实播放样本歌曲 ≥2s 无报错，**静音验证**）。本报告由音源探测 v${DeviceInfo.getVersion()} 生成，供人工复核与 AI 二次整理。`,
+        `> 说明：播放=深度播放验证（真实播放样本歌曲 ≥2s 无报错，**静音验证**）。本报告由源鉴 v${DeviceInfo.getVersion()} 生成，供人工复核与 AI 二次整理。`,
     );
     lines.push("");
     return lines.join("\n");
@@ -381,7 +391,342 @@ export async function exportProbeReport(md: string): Promise<void> {
     if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(fileUri, {
             mimeType: "text/plain",
-            dialogTitle: "分享音源探测报告",
+            dialogTitle: "分享源鉴报告",
         });
     }
+}
+
+/* ============ JSON 报告（结构化，可直接投喂 AI / 自动化对比） ============ */
+
+/** 单个音源的结构化条目（全字段 + 建议动作） */
+function jsonSource(
+    p: Plugin,
+    r: IProbeResult | undefined,
+): Record<string, unknown> {
+    const meta = pluginMeta(p);
+    if (!r) {
+        return {
+            name: p.name,
+            version: meta.version,
+            author: meta.author,
+            homePage: meta.homePage,
+            enabled: false,
+            tier: "死源",
+            missingResult: true,
+        };
+    }
+    return {
+        name: p.name,
+        version: meta.version,
+        author: meta.author,
+        homePage: meta.homePage,
+        enabled: r.enabled,
+        tier: tierOf(r),
+        abilities: {
+            search: r.abilities.search,
+            searchTypes: r.abilities.searchTypes,
+            mediaSource: r.abilities.mediaSource,
+            musicInfo: r.abilities.musicInfo,
+            lyric: r.abilities.lyric,
+            albumInfo: r.abilities.albumInfo,
+            musicSheetInfo: r.abilities.musicSheetInfo,
+            artistWorks: r.abilities.artistWorks,
+            topLists: r.abilities.topLists,
+            topListDetail: r.abilities.topListDetail,
+            recommendSheetTags: r.abilities.recommendSheetTags,
+            recommendSheetsByTag: r.abilities.recommendSheetsByTag,
+            importMusicSheet: r.abilities.importMusicSheet,
+            musicComments: r.abilities.musicComments,
+        },
+        search: {
+            ok: r.searchOk,
+            firstResultComplete: r.searchFirstOk ?? false,
+            byType: r.searchTypesOk,
+            error: r.searchError ?? null,
+            sample: r.sampleTitle
+                ? {
+                    title: r.sampleTitle,
+                    artist: r.sampleArtist ?? null,
+                }
+                : null,
+        },
+        mediaSource: {
+            ok: r.mediaSourceOk,
+            error: r.mediaSourceError ?? null,
+        },
+        playable: {
+            ok: r.playableOk,
+            error: r.playError ?? null,
+            playedSec: r.playedSec ?? null,
+            durationSec: r.playDurationSec ?? null,
+            verifyMs: r.playVerifyMs ?? null,
+        },
+        sheets: {
+            listOk: r.sheetsOk,
+            count: r.sheetCount ?? null,
+            firstSongPlayable: r.sheetsFirstOk ?? false,
+            error: r.sheetsError ?? null,
+        },
+        sheetTags: {
+            ok: r.sheetTagsOk,
+            error: r.sheetTagsError ?? null,
+        },
+        lyric: {
+            ok: r.lyricOk,
+            hasTranslation: r.lyricTranslationOk,
+            error: r.lyricError ?? null,
+        },
+        artistWorks: {
+            ok: r.artistWorksOk,
+            error: r.artistWorksError ?? null,
+        },
+        album: {
+            ok: r.albumOk,
+            error: r.albumError ?? null,
+        },
+        comments: {
+            ok: r.commentsOk,
+            error: r.commentsError ?? null,
+        },
+        durationMs: r.durationMs,
+        lastError: r.lastError ?? null,
+        // 半死源/死源给建议动作（供人工/插件维护者处置）
+        suggestedAction: !r.playableOk ? suggestAction(r) : null,
+    };
+}
+
+/**
+ * 生成探测报告（JSON 字符串）：总览 + 每个音源全字段结构化。
+ * 与 Markdown 报告同一数据源；AI 二次整理/自动化对比优先用 JSON。
+ */
+export function buildProbeReportJson(
+    plugins: Plugin[],
+    results: Record<string, IProbeResult>,
+    probeAt: Date,
+): string {
+    const withResult = plugins.filter(p => results[p.hash]);
+    const counted = withResult.map(p => ({ p, r: results[p.hash] }));
+
+    const n = (fn: (r: IProbeResult) => boolean) =>
+        counted.filter(({ r }) => fn(r)).length;
+
+    const tierCount: Record<string, number> = {
+        全通: 0,
+        可解析不可播: 0,
+        半可用: 0,
+        歌单型: 0,
+        死源: 0,
+    };
+    counted.forEach(({ r }) => {
+        tierCount[tierOf(r)] = (tierCount[tierOf(r)] ?? 0) + 1;
+    });
+
+    const reasonCount: Record<string, number> = {};
+    counted
+        .filter(({ r }) => !r.playableOk)
+        .forEach(({ r }) => {
+            const reason = classifyPlayError(r.playError || r.mediaSourceError);
+            reasonCount[reason] = (reasonCount[reason] ?? 0) + 1;
+        });
+
+    const report = {
+        app: "源鉴",
+        appVersion: DeviceInfo.getVersion(),
+        generatedAt: probeAt.toISOString(),
+        total: plugins.length,
+        withResult: withResult.length,
+        summary: {
+            tierCount,
+            reasonCount,
+            search: n(r => r.searchOk),
+            searchFirstComplete: n(r => !!r.searchFirstOk),
+            mediaSource: n(r => r.mediaSourceOk),
+            playable: n(r => r.playableOk),
+            sheets: n(r => r.sheetsOk),
+            sheetsFirstSongPlayable: n(r => !!r.sheetsFirstOk),
+            sheetTags: n(r => !!r.sheetTagsOk),
+            lyric: n(r => r.lyricOk),
+            lyricTranslation: n(r => r.lyricTranslationOk),
+            artistWorks: n(r => r.artistWorksOk),
+            album: n(r => r.albumOk),
+            comments: n(r => r.commentsOk),
+        },
+        sources: plugins.map(p => jsonSource(p, results[p.hash])),
+    };
+    return JSON.stringify(report, null, 2);
+}
+
+/** 导出 JSON 报告（与 Markdown 同一分享链路） */
+export async function exportProbeReportJson(json: string): Promise<void> {
+    const fileName = `probe-report-${new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace(/[-:T]/g, "")}.json`;
+    const fileUri = `${FileSystem.cacheDirectory ?? ""}${fileName}`;
+    await FileSystem.writeAsStringAsync(fileUri, json);
+    if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+            mimeType: "application/json",
+            dialogTitle: "分享源鉴报告（JSON）",
+        });
+    }
+}
+
+/* ============ 结论清单（一键复制） ============ */
+
+/** 按五档生成可一键复制的处置清单（手机端粘到主 App 操作的最小闭环） */
+export function buildConclusionList(
+    plugins: Plugin[],
+    results: Record<string, IProbeResult>,
+): string {
+    const groups: Record<SourceTier, string[]> = {
+        全通: [],
+        可解析不可播: [],
+        半可用: [],
+        歌单型: [],
+        死源: [],
+    };
+    plugins.forEach(p => {
+        const r = results[p.hash];
+        if (!r) {
+            groups["死源"].push(p.name);
+            return;
+        }
+        groups[tierOf(r)].push(r.name);
+    });
+    const lines: string[] = [];
+    lines.push("【源鉴处置建议】");
+    if (groups["全通"].length > 0) {
+        lines.push(`建议保留（全通）：${groups["全通"].join("、")}`);
+    }
+    if (groups["可解析不可播"].length > 0) {
+        lines.push(
+            `建议关注·可修复（能解析不能播）：${groups["可解析不可播"].join("、")}`,
+        );
+    }
+    if (groups["半可用"].length > 0) {
+        lines.push(`按需保留（半可用）：${groups["半可用"].join("、")}`);
+    }
+    if (groups["歌单型"].length > 0) {
+        lines.push(`仅歌单可用（按需保留）：${groups["歌单型"].join("、")}`);
+    }
+    if (groups["死源"].length > 0) {
+        lines.push(`建议卸载（死源）：${groups["死源"].join("、")}`);
+    }
+    return lines.join("\n");
+}
+
+/* ============ 历史报告对比（手机端核心价值：知道源变好/变坏） ============ */
+
+const historyStore = getOrCreateMMKV("probe.history");
+
+/** 单源快照 */
+export interface IReportSnapshotItem {
+    hash: string;
+    name: string;
+    tier: SourceTier;
+}
+
+/** 一次探测的完整快照 */
+export interface IReportSnapshot {
+    at: string;
+    items: IReportSnapshotItem[];
+}
+
+/** 五档价值序（diff 用：数字越大越好） */
+const TIER_RANK: Record<SourceTier, number> = {
+    全通: 4,
+    可解析不可播: 3,
+    半可用: 2,
+    歌单型: 1,
+    死源: 0,
+};
+
+/** 保存本次探测快照（覆盖"上次"槽位；本次进"最新"槽位） */
+export function saveReportSnapshot(
+    plugins: Plugin[],
+    results: Record<string, IProbeResult>,
+) {
+    const cur: IReportSnapshot = {
+        at: new Date().toISOString(),
+        items: plugins
+            .filter(p => results[p.hash])
+            .map(p => ({
+                hash: p.hash,
+                name: results[p.hash].name,
+                tier: tierOf(results[p.hash]),
+            })),
+    };
+    const prev = loadLastSnapshot();
+    if (prev) {
+        historyStore.set("prev", JSON.stringify(prev));
+    }
+    historyStore.set("latest", JSON.stringify(cur));
+}
+
+/** 读取上次探测快照（无则 null） */
+export function loadLastSnapshot(): IReportSnapshot | null {
+    const raw = historyStore.getString("latest");
+    return raw ? (JSON.parse(raw) as IReportSnapshot) : null;
+}
+
+/** 读取更早一次（对比用的"上次"槽位） */
+function loadPrevSnapshot(): IReportSnapshot | null {
+    const raw = historyStore.getString("prev");
+    return raw ? (JSON.parse(raw) as IReportSnapshot) : null;
+}
+
+/** 与最近一次历史对比，生成"变好/变坏/新增/卸载"文本 */
+export function buildHistoryDiff(
+    cur: IReportSnapshot,
+): { text: string; changed: number } {
+    const prev = loadPrevSnapshot();
+    if (!prev) {
+        return {
+            text: "暂无更早记录，本次为首次可对比探测。",
+            changed: 0,
+        };
+    }
+    const prevByHash = new Map(prev.items.map(i => [i.hash, i]));
+    const better: string[] = [];
+    const worse: string[] = [];
+    const added: string[] = [];
+    const gone: string[] = [];
+    cur.items.forEach(it => {
+        const old = prevByHash.get(it.hash);
+        if (!old) {
+            added.push(it.name);
+            return;
+        }
+        if (TIER_RANK[it.tier] > TIER_RANK[old.tier]) {
+            better.push(`${it.name}（${old.tier}→${it.tier}）`);
+        } else if (TIER_RANK[it.tier] < TIER_RANK[old.tier]) {
+            worse.push(`${it.name}（${old.tier}→${it.tier}）`);
+        }
+    });
+    const curHashes = new Set(cur.items.map(i => i.hash));
+    prev.items.forEach(old => {
+        if (!curHashes.has(old.hash)) {
+            gone.push(old.name);
+        }
+    });
+
+    const lines: string[] = [];
+    lines.push(`对比 ${new Date(prev.at).toLocaleString("zh-CN", { hour12: false })} 的探测：`);
+    if (better.length > 0) {
+        lines.push(`🟢 变好：${better.join("、")}`);
+    }
+    if (worse.length > 0) {
+        lines.push(`🔴 变坏：${worse.join("、")}`);
+    }
+    if (added.length > 0) {
+        lines.push(`🆕 新增：${added.join("、")}`);
+    }
+    if (gone.length > 0) {
+        lines.push(`🗑 已卸载：${gone.join("、")}`);
+    }
+    if (better.length + worse.length + added.length + gone.length === 0) {
+        lines.push("与上次结果一致，无变化。");
+    }
+    return { text: lines.join("\n"), changed: better.length + worse.length };
 }

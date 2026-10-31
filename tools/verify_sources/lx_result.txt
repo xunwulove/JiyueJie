@@ -1,7 +1,0 @@
-﻿===== Flower源LX (LX) =====
-[FAIL] 加载/执行失败: Cannot destructure property 'EVENT_NAMES' of 'globalThis.lx' as it is undefined.
-===== Huibq源LX (LX) =====
-[FAIL] 加载/执行失败: Cannot destructure property 'EVENT_NAMES' of 'globalThis.lx' as it is undefined.
-===== LX官方源LX (LX) =====
-[FAIL] 加载/执行失败: Cannot read properties of undefined (reading 'EVENT_NAMES')
-===== 六音源LX (LX) =====

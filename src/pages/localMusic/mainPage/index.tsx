@@ -20,7 +20,7 @@ export default function MainPage() {
                 withStatusBar
                 actions={[
                     {
-                        icon: "magnifying-glass",
+                        icon: "search",
                         onPress() {
                             navigate(ROUTE_PATH.SEARCH_MUSIC_LIST, {
                                 musicList: LocalMusicSheet.getMusicList(),
@@ -34,7 +34,7 @@ export default function MainPage() {
                                 title: t("home.localMusic"),
                                 options: [
                                     {
-                                        icon: "magnifying-glass",
+                                        icon: "search",
                                         title: t("localMusic.scanLocalMusic"),
                                         async onPress() {
                                             showDialog("FileSelectorDialog", {
@@ -68,7 +68,7 @@ export default function MainPage() {
                                         },
                                     },
                                     {
-                                        icon: "pencil-square",
+                                        icon: "square-pen",
                                         title: t("common.batchEdit"),
                                         async onPress() {
                                             navigate(ROUTE_PATH.MUSIC_LIST_EDITOR, {
@@ -80,7 +80,7 @@ export default function MainPage() {
                                         },
                                     },
                                     {
-                                        icon: "arrow-down-tray",
+                                        icon: "download",
                                         title: t("localMusic.downloadList"),
                                         async onPress() {
                                             navigate(ROUTE_PATH.DOWNLOADING);

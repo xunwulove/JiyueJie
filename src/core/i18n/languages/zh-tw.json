@@ -518,6 +518,7 @@
     "panel.timingClose.cancelScheduleClose": "取消定時關閉",
     "panel.timingClose.closeAfterPlay": "播放完歌曲再關閉",
     "panel.playRate.title": "播放速度",
+    "panel.playbackSetting.title": "播放設定",
     "panel.sheetTags.title": "歌單類別",
     "repeatMode.SHUFFLE": "隨機播放",
     "repeatMode.QUEUE": "清單循環",

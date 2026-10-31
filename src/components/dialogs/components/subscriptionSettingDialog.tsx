@@ -139,7 +139,7 @@ export default function SubscriptionSettingDialog(
                                 hitSlop={8}
                                 onPress={() => onDelete(item)}>
                                 <Icon
-                                    name="trash-outline"
+                                    name="trash-2"
                                     size={iconSizeConst.light}
                                     color={colors.textSecondary}
                                 />

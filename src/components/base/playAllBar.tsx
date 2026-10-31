@@ -52,7 +52,7 @@ export default function (props: IProps) {
                     }
                 }}>
                 <Icon
-                    name="play-circle"
+                    name="circle-play"
                     style={style.playAllIcon}
                     size={iconSizeConst.normal}
                     color={colors.text}
@@ -61,9 +61,10 @@ export default function (props: IProps) {
             </Pressable>
             {canStar && musicSheet ? (
                 <IconButton
-                    name={starred ? "heart" : "heart-outline"}
+                    name="star"
                     sizeType={"normal"}
-                    color={starred ? "#e31639" : undefined}
+                    color={starred ? "#f5a623" : undefined}
+                    fill={starred ? "currentColor" : "none"}
                     style={style.optionButton}
                     onPress={async () => {
                         if (!starred) {
@@ -88,7 +89,7 @@ export default function (props: IProps) {
                 }}
             />
             <IconButton
-                name="pencil-square"
+                name="square-pen"
                 sizeType={"normal"}
                 style={style.optionButton}
                 onPress={() => {

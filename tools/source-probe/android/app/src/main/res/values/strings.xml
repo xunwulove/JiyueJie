@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_name">音源探测</string>
+    <string name="app_name">源鉴</string>
     <string name="expo_splash_screen_status_bar_translucent">true</string>
     <!-- rtnp channel id -->
     <string name="rntp_temporary_channel_id">musicfree_temporary_channel</string>
     <!-- rtnp channel name -->
     <string name="rntp_temporary_channel_name">musicfree_temporary_channel</string>
-    <string name="playback_channel_name">音源探测</string>
+    <string name="playback_channel_name">源鉴</string>
     <!-- 桌面快捷方式（App Shortcuts） -->
     <string name="shortcut_play">播放</string>
     <string name="shortcut_local">本地音乐</string>

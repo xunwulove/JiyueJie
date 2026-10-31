@@ -29,7 +29,7 @@ export default function SheetMusicList() {
         return (
             <View style={styles.empty}>
                 <Icon
-                    name="playlist"
+                    name="list-music"
                     size={64}
                     color={Color(colors.textSecondary).alpha(0.3).toString()}
                 />

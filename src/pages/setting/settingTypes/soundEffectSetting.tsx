@@ -32,6 +32,7 @@ import {
     applyDdc,
     applyEqEnabled,
     applyEqPreset,
+    applyPostGainEnabled,
     applyReverb,
     ddcCustomList,
     deleteDdcPreset,
@@ -109,6 +110,7 @@ export default function SoundEffectSetting() {
 
     // ===== JamesDSP 进阶音效状态（config 持久化） =====
     const jdspPostGain = useAppConfig("jdsp.postGain") ?? 0;
+    const jdspPostGainEnabled = useAppConfig("jdsp.postGainEnabled") ?? true;
     const jdspBassEnabled = useAppConfig("jdsp.bassEnabled") ?? false;
     const jdspBassGain = useAppConfig("jdsp.bassGain") ?? 6;
     const jdspStereoEnabled = useAppConfig("jdsp.stereoEnabled") ?? false;
@@ -463,25 +465,33 @@ export default function SoundEffectSetting() {
                             </ThemeText>
                         </View>
                         <View style={[style.card, { backgroundColor: colors.card }]}>
-                            {/* 输出增益 */}
+                            {/* 输出增益（开关化，与播放设置浮窗对齐；默认开启保持旧行为） */}
                             <ListItem withHorizontalPadding heightType="small">
                                 <ListItem.Content title="输出增益" description={t("soundEffect.gainDesc")} />
-                                <View style={{ width: rpx(200) }}>
-                                    <Slider
-                                        minimumValue={-12}
-                                        maximumValue={12}
-                                        step={0.5}
-                                        value={jdspPostGain}
-                                        onValueChange={v => {
-                                            Config.setConfig("jdsp.postGain", v); setPostGain(v); 
-                                        }}
-                                        minimumTrackTintColor={colors.primary}
-                                        thumbTintColor={colors.primary}
-                                    />
-                                </View>
-                                <ThemeText fontSize="caption" fontColor="textSecondary">
-                                    {jdspPostGain > 0 ? "+" : ""}{jdspPostGain.toFixed(1)}dB
-                                </ThemeText>
+                                {jdspPostGainEnabled ? (
+                                    <>
+                                        <View style={{ width: rpx(200) }}>
+                                            <Slider
+                                                minimumValue={-12}
+                                                maximumValue={12}
+                                                step={0.5}
+                                                value={jdspPostGain}
+                                                onValueChange={v => {
+                                                    Config.setConfig("jdsp.postGain", v); setPostGain(v); 
+                                                }}
+                                                minimumTrackTintColor={colors.primary}
+                                                thumbTintColor={colors.primary}
+                                            />
+                                        </View>
+                                        <ThemeText fontSize="caption" fontColor="textSecondary">
+                                            {jdspPostGain > 0 ? "+" : ""}{jdspPostGain.toFixed(1)}dB
+                                        </ThemeText>
+                                    </>
+                                ) : null}
+                                <ThemeSwitch
+                                    value={jdspPostGainEnabled}
+                                    onValueChange={applyPostGainEnabled}
+                                />
                             </ListItem>
                             <ListDivider marginLeft={16} />
                             {/* 低音增强 DBB */}
@@ -756,6 +766,7 @@ export default function SoundEffectSetting() {
                             <ListDivider marginLeft={16} />
                             {/* 全部重置 */}
                             <ListItem withHorizontalPadding heightType="small" onPress={() => {
+                                Config.setConfig("jdsp.postGainEnabled", false);
                                 Config.setConfig("jdsp.postGain", 0);
                                 Config.setConfig("jdsp.bassEnabled", false);
                                 Config.setConfig("jdsp.stereoEnabled", false);

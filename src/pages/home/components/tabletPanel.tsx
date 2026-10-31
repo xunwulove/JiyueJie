@@ -343,7 +343,7 @@ export default function TabletPanel() {
                         }
                     />
                     <Icon
-                        name="skip-left"
+                        name="skip-back"
                         size={24}
                         color={colors.text}
                         onPress={() => TrackPlayer.skipToPrevious()}
@@ -371,13 +371,13 @@ export default function TabletPanel() {
                         />
                     </Pressable>
                     <Icon
-                        name="skip-right"
+                        name="skip-forward"
                         size={24}
                         color={colors.text}
                         onPress={() => TrackPlayer.skipToNext()}
                     />
                     <Icon
-                        name="playlist"
+                        name="list-music"
                         size={20}
                         color={colors.textSecondary}
                         onPress={() => showPanel("PlayList")}

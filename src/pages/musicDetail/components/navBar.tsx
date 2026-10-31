@@ -27,7 +27,7 @@ export default function NavBar() {
             <View style={styles.rightGroup}>
                 {/* 主题设置（衣服图标）：沉浸歌词设置三级浮窗 */}
                 <IconButton
-                    name="t-shirt-outline"
+                    name="shirt"
                     sizeType="normal"
                     color={colors.textSecondary}
                     style={styles.button}

@@ -80,7 +80,7 @@ export default function Sheets() {
                         : `${sheet.artist ?? ""}`
                 }
                 placeholderIcon={
-                    sheet.id === MusicSheet.defaultSheet.id ? "heart" : "playlist"
+                    sheet.id === MusicSheet.defaultSheet.id ? "heart" : "list-music"
                 }
                 onPress={onPress}
                 onLongPress={
@@ -139,7 +139,7 @@ export default function Sheets() {
                         }}
                     />
                     <IconButton
-                        name="inbox-arrow-down"
+                        name="inbox"
                         sizeType="normal"
                         onPress={() => {
                             showDialog("ImportMusicSheetDialog");

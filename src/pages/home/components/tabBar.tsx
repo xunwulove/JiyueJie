@@ -32,9 +32,9 @@ export enum SaltTab {
 }
 
 const TABS: Array<{ key: SaltTab; icon: IIconName; title: string }> = [
-    { key: SaltTab.HOME, icon: "home-outline", title: "首页" },
-    { key: SaltTab.SEARCH, icon: "magnifying-glass", title: "搜索" },
-    { key: SaltTab.LIBRARY, icon: "folder-music-outline", title: "音乐库" },
+    { key: SaltTab.HOME, icon: "home", title: "首页" },
+    { key: SaltTab.SEARCH, icon: "search", title: "搜索" },
+    { key: SaltTab.LIBRARY, icon: "library", title: "音乐库" },
     { key: SaltTab.MINE, icon: "user", title: "我的" },
 ];
 
@@ -181,7 +181,7 @@ function HorizontalBar({
                 })}
             </View>
             <IconButton
-                name="cog-8-tooth"
+                name="cog"
                 size={32}
                 color={
                     inSetting
@@ -261,7 +261,7 @@ function SearchBar({
             />
             <View style={styles.searchBarContainer}>
                 <Icon
-                    name="magnifying-glass"
+                    name="search"
                     color={searchIconColor}
                     size={iconSizeConst.small}
                     style={styles.magnify}
@@ -304,7 +304,7 @@ function SearchBar({
                             setPageStatus(PageStatus.EDITING);
                         }}
                         color={searchIconColor}
-                        name="x-mark"
+                        name="x"
                     />
                 ) : null}
             </View>

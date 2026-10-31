@@ -105,6 +105,7 @@ export interface IAppConfigProperties {
 
     // JamesDSP 进阶音效（libjamesdsp 核心库）
     "jdsp.postGain": number;
+    "jdsp.postGainEnabled": boolean;
     "jdsp.bassEnabled": boolean;
     "jdsp.bassGain": number;
     "jdsp.stereoEnabled": boolean;

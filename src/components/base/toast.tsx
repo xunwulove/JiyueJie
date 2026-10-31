@@ -47,11 +47,11 @@ const activeToastStore = new GlobalState<IToastConfigInner | null>(null);
 
 const typeConfig = {
     success: {
-        name: "check-circle",
+        name: "circle-check",
         color: "#457236",
     },
     warn: {
-        name: "exclamation-circle",
+        name: "circle-alert",
         color: "#de7622",
     },
 } as const;

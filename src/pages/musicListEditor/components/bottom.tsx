@@ -43,7 +43,7 @@ export default function Bottom() {
     return (
         <View style={style.wrapper}>
             <BottomIcon
-                icon="motion-play"
+                icon="list-start"
                 title={t("musicListEditor.addToNextPlay")}
                 onPress={async () => {
                     TrackPlayer.addNext(selectedItems);
@@ -64,7 +64,7 @@ export default function Bottom() {
                 }}
             />
             <BottomIcon
-                icon="arrow-down-tray"
+                icon="download"
                 title={t("common.download")}
                 onPress={() => {
                     if (selectedItems.length) {
@@ -77,7 +77,7 @@ export default function Bottom() {
                 }}
             />
             <BottomIcon
-                icon="trash-outline"
+                icon="trash-2"
                 title={t("common.delete")}
                 color={
                     selectedItems.length && musicSheet?.id

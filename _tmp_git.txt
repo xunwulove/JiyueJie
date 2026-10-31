@@ -1,0 +1,18 @@
+﻿=== HEAD 提交 ===
+a15467509fc3161f85bc32f595ea3f007d3a1a9f fix(音源可用率): P1/P2 修复 + 徽章口径统一方案B，0.6.4 同版本重发
+committer: xunwulove <minlian66666@gmail.com> Thu Oct 29 23:26:11 2026 +0800
+
+ docs/code-review-2026-10-29.md                     | 141 +++++++++++++++++++++
+ .../dialogs/components/pluginReliabilityDialog.tsx |  70 ++++++----
+ src/core/pluginManager/index.ts                    |  42 +++---
+ src/core/pluginReliability.ts                      |  89 +++++++++++--
+ src/hooks/useColors.ts                             |   7 +
+ .../pluginSetting/components/pluginItem.tsx        |  58 +++++++--
+ updates/version.json                               |   2 +-
+ 7 files changed, 347 insertions(+), 62 deletions(-)
+=== log -3 ===
+a154675 fix(音源可用率): P1/P2 修复 + 徽章口径统一方案B，0.6.4 同版本重发
+ff68afa feat(core): 音源可用率优化-探测多样本+排序样本保护
+e5220b0 fix(ui): 可用率弹窗百分号不折行+计数恢复成功/失败样式+每维度显示平均耗时
+=== 祖先检查(158c9aa 是否 HEAD 祖先) ===
+ancestor_exit=1

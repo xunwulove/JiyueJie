@@ -65,11 +65,11 @@ const TITLES: Record<GroupType, string> = {
     folder: "文件夹",
 };
 
-/** 行图标：专辑 album-outline（圆角10块）/ 歌手 user（圆形块）/ 文件夹 folder-outline（圆角10块），对齐 APlayer Album/Person */
-const GROUP_ICONS: Record<GroupType, "album-outline" | "user" | "folder-outline"> = {
-    album: "album-outline",
+/** 行图标：专辑 album（圆角10块）/ 歌手 user（圆形块）/ 文件夹 folder（圆角10块），对齐 APlayer Album/Person */
+const GROUP_ICONS: Record<GroupType, "album" | "user" | "folder"> = {
+    album: "album",
     artist: "user",
-    folder: "folder-outline",
+    folder: "folder",
 };
 
 export default function LocalGroup() {

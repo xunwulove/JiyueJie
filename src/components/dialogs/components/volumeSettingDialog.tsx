@@ -41,7 +41,7 @@ export default function VolumeSettingDialog() {
             <Dialog.Content>
                 <View style={styles.container}>
                     <Icon
-                        name="speaker-wave"
+                        name="volume-2"
                         size={iconSizeConst.normal}
                         color={colors.textSecondary}
                     />

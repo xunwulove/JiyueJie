@@ -63,7 +63,7 @@ export default function MusicItemOptionsDialog(
 
     const options: IOption[] = [
         {
-            icon: "identification",
+            icon: "id-card",
             title: `ID: ${getMediaUniqueKey(musicItem)}`,
             onPress: () => {
                 mediaCache.setMediaCache(musicItem);
@@ -95,7 +95,7 @@ export default function MusicItemOptionsDialog(
             },
         },
         {
-            icon: "album-outline",
+            icon: "album",
             show: !!musicItem.album,
             title: t("panel.musicItemOptions.album", { album: musicItem.album }),
             onPress: () => {
@@ -109,7 +109,7 @@ export default function MusicItemOptionsDialog(
             },
         },
         {
-            icon: "motion-play",
+            icon: "list-start",
             title: t("musicListEditor.addToNextPlay"),
             onPress: () => {
                 TrackPlayer.addNext(musicItem);
@@ -128,7 +128,7 @@ export default function MusicItemOptionsDialog(
             },
         },
         {
-            icon: "arrow-down-tray",
+            icon: "download",
             title: t("common.download"),
             show: !downloaded,
             onPress: () => {
@@ -146,12 +146,12 @@ export default function MusicItemOptionsDialog(
             },
         },
         {
-            icon: "check-circle-outline",
+            icon: "circle-check",
             title: t("panel.musicItemOptions.downloaded"),
             show: !!downloaded,
         },
         {
-            icon: "trash-outline",
+            icon: "trash-2",
             title: t("common.delete"),
             show: !!musicSheet,
             onPress: () => {
@@ -183,7 +183,7 @@ export default function MusicItemOptionsDialog(
             },
         },
         {
-            icon: "trash-outline",
+            icon: "trash-2",
             title: t("panel.musicItemOptions.deleteLocalDownload"),
             show: !!downloaded,
             onPress: () => {
@@ -225,7 +225,7 @@ export default function MusicItemOptionsDialog(
             },
         },
         {
-            icon: "link-slash",
+            icon: "unlink",
             title: t("panel.musicItemOptions.unassociateLyric"),
             show: !!associatedLrc,
             onPress: async () => {
@@ -235,7 +235,7 @@ export default function MusicItemOptionsDialog(
             },
         },
         {
-            icon: "archive-box-x-mark",
+            icon: "archive-x",
             title: t("panel.musicItemOptions.clearPluginCache"),
             onPress: () => {
                 mediaCache.removeMediaCache(musicItem);

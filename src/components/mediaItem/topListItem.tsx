@@ -50,7 +50,7 @@ export default function TopListItem(props: ITopListResultsProps) {
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.iconBlock}>
-                    <Icon name="fire" size={20} color="#FFFFFF" />
+                    <Icon name="flame" size={20} color="#FFFFFF" />
                 </LinearGradient>
                 <View style={styles.info}>
                     <ThemeText

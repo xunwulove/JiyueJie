@@ -59,7 +59,7 @@ export default function RadioDialog(props: IRadioDialogProps) {
                         {title}
                     </ThemeText>
                     {tip ? <Tip content={tip} position='top'>
-                        <Icon name='question-mark-circle' size={iconSizeConst.light} color={colors.text} />
+                        <Icon name='circle-help' size={iconSizeConst.light} color={colors.text} />
                     </Tip> : null}
                 </>
             </Dialog.Title>

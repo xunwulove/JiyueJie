@@ -1,7 +1,0 @@
-﻿===== Flower源 (LX) =====
-[FAIL] 加载/执行失败: Cannot read properties of undefined (reading 'version')
-===== Huibq源 (LX) =====
-[FAIL] 加载/执行失败: Identifier 'EVENT_NAMES' has already been declared
-===== LX官方源 (LX) =====
-[FAIL] 加载/执行失败: Cannot read properties of undefined (reading 'md5')
-===== 六音源 (LX) =====

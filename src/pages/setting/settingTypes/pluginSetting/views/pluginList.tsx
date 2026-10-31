@@ -174,41 +174,41 @@ export default function PluginList() {
     const menuOptions: IOption[] = [
         {
             type: "switch",
-            icon: "arrow-path",
+            icon: "refresh-cw",
             title: t("basicSettings.autoUpdatePlugin"),
             configKey: "basic.autoUpdatePlugin",
             defaultValue: true,
         },
         {
             type: "switch",
-            icon: "shield-keyhole-outline",
+            icon: "shield",
             title: t("basicSettings.notCheckPluginVersion"),
             configKey: "basic.notCheckPluginVersion",
             defaultValue: false,
         },
         {
             type: "switch",
-            icon: "moon",
+            icon: "zap",
             title: t("basicSettings.lazyLoadPlugin"),
             configKey: "basic.lazyLoadPlugin",
             defaultValue: true,
         },
         {
             type: "switch",
-            icon: "strategy",
+            icon: "sliders-horizontal",
             title: t("basicSettings.sortPluginByReliability"),
             configKey: "basic.sortPluginByReliability",
             defaultValue: true,
         },
         {
-            icon: "share",
+            icon: "share-2",
             title: "导出全部插件",
             onPress() {
                 onExportPluginsClick();
             },
         },
         {
-            icon: "trash-outline",
+            icon: "trash-2",
             title: t("pluginSetting.menu.uninstallAll"),
             onPress() {
                 showDialog("SimpleDialog", {
@@ -610,7 +610,7 @@ export default function PluginList() {
                         // 检测音源（主动探测：全量深度验证可播性；串行 60s 预算内完成，
                         // 深度验证为静默网络层 Range 拉取，不打断当前播放；
                         // 进度弹窗三行显示，可点"后台运行"收起、任务继续）
-                        icon: "signal",
+                        icon: "radar",
                         onPress() {
                             // 已有轮次在跑（启动自动探测/后台运行中的手动探测）→ 不重复进入
                             if (probeService.isProbing()) {
@@ -723,7 +723,7 @@ export default function PluginList() {
                                                     </ThemeText>
                                                 </View>
                                                 <IconTextButton
-                                                    icon="arrow-down-tray"
+                                                    icon="download"
                                                     onPress={() =>
                                                         onMountLarge(item)
                                                     }>
@@ -774,7 +774,7 @@ export default function PluginList() {
                                 ),
                                 options: [
                                     {
-                                        icon: "folder-outline",
+                                        icon: "folder",
                                         title: t(
                                             "pluginSetting.fabOptions.installFromLocal",
                                         ),
@@ -788,7 +788,7 @@ export default function PluginList() {
                                         onPress: onInstallFromNetworkClick,
                                     },
                                     {
-                                        icon: "arrow-path",
+                                        icon: "refresh-cw",
                                         title: t(
                                             "pluginSetting.fabOptions.updateAllPlugins",
                                         ),

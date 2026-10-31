@@ -195,7 +195,7 @@ export default function ScanSettings() {
                         end={{ x: 1, y: 1 }}
                         style={styles.scanCard}>
                         <Icon
-                            name="arrow-path"
+                            name="refresh-cw"
                             size={22}
                             color={colors.primary}
                         />
@@ -233,7 +233,7 @@ export default function ScanSettings() {
                     </View>
                     <View style={[styles.card, { backgroundColor: colors.card }]}>
                         <SettingSwitchRow
-                            icon="folder-music-outline"
+                            icon="folder-heart"
                             title="使用 Android 媒体库"
                             checked={settings.useMediaLibrary}
                             onCheckedChange={v =>
@@ -275,7 +275,7 @@ export default function ScanSettings() {
                             style={styles.permissionRow}
                             onPress={() => Linking.openSettings()}>
                             <Icon
-                                name="shield-keyhole-outline"
+                                name="shield"
                                 size={20}
                                 color={colors.primary}
                             />
@@ -288,7 +288,7 @@ export default function ScanSettings() {
                         </Pressable>
                         <ListDivider marginLeft={16} />
                         <SettingSwitchRow
-                            icon="arrow-path"
+                            icon="refresh-cw"
                             title="不扫描 60 秒以下音频"
                             subtitle="跳过时长不足 1 分钟的音频"
                             checked={settings.minDuration}
@@ -419,7 +419,7 @@ function FolderRow({
     return (
         <View style={styles.folderRow}>
             <Icon
-                name="folder-outline"
+                name="folder"
                 size={16}
                 color={colors.textSecondary}
             />
@@ -432,7 +432,7 @@ function FolderRow({
             </ThemeText>
             <Pressable onPress={onRemove}>
                 <Icon
-                    name="x-mark"
+                    name="x"
                     size={16}
                     color={
                         colors.textSecondary

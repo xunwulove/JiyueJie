@@ -107,7 +107,7 @@ export default function Operations() {
             },
         },
         {
-            iconName: "clock-outline",
+            iconName: "clock",
             title: isTablet ? "最近播放" : "最近\n播放",
             action() {
                 navigate(ROUTE_PATH.HISTORY);

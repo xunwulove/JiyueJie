@@ -16,6 +16,7 @@ export default function () {
             name="heart"
             size={iconSizeConst.normal}
             color="red"
+            fill="currentColor"
             onPress={() => {
                 if (!musicItem) {
                     return;
@@ -25,9 +26,10 @@ export default function () {
         />
     ) : (
         <Icon
-            name="heart-outline"
+            name="heart"
             size={iconSizeConst.normal}
             color={colors.textSecondary}
+            fill="none"
             onPress={() => {
                 if (musicItem) {
                     MusicSheet.addMusic(MusicSheet.defaultSheet.id, musicItem);

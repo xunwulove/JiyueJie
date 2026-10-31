@@ -114,7 +114,7 @@ static def getVersion() {
 // }
 
 def appVersion = getVersion()
-def appVersionCode = 7
+def appVersionCode = 8
 
 
 android {
@@ -122,7 +122,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "fun.upup.sourceprobe"
+    namespace "fun.upup.yuanjian"
 
     // 字体不压缩：assets 内 ttf 若被 deflate 压缩，Android Typeface.createFromAsset
     // 在部分设备上会加载失败（自定义字体文字渲染空白），必须原样打包
@@ -131,7 +131,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "fun.upup.sourceprobe"
+        applicationId "fun.upup.yuanjian"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode appVersionCode

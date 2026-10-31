@@ -87,21 +87,21 @@ export default function StatsRow() {
         initialPeriod: "DAY" | "ALL";
     }> = [
         {
-            icon: "clock-outline",
+            icon: "clock",
             label: "今日听歌",
             value: formatDuration(stats.todayMinutes),
             color: primary,
             initialPeriod: "DAY",
         },
         {
-            icon: "play-circle-outline",
+            icon: "circle-play",
             label: "今日播放",
             value: `${stats.todayPlays} 次`,
             color: primary,
             initialPeriod: "DAY",
         },
         {
-            icon: "fire",
+            icon: "flame",
             label:
                 stats.mostPlayedCount > 0
                     ? `最常听 · ${stats.mostPlayedCount} 次`
@@ -204,14 +204,16 @@ export default function StatsRow() {
                                 <ThemeText
                                     fontSize="title"
                                     fontWeight="bold"
-                                    numberOfLines={2}
+                                    numberOfLines={1}
                                     ellipsizeMode="tail"
                                     style={styles.valuePhone}>
                                     {card.value}
                                 </ThemeText>
                                 <ThemeText
                                     fontSize="caption"
-                                    fontColor="textSecondary">
+                                    fontColor="textSecondary"
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail">
                                     {card.label}
                                 </ThemeText>
                             </View>

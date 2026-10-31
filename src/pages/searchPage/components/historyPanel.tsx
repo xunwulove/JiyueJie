@@ -81,7 +81,7 @@ export default function HistoryPanel() {
                         <>
                             <View style={style.header}>
                                 <Icon
-                                    name="clock-outline"
+                                    name="clock"
                                     size={16}
                                     color={colors.primary}
                                 />
@@ -131,7 +131,7 @@ export default function HistoryPanel() {
                                                 getHistory().then(setHistory);
                                             }}>
                                             <Icon
-                                                name="x-mark"
+                                                name="x"
                                                 size={14}
                                                 color={colors.textSecondary}
                                             />
@@ -145,7 +145,7 @@ export default function HistoryPanel() {
                     {/* 热门搜索 */}
                     <View style={[style.header, history.length ? style.hotHeader : null]}>
                         <Icon
-                            name="fire"
+                            name="flame"
                             size={16}
                             color={Color(colors.primary)
                                 .alpha(0.8)

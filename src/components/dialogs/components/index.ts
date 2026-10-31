@@ -14,7 +14,7 @@ import MenuDialog from "./menuDialog";
 import FileSelectorDialog from "./fileSelectorDialog";
 import MusicListEditorDialog from "./musicListEditorDialog";
 import ThemeSettingDialog from "./themeSettingDialog";
-import PlayRateDialog from "./playRateDialog";
+import SoundEffectQuickDialog from "./soundEffectQuickDialog";
 import TimingCloseDialog from "./timingCloseDialog";
 import SetFontSizeDialog from "./setFontSizeDialog";
 import SubscriptionSettingDialog from "./subscriptionSettingDialog";
@@ -53,7 +53,7 @@ const dialogs = {
     FileSelectorDialog,
     MusicListEditorDialog,
     ThemeSettingDialog,
-    PlayRateDialog,
+    SoundEffectQuickDialog,
     TimingCloseDialog,
     SetFontSizeDialog,
     SubscriptionSettingDialog,

@@ -35,7 +35,7 @@ export default function History() {
                     musicHistoryList.length
                         ? [
                             {
-                                icon: "trash-outline",
+                                icon: "trash-2",
                                 onPress() {
                                     musicHistory.clearMusic();
                                 },
@@ -102,7 +102,7 @@ export default function History() {
             ) : (
                 <View style={styles.empty}>
                     <Icon
-                        name="clock-outline"
+                        name="clock"
                         size={64}
                         color={Color(colors.textSecondary)
                             .alpha(0.3)

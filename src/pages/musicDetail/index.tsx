@@ -24,7 +24,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import TrackPlayer, { useCurrentMusic, useMusicQuality } from "@/core/trackPlayer";
 import useColors from "@/hooks/useColors";
 import Color from "color";
-import { getNextQuality, qualityText } from "@/utils/qualities";
+import { getNextQuality, qualityKeys, qualityText } from "@/utils/qualities";
 
 /**
  * 全屏播放页 - 对齐 APlayer PlayingPage：
@@ -43,6 +43,18 @@ export default function MusicDetail() {
     const musicItem = useCurrentMusic();
     const quality = useMusicQuality();
     const colors = useColors();
+    // 音质可切换：本地音乐单音质 / 在线仅声明 1 档可用音质 → 不可切换（标签禁点 + 外框弱化）；
+    // qualities 缺失（未知）按可切换处理（点击循环切换，靠源兜底）
+    const canSwitchQuality = musicItem
+        ? !LocalMusicSheet.isLocalMusic(musicItem) &&
+          (musicItem.qualities === undefined ||
+              Object.keys(musicItem.qualities).length === 0 ||
+              qualityKeys.filter(
+                  key =>
+                      musicItem.qualities?.[key]?.url ||
+                      musicItem.qualities?.[key]?.size,
+              ).length > 1)
+        : false;
 
     useEffect(() => {
         const needAwake = Config.getConfig("basic.musicDetailAwake");
@@ -89,7 +101,8 @@ export default function MusicDetail() {
             </Text>
             {/* 当前音质标识（QQ 音乐式带框标签）：qualityText[当前音质]（无歌曲时随 musicItem 隐藏）；
                 点击自动切换到下一个音质（low→standard→high→super 循环），不弹面板；
-                本地音乐单音质：显示标识但禁用点击（onPress 置空，不执行 changeQuality） */}
+                本地音乐 / 在线单音质：显示标识但禁用点击（onPress 置空，不执行 changeQuality）；
+                可切换时外框金色 #f5a623 提示可点击，不可切换保持弱化灰框 */}
             {musicItem && (
                 <Text
                     numberOfLines={1}
@@ -102,13 +115,15 @@ export default function MusicDetail() {
                         compact && styles.qualityTagCompact,
                         {
                             color: colors.textSecondary,
-                            borderColor: Color(colors.textSecondary)
-                                .alpha(0.35)
-                                .toString(),
+                            borderColor: canSwitchQuality
+                                ? "#f5a623"
+                                : Color(colors.textSecondary)
+                                    .alpha(0.35)
+                                    .toString(),
                         },
                     ]}
                     onPress={
-                        !LocalMusicSheet.isLocalMusic(musicItem)
+                        canSwitchQuality
                             ? () => {
                                 TrackPlayer.changeQuality(
                                     getNextQuality(quality),

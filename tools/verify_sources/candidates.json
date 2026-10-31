@@ -1,0 +1,699 @@
+{
+  "desc": "参考库候选（参考库候选（参考库候选（参考库候选（10 个来源，合并 Nairocy 38 全量含碳酸系/moro one-*）",
+  "sources": [
+    "插件Hub聚合器: 34 个",
+    "moro订阅站: 无根清单(HTTP 404)，one-* 从其它来源覆盖",
+    "Nairocy: /down 与主页均失败(HTTP 0)",
+    "官方MusicFreePlugins: 12 个",
+    "kevinr/tvbox: 31 个",
+    "ThomasBy2025: 5 个(plugins/git.js,plugins/kg.js,plugins/kw.js,plugins/tx.js,plugins/wy.js)",
+    "GuGuMur CDN: 2 个(W电台/W电台_1)",
+    "GitLab acoolbook: 11 个",
+    "Huibq: 5 个",
+    "AkFace: 5 个",
+    "moro one-*(gitee 清单提取)",
+    "moro one-*(gitee 清单提取)",
+    "Nairocy 索引(web_fetch): 38 个(全量含碳酸系)",
+    "moro one-*(gitee 清单提取)"
+  ],
+  "plugins": [
+    {
+      "name": "Audiomack",
+      "version": "0.0.2",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/audiomack/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "歌词网",
+      "version": "0.0.0",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/geciwang/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "歌词千寻",
+      "version": "0.0.0",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/geciqianxun/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "Navidrome",
+      "version": "0.0.0",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/navidrome/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "suno",
+      "version": "0.0.0",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/suno/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "udio",
+      "version": "0.0.0",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/udio/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "猫耳FM",
+      "version": "0.1.4",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/maoerfm/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "快手",
+      "version": "0.0.2",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/kuaishou/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "音悦台",
+      "version": "0.0.1",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/yinyuetai/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "Youtube",
+      "version": "0.0.1",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/youtube/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "bilibili",
+      "version": "0.2.3",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/bilibili/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "WebDAV",
+      "version": "0.0.2",
+      "url": "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/webdav/index.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "歌曲宝",
+      "version": "0.0.6",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/gequbao.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "书音FM",
+      "version": "0.3.6",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/shuyinfm.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "六月听书",
+      "version": "0.1.5",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/6yueting.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "果核音乐",
+      "version": "0.0.1",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/ghyinyue.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "5sing",
+      "version": "0.0.3",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/5sing.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "好听轻音乐",
+      "version": "0.1.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/htqyy.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "爱听",
+      "version": "0.0.6",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/at.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "种子",
+      "version": "0.1.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/zz.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "小秋音乐",
+      "version": "0.0.2",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaoqiu.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "小枸音乐",
+      "version": "0.0.2",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaogou.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "小芸音乐",
+      "version": "0.0.2",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaoyun.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "小蜜音乐",
+      "version": "0.0.2",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaomi.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "小蜗音乐",
+      "version": "0.0.2",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaowo.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "W电台_1",
+      "version": "0.0.2",
+      "url": "https://fastly.jsdelivr.net/gh/GuGuMur/MusicFreePlugin-NeteaseRadio@master/dist/plugin.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "酷狗",
+      "version": "0.1.4",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/kugou.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "网易",
+      "version": "0.1.0",
+      "url": "http://music.haitangw.net/cqapi/wy.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "酷我",
+      "version": "0.1.0",
+      "url": "http://music.haitangw.net/cqapi/kw.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "酷我_1",
+      "version": "0.1.0",
+      "url": "http://music.haitangw.net/cqapi/kg.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "qq",
+      "version": "0.1.0",
+      "url": "http://music.haitangw.net/cqapi/qq.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "mg",
+      "version": "0.1.0",
+      "url": "http://music.haitangw.net/cqapi/xiaomi.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "W电台",
+      "version": "0.0.2",
+      "url": "https://cdn.jsdelivr.net/gh/GuGuMur/MusicFreePlugin-NeteaseRadio@master/dist/plugin.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "W音乐",
+      "version": "0.2.3",
+      "url": "https://raw.githubusercontent.com/ThomasBy2025/musicfree/refs/heads/main/plugins/wy.js",
+      "from": "插件Hub聚合器"
+    },
+    {
+      "name": "2t58",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/2t58.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "5sing-back",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/5sing-back.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "6yueting",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/6yueting.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "anting",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/anting.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "at",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/at.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "dj",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/dj.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "gequbao",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/gequbao.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "ghyinyue",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/ghyinyue.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "htqyy",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/htqyy.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "kuaishou",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/kuaishou.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "kugou",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/kugou.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "kuwo",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/kuwo.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "maoerfm",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/maoerfm.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "migu",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/migu.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "netease",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/netease.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "qianqian",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/qianqian.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "qmkg",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/qmkg.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "shuyinfm-b",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/shuyinfm-b.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "shuyinfm",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/shuyinfm.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "xiaogou",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaogou.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "xiaomi",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaomi.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "xiaoqiu",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaoqiu.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "xiaowo",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaowo.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "xiaoyun",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/xiaoyun.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "yinyuetai",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/yinyuetai.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "ypm",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/ypm.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "zhongzi",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/zhongzi.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "zz",
+      "version": "1.0.0",
+      "url": "https://gitee.com/kevinr/tvbox/raw/master/musicfree/plugins/zz.js",
+      "from": "kevinr/tvbox musicfree/plugins"
+    },
+    {
+      "name": "git",
+      "version": "1.0.0",
+      "url": "https://raw.githubusercontent.com/ThomasBy2025/musicfree/master/plugins/git.js",
+      "from": "ThomasBy2025"
+    },
+    {
+      "name": "kg",
+      "version": "1.0.0",
+      "url": "https://raw.githubusercontent.com/ThomasBy2025/musicfree/master/plugins/kg.js",
+      "from": "ThomasBy2025"
+    },
+    {
+      "name": "kw",
+      "version": "1.0.0",
+      "url": "https://raw.githubusercontent.com/ThomasBy2025/musicfree/master/plugins/kw.js",
+      "from": "ThomasBy2025"
+    },
+    {
+      "name": "tx",
+      "version": "1.0.0",
+      "url": "https://raw.githubusercontent.com/ThomasBy2025/musicfree/master/plugins/tx.js",
+      "from": "ThomasBy2025"
+    },
+    {
+      "name": "wy",
+      "version": "1.0.0",
+      "url": "https://raw.githubusercontent.com/ThomasBy2025/musicfree/master/plugins/wy.js",
+      "from": "ThomasBy2025"
+    },
+    {
+      "name": "网易云",
+      "version": "0.2.1",
+      "url": "http://adad23u.appinstall.life/dist/netease/index.js",
+      "from": "GitLab acoolbook"
+    },
+    {
+      "name": "千千音乐",
+      "version": "0.1.2",
+      "url": "http://adad23u.appinstall.life/dist/qianqian/index.js",
+      "from": "GitLab acoolbook"
+    },
+    {
+      "name": "咪咕",
+      "version": "0.2.0",
+      "url": "http://adad23u.appinstall.life/dist/migu/index.js",
+      "from": "GitLab acoolbook"
+    },
+    {
+      "name": "喜马拉雅",
+      "version": "0.1.4",
+      "url": "http://adad23u.appinstall.life/dist/xmly/index.js",
+      "from": "GitLab acoolbook"
+    },
+    {
+      "name": "全民K歌",
+      "version": "0.1.0",
+      "url": "http://adad23u.appinstall.life/dist/qmkg/index.js",
+      "from": "GitLab acoolbook"
+    },
+    {
+      "name": "QQ音乐",
+      "version": "0.2.1",
+      "url": "http://adad23u.appinstall.life/dist/qq/index.js",
+      "from": "GitLab acoolbook"
+    },
+    {
+      "name": "哔哩哔哩",
+      "version": "1.0.0",
+      "url": "https://gitee.com/nainoz_naa/other/raw/master/%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "哔哩哔哩_Cookie",
+      "version": "1.0.0",
+      "url": "https://gitee.com/nainoz_naa/other/raw/master/%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "开心汽水",
+      "version": "1.0.0",
+      "url": "https://gitee.com/hongmengv5/musicfree/raw/master/qishui.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "酷狗_xixi",
+      "version": "1.0.0",
+      "url": "https://js.258008.xyz/nian/kg.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "酷狗Thomas",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/%E9%85%B7%E7%8B%97Thomas.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "酷我_猫",
+      "version": "1.0.0",
+      "url": "https://gitee.com/nainoz_naa/other/raw/master/%E9%85%B7%E6%88%91_%E7%8C%AB.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "酷我_念心",
+      "version": "1.0.0",
+      "url": "https://raw.gitcode.com/Crystim/mfp/raw/main/%E9%85%B7%E6%88%91_%E5%BF%B5%E5%BF%83.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "酷我_xixi",
+      "version": "1.0.0",
+      "url": "https://js.258008.xyz/nian/kw.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "酷我音乐Thomas",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/%E9%85%B7%E6%88%91%E9%9F%B3%E4%B9%90Thomas.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "弥音QQ",
+      "version": "1.0.0",
+      "url": "https://raw.gitcode.com/Crystim/mfp/raw/main/%E5%BC%A5%E9%9F%B3QQ.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "千千",
+      "version": "1.0.0",
+      "url": "https://gitee.com/nainoz_naa/other/raw/master/%E5%8D%83%E5%8D%83.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "腾讯音乐",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/%E8%85%BE%E8%AE%AF%E9%9F%B3%E4%B9%90.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "网易_猫",
+      "version": "1.0.0",
+      "url": "https://gitee.com/nainoz_naa/other/raw/master/%E7%BD%91%E6%98%93_%E7%8C%AB.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "网易音乐",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/%E7%BD%91%E6%98%93%E9%9F%B3%E4%B9%90.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "网易云电台",
+      "version": "1.0.0",
+      "url": "https://gitee.com/nainoz_naa/other/raw/master/%E7%BD%91%E6%98%93%E4%BA%91%E7%94%B5%E5%8F%B0.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "网易云音乐 （非VIP）",
+      "version": "1.0.0",
+      "url": "https://gitee.com/nainoz_naa/other/raw/master/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%20%EF%BC%88%E9%9D%9EVIP%EF%BC%89.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "网易专辑",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/%E7%BD%91%E6%98%93%E4%B8%93%E8%BE%91.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "喜马拉雅_竹侣",
+      "version": "1.0.0",
+      "url": "https://raw.gitcode.com/Crystim/mfp/raw/main/%E5%96%9C%E9%A9%AC%E6%8B%89%E9%9B%85_%E7%AB%B9%E4%BE%A3.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "喜马拉雅_C",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/nainoz_naa/music/raw/master/ximalaya.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "云音乐 （酷我非VIP）",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/nainoz_naa/other/raw/master/%E4%BA%91%E9%9F%B3%E4%B9%90%20%EF%BC%88%E9%85%B7%E6%88%91%E9%9D%9EVIP%EF%BC%89.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "云云音乐",
+      "version": "1.0.0",
+      "url": "https://2209.kstore.space/xiaochen.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "GD音乐台",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/GD%E9%9F%B3%E4%B9%90%E5%8F%B0.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "GitCode",
+      "version": "1.0.0",
+      "url": "https://music.nairocy.com/file/GitCode.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "Migu",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/Domdkw/MusicFree-migu/raw/master/dist/migu-plugin.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "QQ_猫",
+      "version": "1.0.0",
+      "url": "https://gitee.com/nainoz_naa/other/raw/master/QQ_%E7%8C%AB.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "QQ音乐 （非VIP）",
+      "version": "1.0.0",
+      "url": "https://gitee.com/maotoumao/plugins-list1/raw/master/qq.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "WebDav_lrc",
+      "version": "1.0.0",
+      "url": "https://gitee.com/mcck-tools/other/raw/master/musicfree/webdav.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "酷狗_xixi2",
+      "version": "1.0.0",
+      "url": "https://js.258008.xyz/nian/kg.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "酷我_xixi2",
+      "version": "1.0.0",
+      "url": "https://js.258008.xyz/nian/kw.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "one-QQ",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/qq.js",
+      "from": "moro订阅站"
+    },
+    {
+      "name": "one-咪咕",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/mg.js",
+      "from": "moro订阅站"
+    },
+    {
+      "name": "one-汽水",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/qs.js",
+      "from": "moro订阅站"
+    },
+    {
+      "name": "one-网易",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/wy.js",
+      "from": "moro订阅站"
+    },
+    {
+      "name": "one-酷我",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/kw.js",
+      "from": "moro订阅站"
+    },
+    {
+      "name": "one-酷我听书",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/kwting.js",
+      "from": "moro订阅站"
+    },
+    {
+      "name": "one-酷狗",
+      "version": "1.2.0",
+      "url": "https://moro.cn.mt/plugins/kg.js",
+      "from": "moro订阅站"
+    },
+    {
+      "name": "碳酸歌词",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/nainoz_naa/music/raw/master/NaH.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "碳酸酷我",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/nainoz_naa/music/raw/master/%E7%A2%B3%E9%85%B8%E9%85%B7%E6%88%91.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "碳酸氢钠",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/nainoz_naa/music/raw/master/carbonate.js",
+      "from": "Nairocy聚合站"
+    },
+    {
+      "name": "碳酸Meting",
+      "version": "1.0.0",
+      "url": "https://raw.giteeusercontent.com/nainoz_naa/music/raw/master/%E7%A2%B3%E9%85%B8Meting.js",
+      "from": "Nairocy聚合站"
+    }
+  ]
+}

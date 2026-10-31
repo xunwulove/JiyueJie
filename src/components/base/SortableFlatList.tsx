@@ -389,7 +389,7 @@ function _SortableFlatListItem(props: ISortableFlatListItemProps) {
                 }}
                 style={styles.btn}>
                 <Icon
-                    name="bars-3"
+                    name="menu"
                     size={iconSizeConst.normal}
                     color={textColor}
                 />
@@ -452,7 +452,7 @@ const FakeFlatListItem = forwardRef(function (
             {item ? renderItem({ item, index: -1 }) : null}
             <Pressable style={styles.btn}>
                 <Icon
-                    name="bars-3"
+                    name="menu"
                     size={iconSizeConst.normal}
                     color={textColor}
                 />

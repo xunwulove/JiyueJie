@@ -243,7 +243,7 @@ export default function Onboarding() {
                             <View style={styles.brandBlock}>
                                 <View style={styles.brandIconWrap}>
                                     <Icon
-                                        name="musical-note"
+                                        name="music"
                                         size={64}
                                         color="#FFFFFF"
                                     />
@@ -269,17 +269,17 @@ export default function Onboarding() {
                                 }>
                                 {[
                                     {
-                                        icon: "circle-stack" as IIconName,
+                                        icon: "plug" as IIconName,
                                         title: "导入音乐源",
                                         desc: "支持 MusicFree 生态音源，一键订阅更新",
                                     },
                                     {
-                                        icon: "magnifying-glass" as IIconName,
+                                        icon: "search" as IIconName,
                                         title: "搜索全网歌曲",
                                         desc: "多源聚合搜索，自动择优播放",
                                     },
                                     {
-                                        icon: "arrow-down-tray" as IIconName,
+                                        icon: "download" as IIconName,
                                         title: "下载到本地",
                                         desc: "歌曲内嵌专辑图，离线也能听",
                                     },
@@ -399,7 +399,7 @@ export default function Onboarding() {
                                                 .toString() },
                                         ]}>
                                         <Icon
-                                            name="folder-music-outline"
+                                            name="folder"
                                             size={24}
                                             color={primary}
                                         />
@@ -417,7 +417,7 @@ export default function Onboarding() {
                                     {storageGranted ? (
                                         <View style={styles.grantedWrap}>
                                             <Icon
-                                                name="check-circle"
+                                                name="circle-check"
                                                 size={18}
                                                 color="#16A34A"
                                             />
@@ -460,7 +460,7 @@ export default function Onboarding() {
                                                 .toString() },
                                         ]}>
                                         <Icon
-                                            name="chat-bubble-oval-left-ellipsis"
+                                            name="message-circle"
                                             size={24}
                                             color={primary}
                                         />
@@ -478,7 +478,7 @@ export default function Onboarding() {
                                     {notifyGranted ? (
                                         <View style={styles.grantedWrap}>
                                             <Icon
-                                                name="check-circle"
+                                                name="circle-check"
                                                 size={18}
                                                 color="#16A34A"
                                             />
@@ -555,7 +555,7 @@ export default function Onboarding() {
                                                 .toString() },
                                         ]}>
                                         <Icon
-                                            name="arrow-path"
+                                            name="refresh-cw"
                                             size={24}
                                             color={primary}
                                         />
@@ -617,7 +617,7 @@ export default function Onboarding() {
                                                 .toString() },
                                         ]}>
                                         <Icon
-                                            name="musical-note"
+                                            name="music"
                                             size={24}
                                             color={primary}
                                         />
@@ -648,7 +648,7 @@ export default function Onboarding() {
                                                 .toString() },
                                         ]}>
                                         <Icon
-                                            name="play-circle"
+                                            name="circle-play"
                                             size={24}
                                             color={primary}
                                         />

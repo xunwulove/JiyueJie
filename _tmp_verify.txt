@@ -1,0 +1,9 @@
+﻿app-arm64-v8a-release.apk size= url=https://gitee.com/xunwulove/jiyuejie/releases/download/v0.6.4/app-arm64-v8a-release.apk
+app-universal-release.apk size= url=https://gitee.com/xunwulove/jiyuejie/releases/download/v0.6.4/app-universal-release.apk
+
+Name                    Length LastWriteTime      
+----                    ------ -------------      
+极悦界 0.6.4 (arm64).apk 30620821 2026/10/29 23:43:29
+极悦界 0.6.4 (通用).apk    40202129 2026/10/29 23:43:30
+
+

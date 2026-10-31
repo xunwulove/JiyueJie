@@ -222,8 +222,11 @@ export function applyAllConfig() {
         jdspSetEqualizer(false, new Array(15).fill(0));
     }
     // JamesDSP 进阶音效恢复
+    // 输出增益开关：0.6.5 起支持 jdsp.postGainEnabled（默认 true 保持旧行为），关闭时强制 0dB 直通
+    const postGainEnabled = Config.getConfig("jdsp.postGainEnabled") ?? true;
     const jdspPostGain = Config.getConfig("jdsp.postGain") ?? 0;
-    if (jdspPostGain !== 0) setPostGain(jdspPostGain);
+    if (postGainEnabled && jdspPostGain !== 0) setPostGain(jdspPostGain);
+    else if (!postGainEnabled) setPostGain(0);
     if (Config.getConfig("jdsp.bassEnabled")) setBassBoost(true, Config.getConfig("jdsp.bassGain") ?? 6);
     if (Config.getConfig("jdsp.stereoEnabled")) setStereoEnhancement(true, Config.getConfig("jdsp.stereoMix") ?? 0.3);
     if (Config.getConfig("jdsp.reverbEnabled")) {
@@ -267,6 +270,13 @@ export function applyAllConfig() {
             });
         }
     }
+}
+
+/** 输出增益开关：关闭=推 0dB 直通（原生单参数 setPostGain 无需改），开启=推当前值 */
+export function applyPostGainEnabled(enabled: boolean) {
+    Config.setConfig("jdsp.postGainEnabled", enabled);
+    const gain = enabled ? (Config.getConfig("jdsp.postGain") ?? 0) : 0;
+    setPostGain(gain);
 }
 
 /** 均衡器关闭渐变定时器（避免快速切换时多个渐变竞态） */

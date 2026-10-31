@@ -1,0 +1,2 @@
+﻿app-arm64-v8a-release.apk status=200 len=30620821
+app-universal-release.apk status=200 len=40202129

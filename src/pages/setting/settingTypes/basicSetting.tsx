@@ -521,14 +521,14 @@ export default function BasicSetting() {
         items: [
             {
                 title: t("soundEffect.title"),
-                right: <Icon name="skip-right" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
+                right: <Icon name="skip-forward" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
                 onPress() {
                     navigate(ROUTE_PATH.SOUND_EFFECT);
                 },
             },
             {
                 title: t("sidebar.themeSettings"),
-                right: <Icon name="skip-right" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
+                right: <Icon name="skip-forward" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
                 onPress() {
                     // B3：主题设置改为三级浮窗（不再叠二级设置覆盖层；自定义取色已去除）
                     showDialog("ThemeSettingDialog");
@@ -536,14 +536,14 @@ export default function BasicSetting() {
             },
             {
                 title: t("permissionSetting.title"),
-                right: <Icon name="skip-right" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
+                right: <Icon name="skip-forward" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
                 onPress() {
                     showDialog("PermissionSettingDialog");
                 },
             },
             {
                 title: t("common.about"),
-                right: <Icon name="skip-right" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
+                right: <Icon name="skip-forward" size={20} color={colors.textSecondary ?? "rgba(0,0,0,0.45)"} />,
                 onPress() {
                     navigate(ROUTE_PATH.SETTING, { type: "about" });
                 },

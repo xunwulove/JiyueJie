@@ -30,7 +30,7 @@ interface IPlaylistCardProps {
     onPress?: () => void;
     onLongPress?: () => void;
     /** 无封面时的占位图标名（传入 → 渐变底+图标，对齐 MyPlaylistCard；不传 → surfaceVariant 底，对齐首页 PlaylistCard） */
-    placeholderIcon?: "playlist" | "heart" | "musical-note";
+    placeholderIcon?: "list-music" | "heart" | "music";
 }
 
 /**
